@@ -3,7 +3,7 @@ id: RFC-001
 title: Gram Graph Support for Relate
 status: review
 created: 2026-11-06
-adrs: [ADR-001]
+adrs: [ADR-001, ADR-002]
 ---
 
 # RFC-001: Gram Graph Support for Relate
@@ -170,3 +170,4 @@ Basic capability comes first: load and export of the strict subset, with the def
 ## 8. ADRs
 
 - [ADR-001](../adr/ADR-001-load-identity-and-merge.md): Load Identity and Merge Semantics
+- [ADR-002](../adr/ADR-002-export-identity.md): Export Identity
