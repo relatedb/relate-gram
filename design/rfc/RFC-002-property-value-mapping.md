@@ -1,7 +1,7 @@
 ---
 id: RFC-002
 title: Property Value Mapping Between Gram and Cypher
-status: draft
+status: review
 created: 2026-11-06
 adrs: []
 ---

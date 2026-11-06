@@ -1,7 +1,7 @@
 ---
 id: RFC-001
 title: Gram Graph Support for Relate
-status: draft
+status: review
 created: 2026-11-06
 adrs: []
 ---
