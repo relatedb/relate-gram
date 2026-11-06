@@ -9,8 +9,8 @@ or more child [ADRs](../adr/README.md).
 
 Write for a working engineer who has just found this repository. Assume they are technically
 fluent and comfortable with graph databases and the gram notation as general ideas, and assume
-nothing about this project's specifics: not the meta node, not the identity namespaces, not any
-sibling RFC or ADR. Name project artifacts (the meta node, the `@id` namespace) rather than
+nothing about this project's specifics: not the meta node, not the named graphs, not any
+sibling RFC or ADR. Name project artifacts (the meta node, the named graph) rather than
 assuming them; one clause on first use is enough.
 
 The failure mode to avoid is a document addressed to its own authors — one that argues with past

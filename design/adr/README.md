@@ -12,7 +12,7 @@ depend on); an ADR never writes implementation code itself.
 Same reader as the [RFCs](../rfc/README.md#audience): technically fluent, comfortable with
 graph databases and the gram notation as general ideas, and new to this project's specifics. An ADR necessarily
 carries more of those specifics than an RFC — so name each one on first use ("meta node" is the
-node that holds a gram file's top-level record; "namespace" is a named graph inside one database) rather than writing as
+node that holds a gram file's top-level record; "named graph" is one of several graphs inside one database) rather than writing as
 though the reader has already been through the pipeline.
 
 Context should open on the technical forces, not on the paperwork: what situation makes a decision

@@ -20,7 +20,7 @@ An exported file also has to load back correctly. A reload treats all identifier
 
 The identifier syntax constrains what can be written. In the tree-sitter grammar for gram, an identifier is a symbol (a letter or underscore followed by letters, digits, `_`, `.`, `-` or `@`), an integer (`-?(0|[1-9][0-9]*)`), or a backtick-quoted name whose text may contain any character except an unescaped backtick, backslash or newline. A plain symbol cannot start with `@`.
 
-The parent RFC (RFC-001) sets the direction: export takes an identifier from a namespaced `@id` value (an identity stored on an element when one database holds several named graphs), a unique property value, or a generated sequence, in that order, and fails when a configured property is missing or not unique. It leaves the naming scheme for generated identifiers to a decision. The scheme, the configuration, the ordering and the quoting are fixed below. The `@id` step depends on namespaces, which are a later decision (RFC-001 question 7.2).
+The parent RFC (RFC-001) sets the direction: export takes an identifier from a `@id` value (an identity stored on an element when one database holds several named graphs), a unique property value, or a generated sequence, in that order, and fails when a configured property is missing or not unique. It leaves the naming scheme for generated identifiers to a decision. The scheme, the configuration, the ordering and the quoting are fixed below. The `@id` step depends on named graphs, which are a later decision (RFC-001 question 7.2).
 
 ## 2. Decision
 
@@ -36,9 +36,9 @@ Export has three identity modes, selected by an `identity` setting. The default 
 
 Two optional settings name the property to use: `node-id-property` and `relationship-id-property`. Each applies to one kind of element. In `property` mode at least one of them MUST be set, or the export fails with a configuration error.
 
-`property` exists so that an export can ignore `@id` values and produce the same output as before namespaces were in use.
+`property` exists so that an export can ignore `@id` values and produce the same output as before named graphs were in use.
 
-Until namespaces exist, no element has an `@id` value (ADR-001 rejects keys starting with `@` on load), so `auto` behaves as `property` when a property is configured and as `generate` when none is.
+Until named graphs exist, no element has an `@id` value (ADR-001 rejects keys starting with `@` on load), so `auto` behaves as `property` when a property is configured and as `generate` when none is.
 
 ### 2.2 Identifiers from a property
 
@@ -111,7 +111,7 @@ An export is all-or-nothing: every identity error is detected before the first b
 - A file that was loaded and then exported does not keep its original identifiers, since they were dropped on load. A user who needs them must have them stored as a property and use `property` mode.
 - Every element gets an identifier, so exports are larger than the minimum.
 - Reporting every offending element before writing requires a pass over the graph before the first byte is written.
-- The `@id` step in `auto` mode does nothing until namespaces are decided (RFC-001 question 7.2); namespaces extend this decision and do not replace it.
+- The `@id` step in `auto` mode does nothing until named graphs are decided (RFC-001 question 7.2); named graphs extend this decision and do not replace it.
 - Follow-on decisions: the spelling of values on export (RFC-002), the meta node and top-level record format, and the library settings and CLI flags for `identity`, `node-id-property` and `relationship-id-property`, specified with the CLI integration.
 
 ## 5. Related

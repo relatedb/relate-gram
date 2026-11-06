@@ -91,17 +91,17 @@ Elements are created in order of first appearance, and merges are applied in fil
 
 3.9. **Treat an anonymous endpoint in a repeated relationship as unspecified.** Rejected: `()-[r]->()` could then silently attach to different nodes, and an error costs the user one explicit identifier.
 
-3.10. **Reserve only the exact key `@id`.** Rejected: later work on namespaces may need further `@`-prefixed keys, and reserving the prefix now avoids reclassifying existing files later.
+3.10. **Reserve only the exact key `@id`.** Rejected: later work on named graphs may need further `@`-prefixed keys, and reserving the prefix now avoids reclassifying existing files later.
 
 3.11. **Partial load, committing everything up to the first error.** Rejected: a half-loaded graph cannot be told apart from a complete one, and which half is loaded depends on file order.
 
 ## 4. Consequences
 
 - A file that repeats a property with different values fails to load unless the user chooses `first` or `last`. Users must resolve genuine conflicts in the file, which is the intended effect.
-- Loading the same file twice into one database produces two copies of every element, because resolution never matches existing elements. Loading into a database that already holds data, and the namespaces (named graphs inside one database, planned in the parent RFC) that make matching possible, are left to later work (RFC-001 open questions 7.9 and 7.2).
+- Loading the same file twice into one database produces two copies of every element, because resolution never matches existing elements. Loading into a database that already holds data, and the named graphs (separate graphs inside one database, planned in the parent RFC) that make matching possible, are left to later work (RFC-001 open questions 7.9 and 7.2).
 - Anonymous relationships never merge. Users who want `(a)-[:R]->(b)` written twice to be one relationship must give it an identifier. An opt-in merge key remains an open follow-up (RFC-001 question 7.5).
 - User property keys starting with `@` cannot be loaded in the basic phase, even though gram permits them in quoted form.
-- The rules are written for one file, but they depend only on the identity of an element and the order of its appearances, so the cross-file merging that RFC-001 plans can apply the same rules to elements matched by namespaced identity.
+- The rules are written for one file, but they depend only on the identity of an element and the order of its appearances, so the cross-file merging that RFC-001 plans can apply the same rules to elements matched by their identity within a named graph.
 - Atomic load requires the loader to hold the resolved graph before writing it, so very large files need that much memory.
 - Under `first` and `last` the loader reports every discarded value, so a load can emit many warnings.
 - The `on-conflict` option needs a library setting and a CLI flag, specified with the CLI integration.

@@ -67,11 +67,11 @@ Cypher stores types such as temporal values and spatial points that gram has no 
 
 In the later phase, the database holds metadata about properties, kept apart from the values themselves. Metadata says things like "the `body` property of `Document` nodes holds markdown". On load, a tagged string with a tag that is not a Cypher type stores its content as an ordinary string and records the tag in the metadata. On export, the metadata is consulted and the property is written as a tagged string again. Queries see only the plain string.
 
-The meta node, which holds a gram file's top-level record (RFC-001), is the candidate place to record this metadata, because it already represents information about the graph rather than in it. Whether the meta node is the right home, and at what granularity metadata attaches (a property key across a label, a single element, a whole namespace), is open.
+The meta node, which holds a gram file's top-level record (RFC-001), is the candidate place to record this metadata, because it already represents information about the graph rather than in it. Whether the meta node is the right home, and at what granularity metadata attaches (a property key across a label, a single element, a whole named graph), is open.
 
 ### 5.4 Cross-cutting concerns
 
-The mapping applies equally to node properties, relationship properties and the meta node's own properties. Errors are reported with a position in the source file. The rule is the same in every namespace.
+The mapping applies equally to node properties, relationship properties and the meta node's own properties. Errors are reported with a position in the source file. The rule is the same in every named graph.
 
 ## 6. Alternatives Considered
 
@@ -101,9 +101,9 @@ The mapping applies equally to node properties, relationship properties and the 
 
 7.6. Is dropping an unrecognized tag reported by default (as a warning), and can the user make it an error or silence it?
 
-7.7. Where is property metadata recorded, and at what granularity? Candidates are the meta node (keyed by label and property key), per-element annotations, or a separate structure. How does metadata interact with namespaces, where each graph may carry its own?
+7.7. Where is property metadata recorded, and at what granularity? Candidates are the meta node (keyed by label and property key), per-element annotations, or a separate structure. How does metadata interact with named graphs, where each graph may carry its own?
 
-7.8. What happens when metadata and data disagree: a property marked as markdown that holds a non-string, or two loads of the same namespace recording different tags for one property?
+7.8. What happens when metadata and data disagree: a property marked as markdown that holds a non-string, or two loads of the same named graph recording different tags for one property?
 
 7.9. Should the strict phase and the advanced phase be one switchable mode of a single mapping, or two mappings sharing a common core?
 

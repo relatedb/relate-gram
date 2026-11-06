@@ -17,9 +17,9 @@ ADR-0429/0431 upstream). It may be brought in-house later.
 - The top-level record maps to a **meta node**; its format is to be set by an ADR.
 - **Identity:** gram IDs only resolve references while loading, and are dropped. The first appearance of an ID fixes it
   as a node or a relationship; using it later as the other kind is an error. A repeated appearance merges by default.
-- Advanced: one Relate database holds several graphs, distinguished by an `@id` namespace (format to be set by an ADR).
+- Advanced: one Relate database holds several graphs, distinguished by named graphs, whose identity lives in an `@id` property (format to be set by an ADR).
   The `@id` property round-trips to gram by becoming the element identifier. Also: managed multi-graph load, and merging
-  graphs within one namespace.
+  graphs within one named graph.
 - Parser: `gram-codec` (pattern-rs), updated as needed to match current tree-sitter-gram (e.g. scalar arrays inside a
   shallow map); tree-sitter-gram's corpus is the conformance reference.
 

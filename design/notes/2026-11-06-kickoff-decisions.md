@@ -10,7 +10,7 @@ direction, not binding; RFCs and ADRs will settle them.
 - Strictness: reject whatever does not map directly to Cypher. Top-level record becomes a "meta node" (ADR needed).
 - Identity: gram IDs resolve references only and are dropped; first appearance fixes node vs. relationship; repeats
   merge by default; reuse as the other kind is an error.
-- Namespaces: several graphs in one database, distinguished by an `@id` namespace (ADR needed).
+- Named graphs: several graphs in one database, distinguished by named graphs, whose identity lives in an `@id` property (ADR needed).
 - Export IDs: modes `auto` (default), `generate`, `property`. `auto` = `@id`, else configured id-property if present and
   unique, else sequential `n0`/`r0`. Missing or non-unique id-property is an error listing offenders. The property stays
   in the record. Non-symbol identifiers are quoted.

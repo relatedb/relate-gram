@@ -14,7 +14,7 @@ Gram is a plain-text notation for graphs and the patterns built from them. A gra
 
 `relate-gram` is the proposed extension to Relate that adds gram as a two-way format for graph data: load a gram file into an in-memory Relate database, and export a database to a gram file. The organizing claim is that the supported notation should be a strict subset of gram, namely the part that maps directly onto Cypher's property graph model: nodes, relationships, paths and the file's top-level record (a record of properties, at the start of a gram file, describing the file as a whole). Annotations and pattern notation, which have no Cypher counterpart, are out of scope.
 
-The hard part of the work is element identity. Gram writes an identifier on every element so that other parts of the file can refer to it; a property graph database assigns its own internal identifiers and gives users no stable handle on them. Identifiers are used to resolve references on load and are generated or copied on export, several graphs can share one database in separate namespaces, and the top-level record is kept as a "meta node". Details follow in later RFCs and ADRs.
+The hard part of the work is element identity. Gram writes an identifier on every element so that other parts of the file can refer to it; a property graph database assigns its own internal identifiers and gives users no stable handle on them. Identifiers are used to resolve references on load and are generated or copied on export, several graphs can share one database as separate named graphs, and the top-level record is kept as a "meta node". Details follow in later RFCs and ADRs.
 
 ## 2. Problem / Motivation
 
@@ -45,9 +45,9 @@ A gram file is a single artifact that holds nodes, relationships and their prope
 
 3.5. Preserve a gram file's top-level record by loading it as a distinguished "meta node".
 
-3.6. Allow several graphs to live in one database in distinct namespaces. An element's namespaced identity is kept in a reserved `@id` property that survives a round trip through gram by becoming the element's identifier.
+3.6. Allow several graphs to live in one database as distinct named graphs. An element's identity within its named graph is kept in a reserved `@id` property that survives a round trip through gram by becoming the element's identifier.
 
-3.7. Load multiple graphs in managed fashion, each into its own namespace, and merge graphs loaded into the same namespace.
+3.7. Load multiple graphs in managed fashion, each into its own named graph, and merge graphs loaded into the same named graph.
 
 3.8. Map property values between gram and Cypher by a documented rule. The first phase preserves only Cypher's own types. A later, advanced mapping may record metadata about properties, so that information gram can express but Cypher cannot store (for example, that a string is markdown) survives a round trip.
 
@@ -94,7 +94,7 @@ Loading the same file twice into a fresh database each time therefore yields equ
 
 An exported file needs an identifier on each element that is referenced more than once. Export offers a small set of strategies:
 
-- Use an element's namespaced `@id` value, when it has one (see 5.5).
+- Use an element's `@id` value, when it has one (see 5.5).
 - Copy the value of a configured property, when every element of that kind has a unique value for it. If some elements lack the property or the values collide, export fails and lists the offending elements.
 - Otherwise generate identifiers, numbered in a deterministic order so that exports of the same database are stable and diffable. The naming scheme is left to an ADR.
 
@@ -104,16 +104,16 @@ The default behavior chooses among these in the order listed. Identifiers that a
 
 A gram file may open with a record of properties describing the file as a whole. A property graph has no place for data about the graph itself, so the extension loads the record as a "meta node": a node of a reserved kind that is distinguishable from data nodes, holds the record's properties, and is written back as the top-level record on export. The reserved label, property layout and rules for excluding the meta node from ordinary queries are left to a later decision.
 
-### 5.5 Namespaces and named graphs
+### 5.5 Named graphs
 
-A single Relate database can hold several graphs, each in a namespace. An element's namespaced identity is stored in a reserved `@id` property. On export, that value becomes the element's gram identifier, so identity survives the round trip: a graph exported from one database and loaded into another into the same namespace lines up with what is already there.
+A single Relate database can hold several graphs, each a named graph. (Relate itself has three fixed built-in namespaces: the user data graph, the system database and the ontology graph. Named graphs are unrelated to these and live inside the user data graph.) An element's identity within its named graph is stored in a reserved `@id` property. On export, that value becomes the element's gram identifier, so identity survives the round trip: a graph exported from one database and loaded into another as the same named graph lines up with what is already there.
 
 Two operations build on this:
 
-- *Managed load of several graphs.* Each file loads into its own namespace, and the namespace is a first-class thing that can be listed, exported on its own, or removed.
-- *Merging.* Loading a graph into a namespace that already exists merges elements whose `@id` values match, using the same merge defaults as in-file repetition (5.2).
+- *Managed load of several graphs.* Each file loads into its own named graph, and the named graph is a first-class thing that can be listed, exported on its own, or removed.
+- *Merging.* Loading a graph into a named graph that already exists merges elements whose `@id` values match, using the same merge defaults as in-file repetition (5.2).
 
-The spelling of `@id` values, how a namespace is named, and how both appear in gram are left to a later decision.
+The spelling of `@id` values, how a named graph is named, and how both appear in gram are left to a later decision.
 
 ### 5.6 Integration with Relate
 
@@ -123,17 +123,17 @@ Identity-aware libraries for TypeScript and Python, and client-side data structu
 
 ### 5.7 Phasing
 
-Basic capability comes first: load and export of the strict subset, with the default identity behavior. Namespaces, managed multi-graph loading and merging come second, since they depend on the identity model being settled. Language bindings and client structures come last.
+Basic capability comes first: load and export of the strict subset, with the default identity behavior. Named graphs, managed multi-graph loading and merging come second, since they depend on the identity model being settled. Language bindings and client structures come last.
 
 ## 6. Alternatives Considered
 
-6.1. **Keep using Cypher scripts as the interchange format.** Rejected: a script says how to build a graph, not what it is. It cannot be reviewed as a graph, and its variables are scoped to one execution, so it cannot be merged with another script's elements or loaded into a namespace.
+6.1. **Keep using Cypher scripts as the interchange format.** Rejected: a script says how to build a graph, not what it is. It cannot be reviewed as a graph, and its variables are scoped to one execution, so it cannot be merged with another script's elements or loaded into a named graph.
 
-6.2. **Use the existing JSON or Parquet snapshots.** Rejected for interchange: they are complete and exact for a whole database, but are machine formats that cannot be reviewed or hand-edited as a graph, and do not support loading several graphs into separate namespaces.
+6.2. **Use the existing JSON or Parquet snapshots.** Rejected for interchange: they are complete and exact for a whole database, but are machine formats that cannot be reviewed or hand-edited as a graph, and do not support loading several graphs into separate named graphs.
 
 6.3. **Support the full gram language.** Rejected: annotations and pattern notation have no meaning in Cypher's data model. Supporting them would mean inventing a mapping, and files that use them would not round-trip.
 
-6.4. **Store gram identifiers on elements as an ordinary property by default.** Rejected as the default: identifiers in a file are scoped to the file, and persisting them would make a second load duplicate the first. The reserved `@id` property provides persisted identity as an explicit choice in namespaces.
+6.4. **Store gram identifiers on elements as an ordinary property by default.** Rejected as the default: identifiers in a file are scoped to the file, and persisting them would make a second load duplicate the first. The reserved `@id` property provides persisted identity as an explicit choice in named graphs.
 
 6.5. **Make gram a storage format (a snapshot codec) for Relate.** Rejected for now: the strict subset cannot carry everything a database holds, such as indexes, schema and vector types, so it does not suit a durable form. It remains possible to revisit if gram's coverage grows.
 
@@ -143,9 +143,9 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 ## 7. Open Questions
 
-7.1. What is the meta node's format: its label, how its properties are stored, how it is kept apart from data nodes, and whether it can carry the file's namespace? (A candidate ADR.)
+7.1. What is the meta node's format: its label, how its properties are stored, how it is kept apart from data nodes, and whether it can carry the file's named graph? (A candidate ADR.)
 
-7.2. What is the format of an `@id` value, and how is a namespace named and written in gram? Is namespacing a single prefix on an identifier, a separate property on each element, or something else?
+7.2. What is the format of an `@id` value, and how is a named graph named and written in gram? Is naming a graph a single prefix on an identifier, a separate property on each element, or something else?
 
 7.3. _Resolved by ADR-001 (§2.3)._ Repeated appearances merge: labels union, properties union by key, and differing values are an error unless `on-conflict` selects `first` or `last`.
 

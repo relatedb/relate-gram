@@ -8,12 +8,12 @@ Two items were listed as open questions in RFC-001 (gram graph support for Relat
 
 ## Candidate follow-on RFCs
 
-- Identity and namespaces (load-time resolution, merge rules, `@id`, managed multi-graph loading).
+- Identity and named graphs (load-time resolution, merge rules, `@id`, managed multi-graph loading).
 - The meta node.
 - CLI integration.
 - Language bindings (TypeScript, Python) with client-side result structures. Deferred until the Rust core and CLI exist.
 
-Value mapping is RFC-002. ADRs for the meta node format and the namespace format come after their parent RFCs.
+Value mapping is RFC-002. ADRs for the meta node format and the named graph format come after their parent RFCs.
 
 ## Advanced-phase constructs (from RFC-002)
 
