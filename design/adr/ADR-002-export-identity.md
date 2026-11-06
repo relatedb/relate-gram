@@ -31,10 +31,10 @@ Export has three identity modes, selected by an `identity` setting. The default 
 | Mode | Identifier of an element |
 |---|---|
 | `generate` | Always generated (2.3). |
-| `property` | The value of a configured property when its kind has one (2.2), otherwise generated. `@id` values are ignored. A kind with no setting is generated as a whole; a kind with a setting is never mixed. |
-| `auto` | The element's `@id` value if it has one, otherwise as in `property`. |
+| `property` | The value of a configured property when its kind (node or relationship) has one (2.2), otherwise generated. `@id` values are ignored. A kind with no setting is generated as a whole; a kind with a setting is never mixed. |
+| `auto` | The element's `@id` value if it has one, otherwise the configured property for its kind, otherwise generated. Unlike `property`, `auto` needs no setting. |
 
-Two optional settings name the property to use: `node-id-property` and `relationship-id-property`. Each applies to one kind of element. In `property` mode at least one of them MUST be set, or the export fails with a configuration error.
+Two optional settings name the property to use: `node-id-property` and `relationship-id-property`. Each applies to one kind of element. In `property` mode at least one of them MUST be set, or the export fails with a configuration error. A property setting given in `generate` mode is also a configuration error.
 
 `property` exists so that an export can ignore `@id` values and produce the same output as before named graphs were in use.
 
@@ -56,7 +56,7 @@ Generated identifiers are `n0`, `n1`, … for nodes and `r0`, `r1`, … for rela
 
 ### 2.4 Export order
 
-Nodes are written in ascending order of Relate's internal id (`id(n)`), and so are relationships (`id(r)`). Relate's public library offers no enumeration interface other than Cypher through a connection, so the exporter reads nodes and relationships with queries that carry an explicit `ORDER BY` on the id, and the order does not depend on how the engine scans. Generated identifiers are assigned in that order. Records are written with labels and property keys sorted by Unicode code point, so the text of an element does not depend on how Relate stores its labels and properties.
+Nodes are written in ascending order of Relate's internal id (`id(n)`), and so are relationships (`id(r)`). Relate's public library offers no enumeration interface other than Cypher through a connection, so the exporter reads nodes and relationships with queries that carry an explicit `ORDER BY` on the id, and the order does not depend on how the engine scans. Both reads run in one transaction, so they see one state of the database. Generated identifiers are assigned in that order. Records are written with labels and property keys sorted by Unicode code point, so the text of an element does not depend on how Relate stores its labels and properties.
 
 The loader creates elements in order of first appearance (ADR-001). A load followed by an export is therefore stable if Relate assigns ids deterministically for a given sequence of creations; a test covers this.
 
@@ -79,11 +79,13 @@ An identifier's text is written as a bare integer if it matches `-?(0|[1-9][0-9]
 
 ### 2.7 Failure behavior
 
-An export is all-or-nothing: every identity error is detected before the first byte of output is produced, and the error lists all offending elements, not only the first.
+An export is all-or-nothing: every error, whether about identity or about a value that has no gram form, is detected before the first byte of output is produced, and the error lists all offending elements, not only the first.
+
+Until named graphs are decided, a property key starting with `@` on any exported element is also an export error, listed with the other offenders, since a reload rejects such keys (ADR-001).
 
 ## 3. Alternatives Considered
 
-3.1. **Use Relate's internal identities as identifiers (`n<id>`).** Rejected: the values can have gaps, and two databases holding the same graph can differ, so an export would not be reproducible. Generated counters in a deterministic order do not have this problem.
+3.1. **Use Relate's internal identities as identifiers (`n<id>`).** Rejected: the numbers would expose engine internals and show gaps after deletions, so the file would record accidents of history. Dense counters do not.
 
 3.2. **UUIDs or random identifiers.** Rejected: every export of the same database would differ, defeating diffing.
 
@@ -103,6 +105,8 @@ An export is all-or-nothing: every identity error is detected before the first b
 
 3.10. **Stream output and report errors midway.** Rejected: an error after output has started leaves a truncated file that may still parse as valid gram, so a reader cannot tell it from a complete export.
 
+3.11. **Bare integers (`0`, `1`, …) as generated identifiers.** Rejected: nodes and relationships share one identifier space, so they would need one continuous sequence, and the letter prefixes make the kind visible when reading a file.
+
 ## 4. Consequences
 
 - Generated identifiers are not stable under edits: deleting or inserting an element shifts the numbers after it, and a diff of two exports of an edited database can show many changed lines. Property-based identifiers do not have this effect.
@@ -110,6 +114,9 @@ An export is all-or-nothing: every identity error is detected before the first b
 - The relative order of ids is whatever Relate assigns. The documentation describes `id()` only as the internal id and does not promise that ids ascend in creation order or are never reused after deletion, so the order is reproducible for a given database but carries no other meaning.
 - A file that was loaded and then exported does not keep its original identifiers, since they were dropped on load. A user who needs them must have them stored as a property and use `property` mode.
 - Every element gets an identifier, so exports are larger than the minimum.
+- Labels are written sorted, so a reload can reorder a node's labels compared with the source file.
+- Relate returns a query result as a whole, so a large export holds every node and relationship row in memory before writing.
+- A database that holds `@`-prefixed property keys cannot be exported until named graphs give them a meaning.
 - Reporting every offending element before writing requires a pass over the graph before the first byte is written.
 - The `@id` step in `auto` mode does nothing until named graphs are decided (RFC-001 question 7.2); named graphs extend this decision and do not replace it.
 - Follow-on decisions: the spelling of values on export (RFC-002), the meta node and top-level record format, and the library settings and CLI flags for `identity`, `node-id-property` and `relationship-id-property`, specified with the CLI integration.
