@@ -132,17 +132,17 @@ The record always includes `name`, so an exported file names its graph whatever 
 
 3.8. **Merge a changed file into the existing graph now.** Deferred, not rejected: it is the intended behavior, but identifiers are dropped on load, so existing elements cannot be matched to the new file's elements. Merging by name alone would duplicate every element.
 
-3.13. **Fail on any repeated graph name, without a digest.** Rejected: an unchanged file would fail on reload, where a digest comparison makes it a harmless no-op.
+3.9. **Fail on any repeated graph name, without a digest.** Rejected: an unchanged file would fail on reload, where a digest comparison makes it a harmless no-op.
 
-3.14. **Hash the normalized content of the parsed graph.** Rejected: it needs a canonical form that does not depend on element identifiers, which the export does not guarantee (ADR-002). Raw bytes are exact and cheap, and a reformatted file is treated as changed.
+3.10. **Hash the normalized content of the parsed graph.** Rejected: it needs a canonical form that does not depend on element identifiers, which the export does not guarantee (ADR-002). Raw bytes are exact and cheap, and a reformatted file is treated as changed.
 
-3.9. **Require every graph to be named.** Rejected: loading a small fixture from standard input with no name would then fail for no benefit.
+3.11. **Require every graph to be named.** Rejected: loading a small fixture from standard input with no name would then fail for no benefit.
 
-3.10. **Treat every dot-separated segment of a file name as a possible kind.** Rejected: graph names such as `v1.2` would be misread. Only the last segment is the kind.
+3.12. **Treat every dot-separated segment of a file name as a possible kind.** Rejected: graph names such as `v1.2` would be misread. Only the last segment is the kind.
 
-3.11. **Accept `relate` as an alias for `property-graph`.** Rejected: a second name for one kind would have to be kept indefinitely. The kind is a single constant that can change in one place.
+3.13. **Accept `relate` as an alias for `property-graph`.** Rejected: a second name for one kind would have to be kept indefinitely. The kind is a single constant that can change in one place.
 
-3.12. **Store `kind` on the meta node.** Rejected: only one kind is supported, so the value carries no information, and an exported file is the same kind whatever the original said.
+3.14. **Store `kind` on the meta node.** Rejected: only one kind is supported, so the value carries no information, and an exported file is the same kind whatever the original said.
 
 ## 4. Consequences
 
