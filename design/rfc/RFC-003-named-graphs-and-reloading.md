@@ -1,0 +1,171 @@
+---
+id: RFC-003
+title: Named Graphs and Reloading Changed Files
+status: draft
+created: 2026-11-06
+adrs: []
+---
+
+# RFC-003: Named Graphs and Reloading Changed Files
+
+## 1. Summary
+
+A gram file is something people edit. They load it into a database, change a property, add a node, and load it again, expecting the database to now match the file. A loader that treats every load as new data gives them duplicates, and one that refuses the second load gives them no way forward. Either way the file and the database drift apart.
+
+The mechanism that makes a reload meaningful is identity that outlives a single load. A *named graph* is a set of elements in one Relate database that belong together, usually because they came from one gram file, and that the database keeps apart from other graphs. Elements of a named graph keep the identifier the file gave them, so a later load can tell which elements it already holds. The organizing claim is that the file's own identifiers are the best key for matching: they are explicit, the user already maintains them, and they need no guessing. A reload then becomes an upsert, where elements the file names are created or updated, and nothing else is touched unless the user asks.
+
+This RFC sets the direction for named graphs: how elements record which graph they belong to, what a reload does by default, which options change it, and what that means for export. It also identifies a conflict with the current rule that identifiers are dropped after a load, which the follow-up decisions must resolve.
+
+## 2. Problem / Motivation
+
+**Reloading an edited file has no good answer today.** Take a file `people.gram`:
+
+```
+(ada:Person {name: "Ada", age: 30})
+(grace:Person {name: "Grace"})
+(ada)-[:KNOWS]->(grace)
+```
+
+The user loads it, changes `age: 30` to `age: 31`, adds `(linus:Person {name: "Linus"})`, and loads it again. What the loader can do now:
+
+- Load without remembering anything. Gram identifiers are dropped after a load, so nothing says that `ada` was already loaded. The second load creates a second Ada, a second Grace and a second relationship. The database holds both versions side by side.
+- Compare a digest of the file. The meta node can record a hash of the loaded bytes, so an unchanged file is recognized and skipped. A changed file is a different hash, and the only safe response without element identity is an error.
+
+Neither lets the user do the one thing they wanted, which is to update the database from the edited file.
+
+**Matching without identity is a guess, and wrong guesses are quiet.** Without a stored identifier a loader can match elements on all their properties, which fails for exactly the property the user edited, so every edit makes a new element. It can match on property names that tend to be unique, such as `name`, `title` or anything ending in `id`, which merges two different people called Ada without saying so. Both fail without telling the user.
+
+**A database holds one undifferentiated graph.** Two revisions of one dataset loaded into one database produce a single graph with every person appearing twice. Nothing records which file an element came from, so nothing can export one graph on its own, remove it, or reload it.
+
+## 3. Goals
+
+3.1. Give every element loaded from a named file a record of which named graph it belongs to and which identifier the file gave it.
+
+3.2. Make loading a changed file into a named graph update the graph to match the file, without duplicating elements the file already created and without deleting data the file did not mention.
+
+3.3. Report every reload as a summary of what changed: elements added, updated, unchanged, and present in the graph but absent from the file.
+
+3.4. Let the user choose stricter or more destructive behavior explicitly: previewing a reload without applying it, removing elements the file no longer contains, and replacing a graph wholesale.
+
+3.5. Give files that carry no identifiers, and graphs that need another key, a way to be matched without guessing.
+
+3.6. Keep loads that name no graph as they are today: identifiers resolve references and are dropped.
+
+3.7. Round-trip a named graph through gram, so that an export of a named graph reloads into the same graph without changes.
+
+3.8. State exactly which existing rules this changes, and amend them.
+
+## 4. Non-Goals
+
+4.1. Guessing a match key from property names such as `name`, `title` or `*id`, or from the data's shape.
+
+4.2. Three-way merging against a stored copy of the previously loaded file, which would reconcile file edits with edits made through Cypher. It is more machinery than the problem needs.
+
+4.3. Merging graphs loaded from different files into one graph by similarity.
+
+4.4. Loading into a persistent or non-empty database beyond what named graphs themselves imply. That question belongs to RFC-001 (7.9).
+
+4.5. Cypher-level support for named graphs, such as new query syntax or a graph-scoped query mode. Queries remain Cypher over ordinary properties.
+
+4.6. Language bindings and client structures that expose identity. They build on this and come later.
+
+## 5. Proposed Approach (high-level)
+
+### 5.1 Identity and membership on elements
+
+A load that has a graph name keeps what an unnamed load drops. Each element it creates carries two reserved properties: its gram identifier (the `@id` value) and the name of the graph it belongs to. A candidate for the second is a `@graph` property, so that membership is a plain, queryable property like the rest, with no new element types or relationships.
+
+Identity is the pair of graph and identifier. The same identifier in two graphs is two elements, which is what lets one database hold several revisions of a dataset. The meta node, which already represents the graph itself, becomes a member of the reserved graph `@@` by the same mechanism, replacing the interim rule of recognizing it by its label.
+
+Loads that give no graph name behave as before. Nothing is stored and a second such load duplicates, as the first load rule intends.
+
+### 5.2 Reload as upsert
+
+When the file's graph already exists, the load matches elements by identity and applies the file:
+
+- An element whose identifier is already in the graph is the same element. Its labels are unioned with the file's, and each property the file states takes the file's value.
+- An element whose identifier is new is created.
+- An unchanged file is recognized by its digest and does nothing.
+
+Within a single file, contradicting values for one element remain an error. Across loads the file wins, since a later file that differs from an earlier load is the update the user meant. Properties the file does not mention are left alone, so values added through Cypher survive a reload.
+
+Elements the file writes without an identifier cannot be matched by identity. They match on their full content: labels, properties, and for relationships their endpoints and type. An edit to such an element therefore appears as one removed and one added. The reload reports this and suggests giving the element an identifier.
+
+### 5.3 What a reload never does by default
+
+A reload is additive. An element that is in the graph but no longer in the file stays, and the summary counts it. Three options change this, each explicit:
+
+- A preview mode applies nothing and prints the summary.
+- A prune option removes elements that the graph holds as members and that the file no longer names. Because membership records provenance, pruning cannot touch data created in the database by other means.
+- A replace option makes the graph exactly the file, for test fixtures and similar uses where the file is the whole truth.
+
+### 5.4 Other match keys
+
+A graph whose file carries no identifiers needs another key. Two sources are candidates, both explicit:
+
+- A hint given on load, naming a property to match on for a label.
+- A uniqueness or node-key constraint declared in the database, which already states that a property identifies an element.
+
+Neither replaces the file's identifiers where they exist, and an element that matches on more than one element under a hint is an error, not a pick.
+
+### 5.5 Export
+
+Exporting a named graph writes each element's `@id` as its gram identifier and its membership decides which elements belong in the file. Since the identifier is recorded, an exported graph reloads into the same graph and updates nothing. Export of several graphs from one database, and what the meta node contributes to each file, follow from the membership property.
+
+### 5.6 Consequences for rules already made
+
+Two existing rules assume identifiers are dropped. The project constitution says identifiers "are not stored", and ADR-001 rejects every property key starting with `@` in a file. The direction here keeps the rule for loads that name no graph and replaces it for those that do: storing the identifier is what naming a graph means. The keys are still written only by the loader and never read from file content. The constitution has to be amended through an ADR, and ADR-001's consequence about repeated loads has to be updated again.
+
+### 5.7 Phasing
+
+Until identity is stored, a changed file for an existing graph is an error that tells the user to load under another name (ADR-003). The first step of this work is element identity and membership, with reload as an upsert and the summary. Prune, replace, preview and alternative keys follow.
+
+## 6. Alternatives Considered
+
+6.1. **Fail on a changed file.** Rejected as the end state: it is safe but gives the user no way to apply an edit. It is the interim behavior.
+
+6.2. **Load as new elements every time.** Rejected: it duplicates every unchanged element, and the database stops matching its source.
+
+6.3. **Match on all properties.** Rejected: the edited property no longer matches, so each edit creates a new element, and elements that differ only in their changed values cannot be paired.
+
+6.4. **Match on well-known property names.** Rejected: a wrong guess merges two distinct elements without notice, and the loader's strictness elsewhere is about never producing a database that differs from its source silently.
+
+6.5. **Infer keys from indexes.** Rejected: an index speeds lookup and says nothing about uniqueness. A declared uniqueness constraint does state it, which is why constraints are a candidate key source (5.4).
+
+6.6. **Delete what the file no longer contains by default.** Rejected: it would destroy data a user added after loading. Removal is opt-in (5.3).
+
+6.7. **Overwrite the whole graph on every reload.** Rejected as the default: it discards edits made through Cypher. It remains available as an explicit option for fixtures.
+
+6.8. **Three-way merge against a stored previous version.** Rejected for now (4.2): storing and diffing a prior copy of every graph is more than the common case needs.
+
+6.9. **One database per graph.** Rejected: it avoids the identity question by giving up the goal of holding several graphs in one database, where queries can span them.
+
+6.10. **Store the identifier as an ordinary property such as `id`.** Rejected: it collides with user data and cannot be told apart from it. Reserved `@` keys are loader-written and cannot be forged by a file.
+
+## 7. Open Questions
+
+7.1. Is membership a property on each element, as proposed, or something else, such as a label, a relationship to the meta node, or a combined `@id` value that embeds the graph name? The choice affects query ergonomics, index use and export.
+
+7.2. What is the exact format of an `@id` value, and how does it appear in gram, given that a plain symbol cannot start with `@` and that gram identifiers can be integers or quoted names? (This is RFC-001 question 7.2.)
+
+7.3. Does a reload that updates a property take the file's value only for properties the file states, as proposed, or should a removed property in the file also be removed from the graph? What does replace do about properties added through Cypher?
+
+7.4. How does a relationship with an identifier match on reload when its endpoints or type changed in the file? Is that an error, or a remove and an add?
+
+7.5. What constitutes "the same anonymous element" for matching on full content, and how are exact duplicates within one file and one graph counted?
+
+7.6. Which constraints count as declared keys: uniqueness constraints, node keys, or both, and what happens to a label with several?
+
+7.7. How are renamed identifiers handled? Is a rename always a remove and an add, or can the user declare one?
+
+7.8. How does a user name the graph when loading, and what does the command line look like for load, preview, prune and replace? (Specified with the CLI integration, RFC-001 question 7.11.)
+
+7.9. Can a loaded graph be listed, exported alone, or removed as a unit, and what interface offers that when Cypher is the only enumeration Relate's public library has?
+
+7.10. What happens when two graphs are exported into one file, and when an element in one graph refers to an element of another?
+
+7.11. What does the meta node's digest do once reload exists? It still shortcuts an unchanged file, but should it also record revision history or the time of the last load?
+
+## 8. ADRs
+
+_(populated automatically as `/adr-create` links ADRs to this RFC)_

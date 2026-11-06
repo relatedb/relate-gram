@@ -147,7 +147,7 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 7.1. _Resolved by ADR-003._ The meta node has the label `Graph`, holds the graph's name in `@id` and the record's other properties as ordinary properties, and belongs to a reserved graph `@@`. It is not hidden from queries.
 
-7.2. What is the format of an `@id` value, and how is a named graph named and written in gram? Is naming a graph a single prefix on an identifier, a separate property on each element, or something else?
+7.2. What is the format of an `@id` value, and how is a named graph named and written in gram? Is naming a graph a single prefix on an identifier, a separate property on each element, or something else? (Taken up in RFC-003.)
 
 7.3. _Resolved by ADR-001 (§2.3)._ Repeated appearances merge: labels union, properties union by key, and differing values are an error unless `on-conflict` selects `first` or `last`.
 
