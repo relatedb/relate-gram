@@ -56,9 +56,9 @@ Generated identifiers are `n0`, `n1`, … for nodes and `r0`, `r1`, … for rela
 
 ### 2.4 Export order
 
-Nodes are written in ascending order of Relate's internal element identity, and so are relationships. Generated identifiers are assigned in that order. Records are written with labels and property keys sorted by Unicode code point, so the text of an element does not depend on how Relate stores its labels and properties.
+Nodes are written in ascending order of Relate's internal id (`id(n)`), and so are relationships (`id(r)`). Relate's public library offers no enumeration interface other than Cypher through a connection, so the exporter reads nodes and relationships with queries that carry an explicit `ORDER BY` on the id, and the order does not depend on how the engine scans. Generated identifiers are assigned in that order. Records are written with labels and property keys sorted by Unicode code point, so the text of an element does not depend on how Relate stores its labels and properties.
 
-For a database built by loading a gram file, internal identity follows creation order, and the loader creates elements in order of first appearance (ADR-001), so a load followed by an export is stable.
+The loader creates elements in order of first appearance (ADR-001). A load followed by an export is therefore stable if Relate assigns ids deterministically for a given sequence of creations; a test covers this.
 
 ### 2.5 Layout
 
@@ -107,7 +107,7 @@ An export is all-or-nothing: every identity error is detected before the first b
 
 - Generated identifiers are not stable under edits: deleting or inserting an element shifts the numbers after it, and a diff of two exports of an edited database can show many changed lines. Property-based identifiers do not have this effect.
 - Two databases holding the same graph, built in different orders, can export in different orders. Exports are reproducible for a given database, not canonical across databases.
-- The ordering rule assumes Relate exposes elements in a stable, ascending order of internal identity. This has to be confirmed against Relate's public interface before implementation. If it does not, a fallback ordering is needed, and the ordering rule is revised.
+- The relative order of ids is whatever Relate assigns. The documentation describes `id()` only as the internal id and does not promise that ids ascend in creation order or are never reused after deletion, so the order is reproducible for a given database but carries no other meaning.
 - A file that was loaded and then exported does not keep its original identifiers, since they were dropped on load. A user who needs them must have them stored as a property and use `property` mode.
 - Every element gets an identifier, so exports are larger than the minimum.
 - Reporting every offending element before writing requires a pass over the graph before the first byte is written.
