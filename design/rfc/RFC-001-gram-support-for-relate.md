@@ -10,11 +10,11 @@ adrs: []
 
 ## 1. Summary
 
-Gram is a plain-text notation for graphs and the patterns built from them. A gram file writes nodes as `(a:Person {name: "Ada"})`, relationships as `(a)-[:KNOWS]->(b)`, and chains of both as paths, so a small property graph can be read, diffed and edited by hand. Relate is an embeddable, serverless graph database queried with Cypher. It can render query results as gram text, but it cannot load a gram file, and it has no way to write a database back out as one.
+Gram is a plain-text notation for graphs and the patterns built from them. A gram file writes nodes as `(a:Person {name: "Ada"})`, relationships as `(a)-[:KNOWS]->(b)`, and chains of both as paths, so a small property graph can be read, diffed and edited by hand. Relate is an embeddable, serverless graph database queried with Cypher. Its WebAssembly build can render query results as gram text, but Relate cannot load a gram file, and it has no way to write a database back out as one.
 
-This RFC proposes `relate-gram`, an extension to Relate that adds gram as a two-way format for graph data: load a gram file into an in-memory Relate database, and export a database to a gram file. The organizing claim is that the supported notation should be a strict subset of gram, namely the part that maps directly onto Cypher's property graph model: nodes, relationships, paths and the file's top-level record. Annotations and pattern notation, which have no Cypher counterpart, are out of scope.
+`relate-gram` is the proposed extension to Relate that adds gram as a two-way format for graph data: load a gram file into an in-memory Relate database, and export a database to a gram file. The organizing claim is that the supported notation should be a strict subset of gram, namely the part that maps directly onto Cypher's property graph model: nodes, relationships, paths and the file's top-level record (a record of properties, at the start of a gram file, describing the file as a whole). Annotations and pattern notation, which have no Cypher counterpart, are out of scope.
 
-The hard part of the work is element identity. Gram writes an identifier on every element so that other parts of the file can refer to it; a property graph database assigns its own internal identifiers and gives users no stable handle on them. The RFC sets out the intent for how identity is handled on load and on export, how several graphs can share one database in separate namespaces, and how the top-level record is kept. It records the direction and defers each detail to later RFCs and ADRs.
+The hard part of the work is element identity. Gram writes an identifier on every element so that other parts of the file can refer to it; a property graph database assigns its own internal identifiers and gives users no stable handle on them. Identifiers are used to resolve references on load and are generated or copied on export, several graphs can share one database in separate namespaces, and the top-level record is kept as a "meta node". Details follow in later RFCs and ADRs.
 
 ## 2. Problem / Motivation
 
@@ -29,7 +29,7 @@ A gram file is a single artifact that holds nodes, relationships and their prope
 
 **Identity gets in the way of round trips.** A gram file refers to elements by identifier, which is how `(a)-->(b)` and a later `(b)-->(c)` mean the same `b`. Relate's element identifiers are internal. A loader has to decide what a gram identifier means once the data is in the database, and an exporter has to invent identifiers when none are available. If these choices are left implicit, two loads of the same file can disagree, a second load can silently duplicate the first, and an export cannot be loaded back into an equivalent graph.
 
-**A database holds one undifferentiated graph.** Interchange files tend to arrive in sets: several datasets, or revisions of the same dataset. Loading them into one database today means they merge into a single graph with nothing recording which element came from which source, and nothing to say when two files describe the same thing.
+**A database holds one undifferentiated graph.** Consider two revisions of one dataset, each a small graph of people and their relationships. Loading both into one Relate database today produces a single graph in which every person appears twice, nothing records which revision an element came from, and nothing says that the two copies of a person are the same person.
 
 ## 3. Goals
 
@@ -37,11 +37,11 @@ A gram file is a single artifact that holds nodes, relationships and their prope
 
 3.2. Export a Relate database to a gram file.
 
-3.3. Support only the gram constructs that map directly onto Cypher's property graph model (nodes, relationships, paths and the top-level record), and reject everything else with an error that locates the offending text.
+3.3. Support only the gram constructs that map directly onto Cypher's property graph model (nodes, relationships, paths and the top-level record), and reject every other construct that does not map directly, with an error that locates the offending text.
 
 3.4. Make identity behavior explicit and configurable, with defaults that need no configuration:
   - On load, gram identifiers resolve references within the file and are then dropped.
-  - On export, identifiers are generated, or copied from a property whose values are unique.
+  - On export, identifiers come from an `@id` value, are copied from a property whose values are unique, or are generated.
 
 3.5. Preserve a gram file's top-level record by loading it as a distinguished "meta node".
 
@@ -51,7 +51,7 @@ A gram file is a single artifact that holds nodes, relationships and their prope
 
 3.8. Map property values between gram and Cypher by a documented rule. The first phase preserves only Cypher's own types. A later, advanced mapping may record metadata about properties, so that information gram can express but Cypher cannot store (for example, that a string is markdown) survives a round trip.
 
-3.9. Integrate minimally with the `relate` command-line tool at first, and leave room for deeper CLI integration, identity-aware language bindings and graph-shaped client result structures.
+3.9. A first release provides load and export through the `relate` command-line tool. Deeper CLI integration, identity-aware language bindings and graph-shaped client result structures are longer-term goals, specified later.
 
 ## 4. Non-Goals
 
@@ -65,15 +65,15 @@ A gram file is a single artifact that holds nodes, relationships and their prope
 
 4.5. Changing the Relate engine. The extension works through Relate's public interfaces.
 
-4.6. Language bindings for TypeScript and Python, and client-side result structures, in the first phase. They are listed as goals for the longer term and are specified later.
+4.6. Language bindings for TypeScript and Python, and client-side result structures, in the first phase. They are longer-term goals (3.9) and are specified later.
 
 ## 5. Proposed Approach (high-level)
 
 ### 5.1 A strict subset defined by Cypher
 
-The boundary of what is supported is set by one rule: a gram construct is accepted if and only if it maps directly onto Cypher's property graph model. Nodes carry zero or more labels and a property map. A relationship connects two nodes, carries exactly one type and a property map, and has a direction. A path is shorthand for a chain of nodes and relationships. Property values are limited to what Cypher can store: strings, integers, floats, booleans and homogeneous lists of those scalars.
+The boundary of what is supported is set by one rule: a gram construct is accepted if and only if it maps directly onto Cypher's property graph model. Nodes carry zero or more labels and a property map. A relationship connects two nodes, carries exactly one type and a property map, and has a direction. A path is shorthand for a chain of nodes and relationships. Property values are limited to what becomes a Cypher value: strings, integers, floats, booleans, homogeneous lists of those, and the other types Cypher stores that gram can reach through tagged strings.
 
-The detailed mapping between gram values and Cypher values is its own topic, taken up in RFC-002. Its first phase preserves Cypher types only; a later phase may record per-property metadata, for instance on the meta node, so that a property known to hold markdown can be written back as a tagged string.
+The detailed mapping between gram values and Cypher values, including how alternative spellings are converted, is its own topic, taken up in RFC-002. Its first phase preserves Cypher types only; a later phase may record per-property metadata, for instance on the meta node, so that a property known to hold markdown can be written back as a tagged string.
 
 Anything outside this rule is a load error, reported with its position in the file. Silently dropping or approximating a construct would make a loaded database differ from its source without notice.
 
@@ -85,6 +85,7 @@ Gram identifiers exist to say "this element, again." On load they are used for e
 
 - The first appearance of an identifier fixes whether it names a node or a relationship. Using the same identifier later as the other kind is an error.
 - A later appearance of an identifier refers to the same element. By default the appearance merges into the element already loaded. The merge rules (what happens to differing property values, additional labels) are left to a later decision.
+- Elements written without an identifier cannot be referred to again, so each appearance is a separate element. `(a)-->(b)` written twice, with no identifier on the relationship, yields two relationships.
 - After loading, the identifier is not stored on the element. The database's own internal identity applies.
 
 Loading the same file twice into a fresh database each time therefore yields equivalent graphs, and a file that mentions an element in several places yields one element.
@@ -95,7 +96,7 @@ An exported file needs an identifier on each element that is referenced more tha
 
 - Use an element's namespaced `@id` value, when it has one (see 5.5).
 - Copy the value of a configured property, when every element of that kind has a unique value for it. If some elements lack the property or the values collide, export fails and lists the offending elements.
-- Otherwise generate identifiers (`n0`, `n1`, … for nodes; `r0`, `r1`, … for relationships), numbered in a deterministic order so that exports of the same database are stable and diffable.
+- Otherwise generate identifiers, numbered in a deterministic order so that exports of the same database are stable and diffable. The naming scheme is left to an ADR.
 
 The default behavior chooses among these in the order listed. Identifiers that are not plain gram symbols are quoted.
 
@@ -126,7 +127,7 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 ## 6. Alternatives Considered
 
-6.1. **Keep using Cypher scripts as the interchange format.** Rejected: a script describes how to build a graph rather than the graph, relationships must be rebuilt by matching nodes on some key, and nothing in a script says that two statements mention the same element.
+6.1. **Keep using Cypher scripts as the interchange format.** Rejected: a script says how to build a graph, not what it is. It cannot be reviewed as a graph, and its variables are scoped to one execution, so it cannot be merged with another script's elements or loaded into a namespace.
 
 6.2. **Use the existing JSON or Parquet snapshots.** Rejected for interchange: they are complete and exact for a whole database, but are machine formats that cannot be reviewed or hand-edited as a graph, and do not support loading several graphs into separate namespaces.
 
@@ -138,6 +139,8 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 6.6. **Contribute directly to Relate rather than building a standalone extension.** Deferred: a standalone project can move faster while the identity model is settled, and the code can be brought into Relate afterward.
 
+6.7. **Another existing graph interchange format (GraphML, DOT, node-link JSON).** Rejected: gram combines labelled nodes, typed relationships and properties in a compact, hand-editable form, and has existing parser tooling in the pattern-rs ecosystem.
+
 ## 7. Open Questions
 
 7.1. What is the meta node's format: its label, how its properties are stored, how it is kept apart from data nodes, and whether it can carry the file's namespace? (A candidate ADR.)
@@ -146,19 +149,21 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 7.3. What are the default merge rules when an element appears more than once, whether within one file or across files in the same namespace? In particular, what happens to conflicting property values, and to labels that differ between appearances?
 
-7.4. What happens to relationships when a merge touches their endpoints? Is a relationship's identity independent of its endpoints, or can an identical `(a)-[:R]->(b)` appearing twice be one relationship or two?
+7.4. What happens to relationships when a merge touches their endpoints? Is a relationship's identity independent of its endpoints?
 
-7.5. How does a path that reuses an identifier on one of its inner nodes interact with the rule that the first appearance fixes an identifier as a node or relationship?
+7.5. Elements without an identifier never merge (5.2). Is that the right default for relationships in particular, given that a user may expect `(a)-[:R]->(b)` written twice to mean one relationship? Is an opt-in merge key needed?
 
-7.6. How are property values mapped between gram and Cypher, and how might later metadata extend that mapping? (Taken up in RFC-002.)
+7.6. How does a path that reuses an identifier on one of its inner nodes interact with the rule that the first appearance fixes an identifier as a node or relationship?
 
-7.7. How much of a gram file's text survives a load and export, beyond its graph? Do comments, element ordering and layout matter?
+7.7. How are property values mapped between gram and Cypher, and how might later metadata extend that mapping? (Taken up in RFC-002.)
 
-7.8. Which parts of the existing gram parser need updating to match the current gram grammar, and should that work happen before or alongside the loader?
+7.8. Gram has `-->`, `<--`, `--` and bidirectional arrows, and relationships without a type. Cypher relationships are directed and typed. Which arrow forms are accepted, how are undirected and bidirectional forms handled, and is an untyped relationship an error?
 
-7.9. What does the minimal `relate` CLI integration look like (verbs, flags, defaults), and what does it need from Relate's extension mechanism?
+7.9. Is loading into a non-empty or persistent database in scope, or only into a fresh in-memory one? If it is in scope, what does a load merge with, and how is a loaded in-memory database persisted afterward?
 
-7.10. What are the remaining follow-on RFCs? Candidates are identity and namespaces, the meta node, CLI integration, and language bindings with client-side result structures. Value mapping is RFC-002.
+7.10. How much of a gram file's text survives a load and export, beyond its graph? Do comments, element ordering and layout matter?
+
+7.11. What does the first `relate` CLI integration look like (verbs, flags, defaults), and what does it need from Relate's extension mechanism?
 
 ## 8. ADRs
 
