@@ -14,7 +14,8 @@ ADR-0429/0431 upstream). It may be brought in-house later.
 - **Strictness rule:** reject anything that does not map directly to Cypher, with a located error. Property values are
   string, integer, float, boolean and homogeneous arrays of scalars; no nested maps, tagged strings, ranges or
   measurements. Nodes may have several labels; a relationship has exactly one type.
-- The top-level record maps to a **meta node**; its format is to be set by an ADR.
+- The top-level record maps to a **meta node** (ADR-003): label `Graph`, `@id` holds the graph's name, living in the reserved meta graph `@@`. Not hidden from queries.
+- **Assumption:** only gram kind `property-graph` is supported (assumed when absent; other kinds are errors that say so). Files follow `graph-name.kind.gram`; the graph name comes from the record's `name`, else the file name.
 - **Identity:** gram IDs only resolve references while loading, and are dropped. The first appearance of an ID fixes it
   as a node or a relationship; using it later as the other kind is an error. A repeated appearance merges by default.
 - Advanced: one Relate database holds several graphs, distinguished by named graphs, whose identity lives in an `@id` property (format to be set by an ADR).
