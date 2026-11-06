@@ -14,3 +14,7 @@ Two items were listed as open questions in RFC-001 (gram graph support for Relat
 - Language bindings (TypeScript, Python) with client-side result structures. Deferred until the Rust core and CLI exist.
 
 Value mapping is RFC-002. ADRs for the meta node format and the namespace format come after their parent RFCs.
+
+## Advanced-phase constructs (from RFC-002)
+
+Which gram constructs the advanced value mapping would make acceptable, and which metadata beyond a format tag is worth recording (for instance units for measurements). Revisit when the advanced mapping is designed.

@@ -75,7 +75,7 @@ The boundary of what is supported is set by one rule: a gram construct is accept
 
 The detailed mapping between gram values and Cypher values, including how alternative spellings are converted, is its own topic, taken up in RFC-002. Its first phase preserves Cypher types only; a later phase may record per-property metadata, for instance on the meta node, so that a property known to hold markdown can be written back as a tagged string.
 
-Anything outside this rule is a load error, reported with its position in the file. Silently dropping or approximating a construct would make a loaded database differ from its source without notice.
+Anything outside this rule is a load error, reported with its position in the file. Silently dropping or approximating a construct would make a loaded database differ from its source without notice. The one planned exception, dropping an unrecognized tag from a tagged string (RFC-002), is reported to the user.
 
 The parser is expected to come from the existing gram tooling rather than being written afresh, and it will have to track the current gram grammar, which has gained support for scalar arrays inside property maps.
 
@@ -164,6 +164,8 @@ Basic capability comes first: load and export of the strict subset, with the def
 7.10. How much of a gram file's text survives a load and export, beyond its graph? Do comments, element ordering and layout matter?
 
 7.11. What does the first `relate` CLI integration look like (verbs, flags, defaults), and what does it need from Relate's extension mechanism?
+
+7.12. The gram grammar accepts a double-colon before a label. Is it accepted as an ordinary label, or rejected as outside the strict subset?
 
 ## 8. ADRs
 

@@ -10,15 +10,15 @@ adrs: []
 
 ## 1. Summary
 
-Gram and Cypher both attach key-value properties to nodes and relationships, but their value vocabularies differ. Gram has strings in several quoting styles, integers in decimal, hexadecimal and octal spellings, decimals, booleans, bare symbols, ranges, measurements, tagged strings (a string carrying a tag such as a format name), arrays of scalars and nested maps. Cypher stores a fixed set of types, and its lists hold values of one type. Loading gram into a Cypher database and exporting back out requires a rule for every value that crosses the boundary.
+Gram and Cypher both attach key-value properties to nodes and relationships, but their value vocabularies differ. Gram has strings in several quoting styles, integers in decimal, hexadecimal and octal spellings, decimals, booleans, bare symbols (unquoted names such as `active`), ranges, measurements, tagged strings (a string carrying a tag such as a format name), arrays of scalars and nested maps. Cypher stores a fixed set of types, and its lists hold values of one type. Loading gram into a Cypher database and exporting back out requires a rule for every value that crosses the boundary.
 
-This RFC proposes the direction for that rule. The first phase is strict: values are accepted on load only if they become a Cypher type, and exported Cypher values are written as the gram values that correspond to them, so that a round trip preserves types. Alternative spellings of integers and strings are accepted and converted. Tagged strings are accepted too: a tag that names a well-known Cypher type (temporal or spatial) produces a value of that type, and any other tag is dropped, leaving a plain string. A later phase adds an advanced mapping in which metadata about properties is recorded alongside the graph, so that information gram can express but Cypher cannot store, such as a dropped tag, survives the trip. The motivating example is a string property known to contain markdown, which could be written back as a tagged string.
+The proposed direction for that rule has two phases. The first is strict: values are accepted on load only if they become a Cypher type, and exported Cypher values are written as the gram values that correspond to them, so that a round trip preserves types. Alternative spellings of integers and strings are accepted and converted. Tagged strings are accepted too: a tag that names a well-known Cypher type (temporal or spatial) produces a value of that type, and any other tag is dropped, leaving a plain string. A later phase adds an advanced mapping in which metadata about properties is recorded alongside the graph, so that information gram can express but Cypher cannot store, such as a dropped tag, survives the trip. The motivating example is a string property known to contain markdown, which could be written back as a tagged string.
 
-The RFC fixes the direction and the open questions. The mapping tables, edge cases and metadata format belong in ADRs.
+The mapping tables, edge cases and metadata format are left to ADRs.
 
 ## 2. Problem / Motivation
 
-**Value types cannot be left implicit.** The gram grammar accepts, among others, `{count: 0x1F}`, `{status: active}`, `{span: 1..5}`, `{weight: 5kg}` and ``{body: md`# Title`}``. A Cypher database stores none of these as they are written. A loader that guesses (storing `active` as a string, or a measurement as text) produces a database whose values differ from the file's in ways the user cannot see, and an exporter that guesses back cannot reproduce the original text.
+**Value types cannot be left implicit.** The gram grammar (its number, range, measurement and tagged-string rules, in tree-sitter-gram) accepts, among others, `{count: 0x1F}`, `{status: active}`, `{span: 1..5}`, `{weight: 5kg}` and ``{body: md`# Title`}``. A Cypher database stores none of these as they are written. A loader that guesses (storing `active` as a string, or a measurement as text) produces a database whose values differ from the file's in ways the user cannot see, and an exporter that guesses back cannot reproduce the original text.
 
 **Type fidelity is what makes round trips trustworthy.** If an integer loads as a float, or a list of mixed values is flattened to strings, a graph exported and reloaded no longer matches the one before, and queries over it give different answers. The first phase therefore commits to preserving the types Cypher can store, in both directions.
 
@@ -52,7 +52,7 @@ The RFC fixes the direction and the open questions. The mapping tables, edge cas
 
 ### 5.1 Strict first phase
 
-A gram value is accepted if it becomes a type Cypher stores. The accepted set is strings, integers, decimals (as floats), booleans, arrays whose elements are all of one such type, and tagged strings (5.2). Alternative spellings are accepted and converted: hexadecimal and octal integers become integers; bare symbols used as values, and single-quoted, backticked and fenced strings, become strings. Whatever is accepted is stored as an ordinary Cypher value. Gram constructs that cannot become a Cypher type (ranges, measurements, nested maps) are load errors.
+A gram value is accepted if it becomes a type Cypher stores. The accepted set is strings, integers, decimals (as floats), booleans, arrays whose elements are all of one such type, and tagged strings (5.2). Alternative spellings are accepted and converted: hexadecimal and octal integers become integers; bare symbols used as values (unquoted names such as `active`), and single-quoted, backticked and fenced strings, become strings. Whatever is accepted is stored as an ordinary Cypher value. Gram constructs that cannot become a Cypher type (ranges, measurements, nested maps) are load errors.
 
 Export is the reverse: each stored Cypher value is written in the gram form that reads back as the same type. Where gram offers several spellings, export picks one canonical spelling. Conversion on load is therefore not reversible spelling-for-spelling: `0x1F` reads back as `31`.
 
@@ -67,7 +67,7 @@ Cypher stores types such as temporal values and spatial points that gram has no 
 
 In the later phase, the database holds metadata about properties, kept apart from the values themselves. Metadata says things like "the `body` property of `Document` nodes holds markdown". On load, a tagged string with a tag that is not a Cypher type stores its content as an ordinary string and records the tag in the metadata. On export, the metadata is consulted and the property is written as a tagged string again. Queries see only the plain string.
 
-The top-level record's meta node, introduced in RFC-001, is the candidate place to record this metadata, because it already represents information about the graph rather than in it. Whether the meta node is the right home, and at what granularity metadata attaches (a property key across a label, a single element, a whole namespace), is open.
+The meta node, which holds a gram file's top-level record (RFC-001), is the candidate place to record this metadata, because it already represents information about the graph rather than in it. Whether the meta node is the right home, and at what granularity metadata attaches (a property key across a label, a single element, a whole namespace), is open.
 
 ### 5.4 Cross-cutting concerns
 
@@ -81,7 +81,11 @@ The mapping applies equally to node properties, relationship properties and the 
 
 6.3. **Accept every gram value, storing what Cypher cannot hold as a string.** Rejected: a range, measurement or map rendered as text makes a loaded graph differ from its source without notice, so these fail loudly. Tagged strings differ because their content already is a string.
 
-6.4. **Add the advanced mapping at the start.** Deferred: the strict mapping is needed either way and is independently useful, and the metadata design depends on decisions about the meta node that are not yet made.
+6.4. **Reject tagged strings whose tag does not name a Cypher type.** Rejected: the content is an ordinary string and loads correctly, and rejecting would make many existing gram files unloadable for a loss that the advanced mapping can later recover.
+
+6.5. **Record dropped tags as companion properties on the element.** Rejected: it adds properties that queries and exports see, filling the data model with bookkeeping. Metadata kept apart from the data avoids this.
+
+6.6. **Add the advanced mapping at the start.** Deferred: the strict mapping is needed either way and is independently useful, and the metadata design depends on decisions about the meta node that are not yet made.
 
 ## 7. Open Questions
 
@@ -95,15 +99,15 @@ The mapping applies equally to node properties, relationship properties and the 
 
 7.5. How are lists mapped, given that Cypher lists hold one type and gram arrays hold scalars? What happens to an empty list, whose element type cannot be inferred from its text, and to a list of mixed types? Do lists of tagged values (for example temporal values) work?
 
-7.6. Is dropping an unrecognized tag silent, or does the loader report it as a warning? Can the user choose to make it an error?
+7.6. Is dropping an unrecognized tag reported by default (as a warning), and can the user make it an error or silence it?
 
 7.7. Where is property metadata recorded, and at what granularity? Candidates are the meta node (keyed by label and property key), per-element annotations, or a separate structure. How does metadata interact with namespaces, where each graph may carry its own?
 
 7.8. What happens when metadata and data disagree: a property marked as markdown that holds a non-string, or two loads of the same namespace recording different tags for one property?
 
-7.9. Which metadata beyond "this string has a format tag" is worth recording (for instance units for measurements), and which gram constructs would the advanced phase make acceptable?
+7.9. Should the strict phase and the advanced phase be one switchable mode of a single mapping, or two mappings sharing a common core?
 
-7.10. Should the strict phase and the advanced phase be one switchable mode of a single mapping, or two mappings sharing a common core?
+7.10. How are property keys quoted and escaped? What happens to duplicate keys in one map, and how does export treat Cypher values for which no gram form exists (for example vectors or byte arrays), given that Cypher has no null property and gram has no null?
 
 ## 8. ADRs
 
