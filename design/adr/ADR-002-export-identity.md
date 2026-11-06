@@ -1,7 +1,7 @@
 ---
 id: ADR-002
 title: Export Identity
-status: proposed
+status: accepted
 rfcs: [RFC-001]
 created: 2026-11-06
 ---
