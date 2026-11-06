@@ -104,7 +104,7 @@ The default behavior chooses among these in the order listed. Identifiers that a
 
 ### 5.4 The top-level record and the meta node
 
-A gram file may open with a record of properties describing the file as a whole. A property graph has no place for data about the graph itself, so the extension loads the record as a "meta node": a node of a reserved kind that is distinguishable from data nodes, holds the record's properties, and is written back as the top-level record on export. The reserved label, property layout and rules for excluding the meta node from ordinary queries are left to a later decision. In the pattern-rs ecosystem the record's `kind` property says what a file is (for example `{ kind: "schema" }`), so loading a file whose `kind` is not a data graph deserves its own handling (see 7.13).
+A gram file may open with a record of properties describing the file as a whole. A property graph has no place for data about the graph itself, so the extension loads the record as a "meta node": a node of a reserved kind that is distinguishable from data nodes, holds the record's properties, and is written back as the top-level record on export. The label, property layout and the meta node's place among named graphs are settled in a later decision. In the pattern-rs ecosystem the record's `kind` property selects the semantics, conventions and style of a file's contents (for example `{ kind: "schema" }`). Only one kind, `property-graph`, is supported, and it is assumed when a file names none; other kinds are errors that say so. The record also names the graph through its `name` property, with a fallback to the file name (`graph-name.kind.gram`).
 
 ### 5.5 Named graphs
 
@@ -145,7 +145,7 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 ## 7. Open Questions
 
-7.1. _Partly resolved by ADR-003._ The meta node carries the reserved label `_GramMeta`, holds the record's properties as ordinary properties, is not hidden from queries, and is written back first on export. Still open: whether it carries the identity of a named graph, which the named-graph decision settles.
+7.1. _Resolved by ADR-003._ The meta node has the label `Graph`, holds the graph's name in `@id` and the record's other properties as ordinary properties, and belongs to a reserved graph `@@`. It is not hidden from queries.
 
 7.2. What is the format of an `@id` value, and how is a named graph named and written in gram? Is naming a graph a single prefix on an identifier, a separate property on each element, or something else?
 
@@ -169,7 +169,7 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 7.12. _Resolved by the strict-subset rule (5.1)._ The double-colon before a label or after a property key is rejected, since the pattern-rs schema work uses it to mark type slots and accepting it as an ordinary colon would erase that meaning.
 
-7.13. How does the loader treat a file whose top-level record has a `kind` that does not describe a data graph (for example `schema`)? Loading it as data would produce a graph of schema archetypes with their constraint tags dropped. Is it an error, a warning, or accepted?
+7.13. _Resolved by ADR-003._ The loader supports one kind, `property-graph`, and assumes it when a file names none. A file whose record or file name gives another kind is an error that states the assumption.
 
 7.14. pattern-rs has a canonical gram format (the `pato fmt` command). Should exports match it, or reuse the codec's serializer, so that an exported file is already formatted?
 
@@ -177,4 +177,4 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 - [ADR-001](../adr/ADR-001-load-identity-and-merge.md): Load Identity and Merge Semantics
 - [ADR-002](../adr/ADR-002-export-identity.md): Export Identity
-- [ADR-003](../adr/ADR-003-meta-node.md): Meta Node for the Top-Level Record
+- [ADR-003](../adr/ADR-003-meta-node.md): Meta Nodes and the Meta Graph
