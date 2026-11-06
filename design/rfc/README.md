@@ -64,3 +64,4 @@ Use `/rfc-review` before moving a draft to `review`/`accepted`.
 
 | RFC | Title | Status | ADRs |
 |---|---|---|---|
+| [RFC-001](RFC-001-gram-support-for-relate.md) | Gram Graph Support for Relate | draft | |
