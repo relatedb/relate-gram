@@ -86,7 +86,7 @@ A load computes the SHA-256 digest of the file's raw bytes, exactly as read, bef
 When a load resolves a name for which the database already holds a meta node with that `@id`, the digests are compared:
 
 - **Equal:** the file is unchanged. The load writes nothing, succeeds, and reports that the graph is already loaded.
-- **Different, or the stored meta node has no `@hash`:** the file has changed. Merging the new version into the existing graph is the intended behavior, and it needs the elements of the existing graph to be matched by identity, which they do not carry yet (see below). Until the named-graph decision supplies that, such a load fails with an error that names the graph and both digests.
+- **Different, or the stored meta node has no `@hash`:** the file has changed. Merging the new version into the existing graph is the intended behavior, and it needs the elements of the existing graph to be matched by identity, which they do not carry yet (see below). Until the named-graph decision supplies that, such a load fails with an error that names the graph and both digests and says what to do: load the file under a different graph name, or wait for merge support.
 
 A gram identifier is dropped after a load (ADR-001), so nothing in the database says which existing element a repeated one corresponds to. Matching needs each element to keep its identity in `@id` and to record the graph it belongs to, which is the named-graph decision (RFC-001 question 7.2). That decision also defines how elements without an identifier are treated on a merge, since they never merge (ADR-001).
 
