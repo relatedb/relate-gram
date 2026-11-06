@@ -21,12 +21,12 @@ A gram file may open with a record, a set of key-value properties written in bra
 (a:Person {name: "Ada"})
 ```
 
-The record describes the file as a whole. A property graph has no element for that: nodes and relationships hold data about things in the graph, and nothing holds data about the graph itself. A loader that skips the record loses information, and an exporter has no way to write it back. The record has to be stored in the database as something, and the database has to be able to tell it from data.
+The record describes the file as a whole. A property graph has no element for that: nodes and relationships hold data about things in the graph, and nothing holds data about the graph itself. Without a decision, the loader would skip the record, and an export would have nothing to write back. The record has to be stored in the database as something, and the database has to be able to tell it from data.
 
 Several forces shape the choice:
 
 - A node cannot be hidden. Relate's public library offers no way to exclude an element from queries, so whatever the loader writes is visible to every query that scans nodes.
-- The project plans for one database to hold several graphs, each a named graph, with a graph's identity kept in a reserved `@id` property (RFC-001). A graph needs a name and a place to keep information about itself, which is what the record is.
+- The project plans for one database to hold several graphs, each a named graph (a set of elements that the database keeps apart from other graphs, identified by a shared `@id` value), with a graph's identity kept in a reserved `@id` property (RFC-001). A graph needs a name and a place to keep information about itself, which is what the record is.
 - A gram file's top-level record also says what kind of file it is. In the wider gram ecosystem the `kind` property selects the semantics, conventions and style of the contents, for example `schema` for a file of constraints. Every gram file is valid data, but only one kind is a property graph.
 - The ecosystem names files `graph-name.kind.gram`, so a file name can carry the graph's name and its kind.
 - Property keys starting with `@` are rejected on load (ADR-001), so data loaded from a file never has an `@id`.
@@ -63,7 +63,7 @@ A file that has a non-empty record and no resolvable name is a load error that a
 
 Meta nodes are the members of one reserved named graph, called `@@`. The name falls under the reserved `@` prefix, so no user graph can have it. `@@` has no form in gram: its only counterpart in a file is the top-level record, so a file never refers to it.
 
-A named graph has exactly one meta node, written:
+A named graph has exactly one meta node. For a graph named `roster`, for example, it is written:
 
 ```
 (:Graph {@id: "roster", @hash: "sha256:9f2c…", revision: 4})
@@ -74,8 +74,9 @@ A named graph has exactly one meta node, written:
 - `@hash` holds the SHA-256 digest of the file the graph was loaded from (2.4), written `sha256:` followed by 64 lowercase hexadecimal digits.
 - The record's other properties are stored as ordinary properties, under the value mapping of RFC-002. `name` is not stored separately, since `@id` holds it, and `kind` is dropped (2.1). Record keys starting with `@` remain load errors (ADR-001).
 - The meta node has no relationships.
+- `@id` and `@hash` are written by the loader and never read from the file. ADR-001's rejection of `@` keys applies to file content only. A meta node holds the graph's name, not a gram element identifier, so it does not conflict with the rule that gram identifiers are dropped after load.
 
-Until the named-graph decision defines how an element is recorded as a member of a graph, a node is recognized as a meta node if it has the label `Graph` and an `@id` property. A node that has the label `Graph` and no `@id`, such as one loaded from a file, is ordinary data. The named-graph decision replaces this rule with membership of `@@`.
+Until the named-graph decision defines how an element is recorded as a member of a graph, a node is recognized as a meta node if it has the label `Graph` and an `@id` property. A node that has the label `Graph` and no `@id`, such as one loaded from a file, is ordinary data. Before named graphs exist no data element can have an `@id`, so the rule cannot misread one. The named-graph decision replaces this rule with membership of `@@`.
 
 A file that has a graph name creates a meta node even when it has no record, so that the graph is named in the database.
 
@@ -87,6 +88,8 @@ When a load resolves a name for which the database already holds a meta node wit
 
 - **Equal:** the file is unchanged. The load writes nothing, succeeds, and reports that the graph is already loaded.
 - **Different, or the stored meta node has no `@hash`:** the file has changed. Merging the new version into the existing graph is the intended behavior, and it needs the elements of the existing graph to be matched by identity, which they do not carry yet (see below). Until the named-graph decision supplies that, such a load fails with an error that names the graph and both digests and says what to do: load the file under a different graph name, or wait for merge support.
+
+The comparison is per graph name. The same file loaded under two names produces two graphs, and the load does not detect this.
 
 A gram identifier is dropped after a load (ADR-001), so nothing in the database says which existing element a repeated one corresponds to. Matching needs each element to keep its identity in `@id` and to record the graph it belongs to, which is the named-graph decision (RFC-001 question 7.2). That decision also defines how elements without an identifier are treated on a merge, since they never merge (ADR-001).
 
@@ -148,6 +151,8 @@ The record always includes `name`, so an exported file names its graph whatever 
 
 - The meta node is visible in `MATCH (n)` queries and counts. Users and tools exclude it by its `@id` and `Graph` label until named graphs give a membership filter; this has to be documented.
 - The interim recognition rule must be replaced when named graphs exist. Once data elements also carry `@id`, a data node labelled `Graph` would match it.
+- Loading the same file under two different names creates two graphs with duplicated elements and no warning.
+- Element identity stored for named graphs will extend what Constitution III allows to be stored, so the named-graph decision has to amend it.
 - Loading the same named file twice is a no-op, and a changed file fails until named graphs allow a merge. This amends the consequence recorded in ADR-001, which expected the second load to duplicate every element. Unnamed loads still duplicate.
 - A reformatted or re-commented file has a different digest and counts as changed.
 - A database loaded from several differently named files holds several meta nodes and cannot be exported as one file until elements record the graph they belong to.
