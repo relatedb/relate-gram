@@ -82,7 +82,40 @@ pattern-rs and tree-sitter-gram:
 - `ReconciliationPolicy` (`pattern-core/src/reconcile.rs`) offers `LastWriteWins`, `FirstWriteWins`, `Merge(...)` and `Strict`. `StandardGraph` uses `Merge(UnionElements, ...)` and creates placeholder nodes for relationship endpoints seen before their declaration. Anonymous elements carry an empty identity (`Symbol("")`); how reconciliation treats them is not confirmed.
 - Neither repository defines named graphs, graph names, or identifier scope across files. The leading record is a document header; `kind` is a convention. `graph-name.kind.gram` and `property-graph` are our own conventions, not upstream ones.
 
-## 4. Patterns across systems
+## 4. pattern-hs: survey and RFC-012
+
+The Haskell reference implementation of pattern (`relateby/pattern-hs`) holds a survey of identity management (`proposals/research/identity-management-survey.md`, 2026-07-03) and a draft RFC for scoped identity (`proposals/rfc/RFC-012-scoped-identity.md`, 2026-07-06). Both were read directly from the local files. The survey says its RDF and Datomic claims were checked against specifications and that the rest were fetched from primary sources but not formally verified.
+
+### What the survey adds
+
+- **Datomic tempids.** Local ids resolve to permanent ids at the transaction boundary, and the transaction report returns the mapping from each local id to what it became. A reload summary can do the same.
+- **Upsert on a unique key.** `:db.unique/identity` resolves a record carrying an existing key to the existing entity. It is the one mechanism in the survey that gives both idempotent reload and deliberate sameness across files.
+- **Mutable things need a stable anchor, not a hash.** Perkeep's permanode is the example; content addressing suits immutable values.
+- **Deterministic generated ids.** UUIDv5 hashes a namespace and a name. It is only as stable as the name, so ordinal names shift when the file is edited.
+- **Scope as authority, not location.** Matrix ids and XML namespaces show the form `scope:local`, where the scope names whoever allocated the local part.
+- **Late sameness.** Wikidata merges two items and leaves a redirect; it never deletes or reuses the losing id.
+- **Neo4j import id-groups** give per-source id spaces, and a composite node key has the `(scope, local)` shape.
+
+### What RFC-012 proposes
+
+- Identity is the pair `(scope, local)`, grounded at a frame, the scope-bearing container.
+- A file declares its scope in the leading record under the reserved key `namespace`. The value `@org/sub` is authority-qualified and safe to share across stores; a bare value is local to one store. The reserved-key registry already holds pattern-rs's `kind` and `variant`.
+- With no `namespace`, the store assigns a scope at ingest. That isolates the file's ids but gives no idempotency, since a repeat ingest mints a fresh scope.
+- Anonymous elements are weak entities: identified by their nearest named ancestor plus an ordinal. They never merge by identity, and they cannot be the target of a reference until promoted.
+- Reconciliation has to treat anonymous elements as distinct. The parser currently represents them as the empty symbol, so keying on identity would put all of them in one bucket.
+- Merging sameness discovered later belongs to reconciliation, with a redirect.
+- A notation for referring from one file into another's namespace is deferred.
+
+### Where it meets relate-gram
+
+- **Header key.** ADR-003 reads the graph name from `name`; RFC-012 uses `namespace`. A file declaring only `namespace` would be named from its file name here, and a user's own `name` property (for example a title) would be read as the graph name.
+- **Names that start with `@`.** ADR-003 §2.3 says `@@` falls under the reserved `@` prefix, so no user graph can have that name. RFC-012's authority-qualified scopes start with `@`.
+- **File name as fallback.** RFC-012 rejects a file path as scope because moving the file breaks identity. ADR-003 uses the file name when neither the caller nor the record gives a name.
+- **Shape of identity.** The pair `(scope, local)` supports two properties (`@graph`, `@id`) over one combined value, since an authority-qualified scope contains `@` and `/` and a plain gram symbol allows only one of them.
+- **Anonymous relationships.** relate-gram graphs are flat, but an anonymous relationship has named endpoints that could play the role of the owner: identity from (start, type, end) plus an ordinal among identical parallel relationships. This is a candidate of our own, not in RFC-012.
+- **Empty-symbol hazard.** pattern-rs's `gram-codec` also represents anonymous elements as `Symbol("")`. Whether its reconciliation merges them is not confirmed; it matters if the loader reuses that code.
+
+## 5. Patterns across systems
 
 1. **File-local labels are never persistent identity** (RDF blank nodes, JSON-LD blank nodes, GraphML ids, Dgraph blank nodes). Persistence needs an explicit step: skolemization, storing the ids, or a user-chosen key.
 2. **Stable identity comes from an explicit key** written in the file or chosen by the user (kind/namespace/name, resource address, IRI, `@id`, a `MERGE` key). Position and content do not identify anything.
@@ -92,8 +125,10 @@ pattern-rs and tree-sitter-gram:
 6. **Updates merge per field and keep other writers' fields.** kubectl removes only fields it previously set, which it can do because it stores a copy of what it last applied. Terraform is the exception, since configuration always wins.
 7. **Anonymous elements are the weak point.** Kubernetes cannot track `generateName` objects through apply. Generated labels for anonymous elements are counters (`c14n0`, `n188`, `_:b0`), and they are stable only for one load or one exact input; hash-derived labels shift when anything connected changes. Neo4j's composite uniqueness constraint ignores elements with a missing key property, so anonymous nodes duplicate on each load.
 8. **Several graphs are separated by a graph name, not by element ids** (RDF datasets, JSON-LD `@graph`) or by separate databases (Neo4j).
+9. **The author declares the scope, with a fallback that isolates but does not give idempotency** (pattern-hs RFC-012, RDF named graphs, Datomic upsert on a declared key). A scope derived from location is treated as fragile.
+10. **Anonymous elements are identified by their owner plus an ordinal** (pattern-hs weak entities; RDF blank nodes nested under a named node), and the survey states no clean answer to ordinal shifts when the file is edited.
 
-## 5. What this suggests for RFC-003
+## 6. What this suggests for RFC-003
 
 | Question | Finding |
 |---|---|
@@ -104,9 +139,11 @@ pattern-rs and tree-sitter-gram:
 | Removed property in the file (7.3) | kubectl removes dropped fields only because it stores the last-applied copy. Without a stored copy, relate-gram cannot tell which properties the file set. Keeping them is the default; removal needs extra provenance. |
 | Anonymous elements: match on live content | Pattern 7 argues against generated counters and hashes as matching keys. |
 | Two properties (`@graph`, `@id`) against a combined `@id` | Pattern 8 favours a separate graph name over a prefix inside the identifier. Relate's composite `UNIQUE` ignores missing components, which fits two properties with anonymous elements leaving `@id` unset. Both facts are documented, not tested. |
+| Header key for the graph name (`name` or `namespace`) | Pattern 9 and RFC-012's reserved-key registry. Open; see RFC-003 7.12. |
+| Anonymous relationships identified by (start, type, end, ordinal) | Pattern 10 applied to a flat graph. A candidate of ours, not tested against any system. |
 | Persistent counter for generated identifiers | No surveyed system stores such a counter; the surveyed counters are per-load. It remains a design of ours, for export stability. |
 
-## 6. Candidates for a spike
+## 7. Candidates for a spike
 
 Questions the repositories could not settle, to be tested against a live Relate:
 
@@ -115,4 +152,4 @@ Questions the repositories could not settle, to be tested against a live Relate:
 - `@graph` and `@id` as property keys: create with backticks, match, set, index and constrain, including a composite (`@graph`, `@id`).
 - Whether `STARTS WITH` uses an index, with and without `CREATE INDEX` (`EXPLAIN`).
 - `id()` and `elementId()` across deletion and reload, and whether ids are reused.
-- How pattern-rs `StandardGraph` and `reconcile` treat empty-identity (anonymous) subjects.
+- How pattern-rs `StandardGraph` and `reconcile` treat empty-identity (anonymous) subjects. pattern-hs RFC-012 reports that identity-keyed reconciliation there merges them into one bucket, and `gram-codec` uses the same empty symbol.

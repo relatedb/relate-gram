@@ -71,11 +71,13 @@ Neither lets the user do the one thing they wanted, which is to update the datab
 
 ## 5. Proposed Approach (high-level)
 
+Prior art for these directions is collected in `design/notes/2026-11-06-identity-prior-art.md`, which includes the scoped-identity work in pattern-hs (the Haskell reference implementation of pattern).
+
 ### 5.1 Identity and membership on elements
 
 A load that has a graph name keeps what an unnamed load drops. Each element it creates carries two reserved properties: its gram identifier (the `@id` value) and the name of the graph it belongs to. A candidate for the second is a `@graph` property, so that membership is a plain, queryable property like the rest, with no new element types or relationships.
 
-Identity is the pair of graph and identifier. The same identifier in two graphs is two elements, which is what lets one database hold several revisions of a dataset. The meta node, which already represents the graph itself, becomes a member of the reserved graph `@@` by the same mechanism, replacing the interim rule of recognizing it by its label.
+Identity is the pair of graph and identifier. The same identifier in two graphs is two elements, which is what lets one database hold several revisions of a dataset. The pair is kept as two components, not one concatenated string: a graph name can be authority-qualified (for example `@org/census`), containing characters that a plain gram identifier cannot, and the pair has the shape of a composite uniqueness constraint. A single value with the graph name as a prefix remains a candidate (7.1), with anonymous elements marked by an empty identifier. The meta node, which already represents the graph itself, becomes a member of the reserved graph `@@` by the same mechanism, replacing the interim rule of recognizing it by its label.
 
 Loads that give no graph name behave as before. Nothing is stored and a second such load duplicates, as the first load rule intends.
 
@@ -89,11 +91,16 @@ When the file's graph already exists, the load matches elements by identity and 
 
 Within a single file, contradicting values for one element remain an error. Across loads the file wins, since a later file that differs from an earlier load is the update the user meant. Properties the file does not mention are left alone, so values added through Cypher survive a reload.
 
-Elements the file writes without an identifier cannot be matched by identity. They match on their full content: labels, properties, and for relationships their endpoints and type. An edit to such an element therefore appears as one removed and one added. The reload reports this and suggests giving the element an identifier.
+Elements the file writes without an identifier cannot be matched by identity. Two candidate rules apply, by kind of element:
+
+- A **relationship** between identified nodes can be identified by its start, type and end, plus an ordinal among identical parallel relationships in the file. Editing its properties leaves its identity unchanged; only reordering identical parallel copies shifts it. This follows the weak-entity idea in pattern-hs, in which an anonymous element is identified by its owner and an ordinal, with the endpoints in the owner's role.
+- A **node**, and a relationship whose endpoints are themselves anonymous, matches on its full content: labels, properties, and for relationships their endpoints and type. An edit to such an element appears as one removed and one added.
+
+The reload reports these cases and suggests giving the element an identifier. Generating identifiers for anonymous elements instead is weighed in 6.12.
 
 ### 5.3 What a reload never does by default
 
-A reload is additive. An element that is in the graph but no longer in the file stays, and the summary counts it. Three options change this, each explicit:
+A reload is additive. An element that is in the graph but no longer in the file stays, and the summary counts it. The summary also lists, for every element the file wrote, what it matched or created, so the user can see how each local identifier resolved. Three options change this, each explicit:
 
 - A preview mode applies nothing and prints the summary.
 - A prune option removes elements that the graph holds as members and that the file no longer names. Because membership records provenance, pruning cannot touch data created in the database by other means.
@@ -116,7 +123,13 @@ Exporting a named graph writes each element's `@id` as its gram identifier and i
 
 Two existing rules assume identifiers are dropped. The project constitution says identifiers "are not stored", and ADR-001 rejects every property key starting with `@` in a file. The direction here keeps the rule for loads that name no graph and replaces it for those that do: storing the identifier is what naming a graph means. The keys are still written only by the loader and never read from file content. The constitution has to be amended through an ADR, and ADR-001's consequence about repeated loads has to be updated again.
 
-### 5.7 Phasing
+### 5.7 Naming a graph
+
+Identity within a graph only helps a reload if the same graph name arrives each time. The scope is best declared by the author in the file, so that it does not depend on where the file is stored: a name taken from a file path is lost when the file is moved or renamed, and the reload silently creates a new graph. The name resolution already in place (the caller's name, then the record's, then the file name) keeps the file name as a last resort, and the summary says which source was used.
+
+pattern-hs proposes declaring a graph's scope with the reserved record key `namespace`, in a registry shared with `kind` and `variant`, and writing authority-qualified scopes with a leading `@` (`@org/sub`). The key, the handling of names that begin with `@`, and the fate of the file-name fallback are open (7.12 to 7.14).
+
+### 5.8 Phasing
 
 Until identity is stored, a changed file for an existing graph is an error that tells the user to load under another name (ADR-003). The first step of this work is element identity and membership, with reload as an upsert and the summary. Prune, replace, preview and alternative keys follow.
 
@@ -142,9 +155,13 @@ Until identity is stored, a changed file for an existing graph is an error that 
 
 6.10. **Store the identifier as an ordinary property such as `id`.** Rejected: it collides with user data and cannot be told apart from it. Reserved `@` keys are loader-written and cannot be forged by a file.
 
+6.11. **Use the file's path or name as the only scope.** Rejected as a sole rule: moving or renaming the file creates a new graph without warning. A name declared in the file takes precedence, and whether the file-name fallback stays is open (7.13).
+
+6.12. **Generate identifiers for anonymous elements on load.** A sequential count restarted for each load is rejected: inserting an element shifts every later one, and the reload overwrites the wrong elements. A hash of the element's content is rejected as a matching key: it changes with any edit, identical elements collide, and a stored hash goes stale after a Cypher edit. A count kept in the graph and never reused avoids shifting, but the file does not state those identifiers, so a reload still cannot connect an anonymous element in the file to an existing one. It does keep exported identifiers stable. Whether it earns its place for that alone is open (7.15).
+
 ## 7. Open Questions
 
-7.1. Is membership a property on each element, as proposed, or something else, such as a label, a relationship to the meta node, or a combined `@id` value that embeds the graph name? The choice affects query ergonomics, index use and export.
+7.1. Is membership a property on each element, as proposed, or something else, such as a label, a relationship to the meta node, or a combined `@id` value that embeds the graph name, with an empty identifier for anonymous elements? A separate property keeps a missing identifier distinct from membership and fits a composite constraint, which Relate documents as ignoring tuples with a missing component (not yet tested). A combined value needs one property but gives up a single-property uniqueness constraint and makes `@id` mean two things. The choice affects query ergonomics, index use and export.
 
 7.2. What is the exact format of an `@id` value, and how does it appear in gram, given that a plain symbol cannot start with `@` and that gram identifiers can be integers or quoted names? (This is RFC-001 question 7.2.)
 
@@ -152,7 +169,7 @@ Until identity is stored, a changed file for an existing graph is an error that 
 
 7.4. How does a relationship with an identifier match on reload when its endpoints or type changed in the file? Is that an error, or a remove and an add?
 
-7.5. What constitutes "the same anonymous element" for matching on full content, and how are exact duplicates within one file and one graph counted?
+7.5. What constitutes "the same anonymous element" for matching on full content, and how are exact duplicates within one file and one graph counted? Is a relationship between identified nodes identified by (start, type, end, ordinal), as proposed in 5.2, and what does a changed endpoint or type then mean?
 
 7.6. Which constraints count as declared keys: uniqueness constraints, node keys, or both, and what happens to a label with several?
 
@@ -165,6 +182,16 @@ Until identity is stored, a changed file for an existing graph is an error that 
 7.10. What happens when two graphs are exported into one file, and when an element in one graph refers to an element of another?
 
 7.11. What does the meta node's digest do once reload exists? It still shortcuts an unchanged file, but should it also record revision history or the time of the last load?
+
+7.12. Which record key declares the graph's name: `name`, as ADR-003 reads it today, or `namespace`, as pattern-hs proposes? A user's own `name` property (a title, say) would be read as the graph name, and a file that declares only `namespace` would be named from its file name. Aligning needs an amendment to ADR-003.
+
+7.13. Does the file-name fallback stay as a last resort, given that moving or renaming a file silently creates a new graph?
+
+7.14. Can a graph name start with `@`, as authority-qualified scopes do (`@org/sub`)? ADR-003 §2.3 reserves `@@` by saying the `@` prefix is reserved, which assumes no user graph name begins with it; the reservation would be narrowed to `@@`.
+
+7.15. Should a graph keep a count of generated identifiers that is never reused, so that exports of a named graph keep stable identifiers across edits and deletions, and where is that count stored? How does a reload of an exported file whose identifiers were generated behave?
+
+7.16. If the loader reuses pattern-rs's reconciliation, does it merge anonymous elements that carry the empty symbol as identity? pattern-hs reports that its own reconciliation does and requires it to be fixed. This belongs to the parser decision.
 
 ## 8. ADRs
 
