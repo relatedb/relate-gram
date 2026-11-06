@@ -83,13 +83,15 @@ Loads that give no graph name behave as before. Nothing is stored and a second s
 
 ### 5.2 Reload as upsert
 
+Within one file, each element has a single defining site, where its labels and properties are written, and any number of references to it (ADR-001). A file therefore never contradicts itself about an element, and the load has no conflict option.
+
 When the file's graph already exists, the load matches elements by identity and applies the file:
 
-- An element whose identifier is already in the graph is the same element. Its labels are unioned with the file's, and each property the file states takes the file's value.
+- An element whose identifier is already in the graph is the same element. Its labels are unioned with the file's, and each property its definition states takes the file's value. A reference states nothing and changes nothing.
 - An element whose identifier is new is created.
 - An unchanged file is recognized by its digest and does nothing.
 
-Within a single file, contradicting values for one element remain an error. Across loads the file wins, since a later file that differs from an earlier load is the update the user meant. Properties the file does not mention are left alone, so values added through Cypher survive a reload.
+Across loads the file wins, since a later file that differs from an earlier load is the update the user meant. This replaces RFC-001's statement that a merge into an existing graph uses the in-file defaults, which then made a changed value a conflict error. Properties the file does not mention are left alone, so values added through Cypher survive a reload.
 
 Elements the file writes without an identifier cannot be matched by identity. Two candidate rules apply, by kind of element:
 
@@ -121,7 +123,7 @@ Exporting a named graph writes each element's `@id` as its gram identifier and i
 
 ### 5.6 Consequences for rules already made
 
-Two existing rules assume identifiers are dropped. The project constitution says identifiers "are not stored", and ADR-001 rejects every property key starting with `@` in a file. The direction here keeps the rule for loads that name no graph and replaces it for those that do: storing the identifier is what naming a graph means. The keys are still written only by the loader and never read from file content. The constitution has to be amended through an ADR, and ADR-001's consequence about repeated loads has to be updated again.
+Two existing rules assume identifiers are dropped. The project constitution says identifiers "are not stored", and ADR-001 rejects every property key starting with `@` in a file. The direction here keeps the rule for loads that name no graph and replaces it for those that do: storing the identifier is what naming a graph means. The keys are still written only by the loader and never read from file content. The constitution has to be amended through an ADR. ADR-001 has been amended so that an element is defined at one site, which removes its conflict option, and its statement that a load never matches existing elements has to be updated again when this direction is decided.
 
 ### 5.7 Naming a graph
 
@@ -159,6 +161,8 @@ Until identity is stored, a changed file for an existing graph is an error that 
 
 6.12. **Generate identifiers for anonymous elements on load.** A sequential count restarted for each load is rejected: inserting an element shifts every later one, and the reload overwrites the wrong elements. A hash of the element's content is rejected as a matching key: it changes with any edit, identical elements collide, and a stored hash goes stale after a Cypher edit. A count kept in the graph and never reused avoids shifting, but the file does not state those identifiers, so a reload still cannot connect an anonymous element in the file to an existing one. It does keep exported identifiers stable. Whether it earns its place for that alone is open (7.15).
 
+6.13. **Merge definitions across sites and across loads, with conflict errors (the earlier form of ADR-001 and RFC-001 §5.5).** Rejected: the most common use of a reload, changing a value and loading again, would fail by default, and an element's content could be spread across several places in the file.
+
 ## 7. Open Questions
 
 7.1. Is membership a property on each element, as proposed, or something else, such as a label, a relationship to the meta node, or a combined `@id` value that embeds the graph name, with an empty identifier for anonymous elements? A separate property keeps a missing identifier distinct from membership and fits a composite constraint, which Relate documents as ignoring tuples with a missing component (not yet tested). A combined value needs one property but gives up a single-property uniqueness constraint and makes `@id` mean two things. The choice affects query ergonomics, index use and export.
@@ -192,6 +196,8 @@ Until identity is stored, a changed file for an existing graph is an error that 
 7.15. Should a graph keep a count of generated identifiers that is never reused, so that exports of a named graph keep stable identifiers across edits and deletions, and where is that count stored? How does a reload of an exported file whose identifiers were generated behave?
 
 7.16. If the loader reuses pattern-rs's reconciliation, does it merge anonymous elements that carry the empty symbol as identity? pattern-hs reports that its own reconciliation does and requires it to be fixed. This belongs to the parser decision.
+
+7.17. Do files produced by other gram tools commonly split an element's labels and properties across several sites? If so, the single defining site rule (ADR-001) may need a relaxation, such as accepting identical repeats.
 
 ## 8. ADRs
 

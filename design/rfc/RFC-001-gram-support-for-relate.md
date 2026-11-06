@@ -86,7 +86,7 @@ The parser is expected to come from the existing gram tooling rather than being 
 Gram identifiers exist to say "this element, again." On load they are used for exactly that, and then dropped:
 
 - The first appearance of an identifier fixes whether it names a node or a relationship. Using the same identifier later as the other kind is an error.
-- A later appearance of an identifier refers to the same element. By default the appearance merges into the element already loaded. The merge rules (what happens to differing property values, additional labels) are left to a later decision.
+- A later appearance of an identifier refers to the same element. An element is defined, with its labels and properties, at one site in a file and may be referred to anywhere else by its identifier alone (ADR-001).
 - Elements written without an identifier cannot be referred to again, so each appearance is a separate element. `(a)-->(b)` written twice, with no identifier on the relationship, yields two relationships.
 - After loading, the identifier is not stored on the element. The database's own internal identity applies.
 
@@ -113,7 +113,7 @@ A single Relate database can hold several graphs, each one a named graph. (Relat
 Two operations build on this:
 
 - *Managed load of several graphs.* Each file loads into its own named graph, and the named graph is a first-class thing that can be listed, exported on its own, or removed.
-- *Merging.* Loading a graph into a named graph that already exists merges elements whose `@id` values match, using the same merge defaults as in-file repetition (5.2).
+- *Merging.* Loading a graph into a named graph that already exists matches elements by their `@id` values; RFC-003 sets what a match does, including that the file's values win.
 
 The spelling of `@id` values, how a named graph is named, and how both appear in gram are left to a later decision.
 
@@ -149,7 +149,7 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 7.2. What is the format of an `@id` value, and how is a named graph named and written in gram? Is naming a graph a single prefix on an identifier, a separate property on each element, or something else? (Taken up in RFC-003.)
 
-7.3. _Resolved by ADR-001 (§2.3)._ Repeated appearances merge: labels union, properties union by key, and differing values are an error unless `on-conflict` selects `first` or `last`.
+7.3. _Resolved by ADR-001 (§2.3)._ An element has one defining site and any number of references; a second definition is a load error, so a file never contradicts itself and there is no conflict option.
 
 7.4. _Resolved by ADR-001 (§2.4)._ A relationship with an identifier keeps its type and endpoints from its first appearance, and a repeat must match them.
 

@@ -17,7 +17,7 @@ ADR-0429/0431 upstream). It may be brought in-house later.
 - The top-level record maps to a **meta node** (ADR-003): label `Graph`, `@id` holds the graph's name, living in the reserved meta graph `@@`. Not hidden from queries.
 - **Assumption:** only gram kind `property-graph` is supported (assumed when absent; other kinds are errors that say so). Files follow `graph-name.kind.gram`; the graph name comes from the record's `name`, else the file name.
 - **Identity:** gram IDs only resolve references while loading, and are dropped. The first appearance of an ID fixes it
-  as a node or a relationship; using it later as the other kind is an error. A repeated appearance merges by default.
+  as a node or a relationship; using it later as the other kind is an error. An element is defined at one site (labels and properties) and may be referenced anywhere else by its identifier alone; a second definition is an error.
 - Advanced: one Relate database holds several graphs, distinguished by named graphs, whose identity lives in an `@id` property (format to be set by an ADR).
   The `@id` property round-trips to gram by becoming the element identifier. Also: managed multi-graph load, and merging
   graphs within one named graph.

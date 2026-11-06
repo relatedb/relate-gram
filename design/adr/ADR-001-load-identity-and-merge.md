@@ -10,10 +10,10 @@ created: 2026-11-06
 
 ## 1. Context
 
-A gram file names an element by writing an identifier on it, and writes the same identifier again wherever the element is mentioned: in `(a:Person {name: "Ada"})-[:KNOWS]->(b)` and later `(b)-[:KNOWS]->(c)`, both `b` are one node. A loader therefore meets the same element several times, each time possibly carrying more labels or properties than before, and must decide what the combination means. Three things make the decision necessary before any loader is written:
+A gram file names an element by writing an identifier on it, and writes the same identifier again wherever the element is mentioned: in `(a:Person {name: "Ada"})-[:KNOWS]->(b)` and later `(b)-[:KNOWS]->(c)`, both `b` are one node. A loader therefore meets the same element several times, and must decide which appearances may say what the element is and what a later one means. Three things make the decision necessary before any loader is written:
 
 - Gram identifiers are file-scoped. Relate's own element identity is internal and cannot be set by the loader, so a gram identifier is a name that exists only while the file is being read.
-- A repeated element can disagree with itself: `(a {age: 30})` and later `(a {age: 31})`. Cypher's `MERGE … SET` resolves such a clash by overwriting, which is the opposite of what a loader for interchange files should do.
+- A repeated element can disagree with itself: `(a {age: 30})` and later `(a {age: 31})`. Cypher's `MERGE … SET` resolves such a clash by overwriting, which is the opposite of what a loader for interchange files should do. Allowing an element to be defined at only one site removes the clash instead of resolving it.
 - Gram allows identifiers on relationships (`(a)-[r:KNOWS]->(b)`) and on nodes in the same file, and the grammar gives both the same kind of identifier. Nothing in the syntax stops one identifier from being used as a node and as a relationship.
 
 In the tree-sitter grammar for gram, an identifier is a symbol, a backtick-quoted name, or an integer. A plain symbol cannot start with `@`. A property key may be a symbol, a backtick-quoted name or a double-quoted name, so a key beginning with `@` has to be quoted (`{"@k1": 1}` appears in the grammar's own test corpus).
@@ -32,22 +32,24 @@ An element written without an identifier is anonymous (2.5).
 
 The first appearance of an identifier fixes its kind: a node if it appears in parentheses (as a node or a path endpoint), a relationship if it appears in brackets. Any later appearance as the other kind is a load error that reports both positions.
 
-### 2.3 Merging repeated nodes
+### 2.3 Defining and referencing nodes
 
-Appearances of a node with the same identifier are combined in file order:
+A node appearance that carries labels or a record (properties between braces, `{}` included) is a *definition*. A node appearance with neither is a *reference*. A node identifier has at most one definition in a file, and any number of references, before or after it.
 
-- **Labels** are unioned. The merged node keeps labels in the order they first appear.
-- **Properties** are unioned by key. If a key appears again with an equal value, nothing changes. Two values are equal only if they have the same Cypher type and the same value, so `1` and `1.0` differ, and two lists are equal if they have the same elements in the same order. Equality is judged after the value mapping (RFC-002), so `0x1F` and `31` are equal. A NaN never equals itself, so two NaN values conflict. Duplicate keys within a single record, such as `{a: 1, a: 2}`, are handled by the value-mapping decision (RFC-002 question 7.10).
-- **A key with differing values** is a load error that reports the key, both values and both positions. A load option `on-conflict` can change this to `first` (keep the earlier value) or `last` (keep the later one). The default is `error`. With `first` or `last`, each discarded value is reported as a warning that names the key, the discarded value and both positions.
-- A **bare reference**, such as `(a)` with no labels or properties, adds nothing to an existing node. If it is the first appearance, it creates a node with no labels and no properties, which later appearances fill in.
+- **Two definitions of one identifier** are a load error that reports both positions and says to define the element once and refer to it elsewhere as `(a)`. This holds when the two definitions are identical.
+- The node's labels, in the order written, and its properties are exactly those of its definition. A reference adds nothing to it.
+- **An identifier that is only referenced** creates a node with no labels and no properties. Because that is often a typo (`(alcie)` for `(alice)`), the load lists such identifiers in a warning. `(a {})` is the explicit definition of a node with no content, and it is not warned about.
+- Duplicate keys within a single record, such as `{a: 1, a: 2}`, are handled by the value-mapping decision (RFC-002 question 7.10).
 
-### 2.4 Merging repeated relationships
+A file therefore never contradicts itself about an element, and a load has no conflict option.
 
-A relationship with an identifier has a fixed type, a fixed start node and a fixed end node, all set at its first appearance. A repeated appearance combines with it as follows:
+### 2.4 Defining and referencing relationships
 
-- Its **type** MUST match, or the load fails with an error that reports both positions. An untyped relationship is governed by RFC-001 question 7.8.
-- Its **endpoints** MUST name the same two nodes as the first appearance, by identifier, in the same direction; the written direction (`-[r]->` or `<-[r]-`) is irrelevant as long as start and end are the same. An anonymous endpoint in a repeat never matches and is an error.
-- Its **properties** merge by the rules in 2.3, including `on-conflict`.
+A relationship with an identifier has a fixed type, a fixed start node and a fixed end node. A relationship appearance that carries a type or a record is its definition, and an appearance with neither (`[r]`) is a reference. The same rules apply as for nodes:
+
+- A relationship identifier has at most one definition, which carries the type and the properties. A second definition is a load error that reports both positions.
+- Every appearance MUST name the same two nodes as the first appearance, by identifier, in the same direction; the written direction (`-[r]->` or `<-[r]-`) is irrelevant as long as start and end are the same. An anonymous endpoint in a later appearance never matches and is an error.
+- A relationship identifier that is only referenced has no type, and a Cypher relationship has exactly one, so it is a load error. Untyped relationships are otherwise governed by RFC-001 question 7.8.
 
 A relationship without an identifier is anonymous and never merges (2.5).
 
@@ -61,7 +63,7 @@ A path is read as the chain of nodes and relationships it spells out, in left-to
 
 ### 2.7 Scope of resolution and atomicity
 
-Identifiers resolve only within the file being loaded. A load never matches an element already present in the database. A load either completes or leaves the database unchanged: all errors found while resolving the file abort the load before anything is written.
+Identifiers resolve only within the file being loaded. A load never matches an element already present in the database. Named graphs, which keep identity across loads, extend this (RFC-003). A load either completes or leaves the database unchanged: all errors found while resolving the file abort the load before anything is written.
 
 ### 2.8 The reserved `@` key prefix
 
@@ -69,17 +71,17 @@ A property key that starts with `@` is reserved for identity metadata. In the ba
 
 ### 2.9 Determinism
 
-Elements are created in order of first appearance, and merges are applied in file order, so a given file and option set always produce the same graph.
+Elements are created in order of first appearance, so a given file always produces the same graph.
 
 ## 3. Alternatives Considered
 
-3.1. **Overwrite on conflict, like Cypher `MERGE ... SET`.** Rejected as the default: it discards a value, which makes the database differ from its source. It remains available as the opt-in `on-conflict: last`, with each discarded value reported.
+3.1. **Overwrite on conflict, like Cypher `MERGE ... SET`.** Rejected: it discards a value, which makes the database differ from its source. With one defining site per element, a file has no conflict to resolve.
 
-3.2. **Keep the first appearance's properties and ignore later ones.** Rejected as the default for the same reason. Available as the opt-in `on-conflict: first`, with each discarded value reported.
+3.2. **Keep the first appearance's properties and ignore later ones.** Rejected for the same reason.
 
 3.3. **Accumulate conflicting values into a list.** Rejected: it changes the property's type from what any appearance wrote, and breaks type fidelity on export.
 
-3.4. **Require every appearance of an element to be identical.** Rejected: gram files commonly declare a node once with its full record and mention it elsewhere by identifier alone, so the rule would reject ordinary files. Merging bare references is the common case.
+3.4. **Require every appearance of an element to be identical.** Rejected: gram files commonly declare a node once with its full record and mention it elsewhere by identifier alone, so the rule would reject ordinary files. References, which carry no content, are the common case and are always allowed.
 
 3.5. **Merge relationships by (start, type, end), as Cypher `MERGE` does.** Rejected for the basic phase: it would merge distinct parallel relationships that a file writes deliberately, such as two `KNOWS` edges between the same pair with different properties. An explicit identifier already provides identity. A merge key can be added later as an opt-in.
 
@@ -95,16 +97,20 @@ Elements are created in order of first appearance, and merges are applied in fil
 
 3.11. **Partial load, committing everything up to the first error.** Rejected: a half-loaded graph cannot be told apart from a complete one, and which half is loaded depends on file order.
 
+3.12. **Union labels and properties across appearances, with an error on differing values and an `on-conflict` option (the earlier form of this decision).** Rejected: an element's content could be spread over several places, so a reader has to find all of them to know what the element is, and the option needs `first` and `last` modes whose discarded values must be reported.
+
+3.13. **Allow repeated definitions when they are identical.** Rejected: it adds an equality rule (type, value mapping, NaN) to save a one-line edit, and a file with two identical definitions still has two places to maintain.
+
+3.14. **Make an identifier that is only referenced an error.** Rejected: a node with no content that others point to is legitimate in a property graph, and the rule would force `(a {})` onto every such node. A warning that lists them catches typos instead.
+
 ## 4. Consequences
 
-- A file that repeats a property with different values fails to load unless the user chooses `first` or `last`. Users must resolve genuine conflicts in the file, which is the intended effect.
+- A file that defines an element at more than one site fails to load, even when the definitions agree. Users must consolidate the content into one definition and refer to it elsewhere, which the error says.
 - Loading the same file twice into one database produces two copies of every element, because resolution never matches existing elements (for a named graph, ADR-003 makes a second load of an unchanged file a no-op and a load of a changed file an error). Loading into a database that already holds data, and the named graphs (separate graphs inside one database, planned in the parent RFC) that make matching possible, are left to later work (RFC-001 open questions 7.9 and 7.2).
 - Anonymous relationships never merge. Users who want `(a)-[:R]->(b)` written twice to be one relationship must give it an identifier. An opt-in merge key remains an open follow-up (RFC-001 question 7.5).
 - User property keys starting with `@` cannot be loaded in the basic phase, even though gram permits them in quoted form.
 - The rules are written for one file, but they depend only on the identity of an element and the order of its appearances, so the cross-file merging that RFC-001 plans can apply the same rules to elements matched by their identity within a named graph.
 - Atomic load requires the loader to hold the resolved graph before writing it, so very large files need that much memory.
-- Under `first` and `last` the loader reports every discarded value, so a load can emit many warnings.
-- The `on-conflict` option needs a library setting and a CLI flag, specified with the CLI integration.
 - Follow-on decisions: the export identity scheme, the meta node format (which also needs the top-level record's own rules for `@` keys), and the `@id` format.
 
 ## 5. Related

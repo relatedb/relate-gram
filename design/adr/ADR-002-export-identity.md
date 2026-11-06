@@ -16,7 +16,7 @@ A gram file refers to an element by an identifier written on it: `(n0)-[r0:KNOWS
 - A loaded gram file's own identifiers are dropped after load, so by the time of an export there is nothing to restore them from.
 - Many graphs already carry a natural identifier as an ordinary property, such as a `uuid` or `email`, and writing that value as the gram identifier makes the exported file easy to read and compare.
 
-An exported file also has to load back correctly. A reload treats all identifiers in a file as one space shared by nodes and relationships, and two elements with equal identifiers are one element, so an exporter that wrote a duplicate would produce a file that merges elements or fails to load. And because exports are meant to be diffed, the same database has to produce the same file every time.
+An exported file also has to load back correctly. A reload treats all identifiers in a file as one space shared by nodes and relationships, and two elements with equal identifiers are one element, and an element may be defined only once, so an exporter that wrote a duplicate identifier would produce a file that fails to load. And because exports are meant to be diffed, the same database has to produce the same file every time.
 
 The identifier syntax constrains what can be written. In the tree-sitter grammar for gram, an identifier is a symbol (a letter or underscore followed by letters, digits, `_`, `.`, `-` or `@`), an integer (`-?(0|[1-9][0-9]*)`), or a backtick-quoted name whose text may contain any character except an unescaped backtick, backslash or newline. A plain symbol cannot start with `@`.
 
