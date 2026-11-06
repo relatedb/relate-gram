@@ -1,50 +1,78 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# relate-gram Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Design Before Code
+Work proceeds RFC → ADR → Spec Kit specification → implementation. An accepted ADR is the
+authority for a technical decision. A specification, plan or task MUST name the ADRs it
+implements and MUST NOT restate them; where they differ, the ADR wins until it is amended.
+Commits and pull requests MUST cite the ADR number they implement.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Rationale: decisions about identity, namespaces and value mapping are expensive to reverse, and
+one authoritative record keeps specifications and code from drifting apart.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Strict Subset, Loud Failures
+The loader MUST accept only gram constructs that map directly to Cypher's property graph model.
+Every other construct MUST be a load error that reports its position in the source file. Nothing
+is dropped or approximated silently. The one documented exception is an unrecognized tag on a
+tagged string: the tag is dropped and the loader MUST report it.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+Rationale: a loaded database that differs from its source without notice cannot be trusted.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Identity Is Explicit
+On load, gram identifiers MUST only resolve references within the file; they are not stored. The
+first appearance of an identifier fixes it as a node or a relationship, and a later conflicting use
+MUST be an error. On export, identity MUST be configurable and MUST have deterministic defaults.
+A missing or non-unique identifier source MUST be an error that lists the offending elements, never
+a silent fallback.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Rationale: implicit identity makes two loads of one file disagree and makes exports unloadable.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Round-Trip Fidelity
+Loading a file and exporting the result MUST preserve the graph and its property types. Exports of
+the same database MUST be byte-stable and diffable. Parser conformance MUST be tested against the
+tree-sitter-gram test corpus.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Rationale: interchange is only useful if what comes out is what went in.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Public Interfaces Only
+The crate MUST depend only on Relate's public library interface and its documented extension
+mechanism, with no coupling to private engine internals. Anything needed beyond that is raised
+with the Relate project as a request.
+
+Rationale: the crate is developed out of tree and is intended to be brought into the Relate
+project later without rework.
+
+### VI. Test-First (NON-NEGOTIABLE)
+Tests MUST be written and observed to fail before the implementation they cover. Every feature
+MUST have contract tests for load and export, round-trip tests, and tests that assert the reported
+position of each error. A change that makes any of these fail MUST NOT be merged.
+
+Rationale: the behavior is defined by contracts and error reporting, which tests state precisely.
+
+## Rust Constraints
+
+- The crate MUST depend on `relate` and `gram-codec` (from pattern-rs) for the engine and the
+  parser; any other parser requires an ADR.
+- The Rust toolchain MUST be pinned in the repository and bumped deliberately.
+- `unsafe` code MUST NOT be added without an ADR.
+- Formatting and lint checks (`cargo fmt`, `cargo clippy`) MUST pass before merge.
+
+## Development Workflow
+
+- Design documents and code are authored on feature branches, never directly on the main branch.
+- An RFC, ADR or spike MUST pass its review skill (`/rfc-review`, `/adr-review`) before its status
+  moves toward `review` or `accepted`.
+- Drafts are reviewed through a pull request before they merge.
+- Every Spec Kit plan MUST include a check against this constitution.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes other project practices. An amendment requires an ADR describing the
+change and its rationale, and MUST update this document and its version. Versions follow semantic
+versioning: MAJOR for removing or redefining a principle, MINOR for adding a principle or section
+or materially expanding guidance, PATCH for clarifications. Every plan and pull request review MUST
+verify compliance with the principles above, and any deviation MUST be justified in writing.
+Runtime guidance for agents lives in `CLAUDE.md`.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-06

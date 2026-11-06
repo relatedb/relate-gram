@@ -48,5 +48,5 @@ from `.claude/skills/`.
 - Don't hand-edit the index tables in the `design/*/README.md` files; the skills maintain them.
 - Implementation runs through Spec Kit (`/speckit-specify`, `-plan`, `-tasks`, `-implement`), installed in `.specify/`. Specs
   implement accepted ADRs and name them rather than restating them; the ADR wins on conflict. Commits and PRs cite the ADR.
-  The constitution (`.specify/memory/constitution.md`) is still the unfilled template.
+  The constitution is `.specify/memory/constitution.md`; every plan checks itself against it.
 - Write design documents for a newcomer: name project artifacts on first use.
