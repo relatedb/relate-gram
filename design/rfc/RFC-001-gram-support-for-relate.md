@@ -77,7 +77,9 @@ The detailed mapping between gram values and Cypher values, including how altern
 
 Anything outside this rule is a load error, reported with its position in the file. Silently dropping or approximating a construct would make a loaded database differ from its source without notice. The one planned exception, dropping an unrecognized tag from a tagged string (RFC-002), is reported to the user.
 
-The parser is expected to come from the existing gram tooling rather than being written afresh, and it will have to track the current gram grammar, which has gained support for scalar arrays inside property maps.
+Constructs that carry schema or pattern intent in the wider gram ecosystem are rejected for the same reason: double-colon labels and property slots (`::`), which the pattern-rs schema work uses to mark type slots; fat-arrow and other non-thin relationship arrows, which it reserves for schema and ontology intent; and annotations. Accepting them as ordinary labels, properties or arrows would erase that meaning.
+
+The parser is expected to come from the existing gram tooling rather than being written afresh. pattern-rs's `gram-codec` offers a hand-written parser whose value model lacks maps, measurements and hexadecimal and octal literals, and an optional parser built on tree-sitter-gram that returns source positions but pins an older grammar release and does not expose the arrow family. Which parser to use and what it needs to expose are left to an ADR.
 
 ### 5.2 Identity on load
 
@@ -102,7 +104,7 @@ The default behavior chooses among these in the order listed. Identifiers that a
 
 ### 5.4 The top-level record and the meta node
 
-A gram file may open with a record of properties describing the file as a whole. A property graph has no place for data about the graph itself, so the extension loads the record as a "meta node": a node of a reserved kind that is distinguishable from data nodes, holds the record's properties, and is written back as the top-level record on export. The reserved label, property layout and rules for excluding the meta node from ordinary queries are left to a later decision.
+A gram file may open with a record of properties describing the file as a whole. A property graph has no place for data about the graph itself, so the extension loads the record as a "meta node": a node of a reserved kind that is distinguishable from data nodes, holds the record's properties, and is written back as the top-level record on export. The reserved label, property layout and rules for excluding the meta node from ordinary queries are left to a later decision. In the pattern-rs ecosystem the record's `kind` property says what a file is (for example `{ kind: "schema" }`), so loading a file whose `kind` is not a data graph deserves its own handling (see 7.13).
 
 ### 5.5 Named graphs
 
@@ -157,7 +159,7 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 7.7. How are property values mapped between gram and Cypher, and how might later metadata extend that mapping? (Taken up in RFC-002.)
 
-7.8. Gram has `-->`, `<--`, `--` and bidirectional arrows, and relationships without a type. Cypher relationships are directed and typed. Which arrow forms are accepted, how are undirected and bidirectional forms handled, and is an untyped relationship an error?
+7.8. Gram has `-->`, `<--`, `--` and bidirectional arrows, other arrow families, and relationships without a type. Cypher relationships are directed and typed. Arrow families other than the thin arrow are rejected, since pattern-rs reserves them for schema intent (5.1). Still open: how undirected and bidirectional thin forms are handled, and whether an untyped relationship is an error.
 
 7.9. Is loading into a non-empty or persistent database in scope, or only into a fresh in-memory one? If it is in scope, what does a load merge with, and how is a loaded in-memory database persisted afterward?
 
@@ -165,7 +167,11 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 7.11. What does the first `relate` CLI integration look like (verbs, flags, defaults), and what does it need from Relate's extension mechanism?
 
-7.12. The gram grammar accepts a double-colon before a label. Is it accepted as an ordinary label, or rejected as outside the strict subset?
+7.12. _Resolved by the strict-subset rule (5.1)._ The double-colon before a label or after a property key is rejected, since the pattern-rs schema work uses it to mark type slots and accepting it as an ordinary colon would erase that meaning.
+
+7.13. How does the loader treat a file whose top-level record has a `kind` that does not describe a data graph (for example `schema`)? Loading it as data would produce a graph of schema archetypes with their constraint tags dropped. Is it an error, a warning, or accepted?
+
+7.14. pattern-rs has a canonical gram format (the `pato fmt` command). Should exports match it, or reuse the codec's serializer, so that an exported file is already formatted?
 
 ## 8. ADRs
 

@@ -93,7 +93,7 @@ The mapping applies equally to node properties, relationship properties and the 
 
 7.2. What is the canonical gram spelling for each Cypher type on export, including quoting and escaping of strings?
 
-7.3. Which of Cypher's non-basic types (temporal values, points, vectors, byte arrays) does Relate store as properties? What is the tag vocabulary for the well-known ones, and which textual conventions apply to each (for example, which ISO-8601 forms for temporal values, which WKT dialect for spatial ones)?
+7.3. Which of Cypher's non-basic types (temporal values, points, vectors, byte arrays) does Relate store as properties? What is the tag vocabulary for the well-known ones, and which textual conventions apply to each (for example, which ISO-8601 forms for temporal values, which WKT dialect for spatial ones)? The vocabulary should be coordinated with the tags pattern-rs's gram constraint dialect uses.
 
 7.4. What happens when a tagged string's tag names a well-known type but its content does not parse as that type: a load error, or a fallback to a plain string?
 
