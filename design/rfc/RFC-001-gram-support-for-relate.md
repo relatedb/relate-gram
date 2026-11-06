@@ -3,7 +3,7 @@ id: RFC-001
 title: Gram Graph Support for Relate
 status: review
 created: 2026-11-06
-adrs: [ADR-001, ADR-002]
+adrs: [ADR-001, ADR-002, ADR-003]
 ---
 
 # RFC-001: Gram Graph Support for Relate
@@ -143,7 +143,7 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 ## 7. Open Questions
 
-7.1. What is the meta node's format: its label, how its properties are stored, how it is kept apart from data nodes, and whether it can carry the file's named graph? (A candidate ADR.)
+7.1. _Partly resolved by ADR-003._ The meta node carries the reserved label `_GramMeta`, holds the record's properties as ordinary properties, is not hidden from queries, and is written back first on export. Still open: whether it carries the identity of a named graph, which the named-graph decision settles.
 
 7.2. What is the format of an `@id` value, and how is a named graph named and written in gram? Is naming a graph a single prefix on an identifier, a separate property on each element, or something else?
 
@@ -171,3 +171,4 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 - [ADR-001](../adr/ADR-001-load-identity-and-merge.md): Load Identity and Merge Semantics
 - [ADR-002](../adr/ADR-002-export-identity.md): Export Identity
+- [ADR-003](../adr/ADR-003-meta-node.md): Meta Node for the Top-Level Record

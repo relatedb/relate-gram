@@ -64,5 +64,5 @@ Use `/rfc-review` before moving a draft to `review`/`accepted`.
 
 | RFC | Title | Status | ADRs |
 |---|---|---|---|
-| [RFC-001](RFC-001-gram-support-for-relate.md) | Gram Graph Support for Relate | review | ADR-001, ADR-002 |
+| [RFC-001](RFC-001-gram-support-for-relate.md) | Gram Graph Support for Relate | review | ADR-001, ADR-002, ADR-003 |
 | [RFC-002](RFC-002-property-value-mapping.md) | Property Value Mapping Between Gram and Cypher | review | |
