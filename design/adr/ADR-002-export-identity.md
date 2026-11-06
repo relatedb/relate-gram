@@ -20,7 +20,7 @@ An exported file also has to load back correctly. A reload treats all identifier
 
 The identifier syntax constrains what can be written. In the tree-sitter grammar for gram, an identifier is a symbol (a letter or underscore followed by letters, digits, `_`, `.`, `-` or `@`), an integer (`-?(0|[1-9][0-9]*)`), or a backtick-quoted name whose text may contain any character except an unescaped backtick, backslash or newline. A plain symbol cannot start with `@`.
 
-The parent RFC (RFC-001) sets the direction: export takes an identifier from a namespaced `@id` value, a unique property value, or a generated sequence, in that order, and fails when a configured property is missing or not unique. It leaves the naming scheme for generated identifiers to a decision. This ADR fixes that scheme, the configuration, the ordering and the quoting. The `@id` step depends on namespaces, which are a later decision (RFC-001 question 7.2).
+The parent RFC (RFC-001) sets the direction: export takes an identifier from a namespaced `@id` value (an identity stored on an element when one database holds several named graphs), a unique property value, or a generated sequence, in that order, and fails when a configured property is missing or not unique. It leaves the naming scheme for generated identifiers to a decision. The scheme, the configuration, the ordering and the quoting are fixed below. The `@id` step depends on namespaces, which are a later decision (RFC-001 question 7.2).
 
 ## 2. Decision
 
@@ -31,12 +31,14 @@ Export has three identity modes, selected by an `identity` setting. The default 
 | Mode | Identifier of an element |
 |---|---|
 | `generate` | Always generated (2.3). |
-| `property` | The value of a configured property when its kind has one (2.2), otherwise generated. `@id` values are ignored. |
+| `property` | The value of a configured property when its kind has one (2.2), otherwise generated. `@id` values are ignored. A kind with no setting is generated as a whole; a kind with a setting is never mixed. |
 | `auto` | The element's `@id` value if it has one, otherwise as in `property`. |
 
 Two optional settings name the property to use: `node-id-property` and `relationship-id-property`. Each applies to one kind of element. In `property` mode at least one of them MUST be set, or the export fails with a configuration error.
 
-Until namespaces exist, no element has an `@id` value (ADR-001 reserves the key), so `auto` behaves as `property` when a property is configured and as `generate` when none is.
+`property` exists so that an export can ignore `@id` values and produce the same output as before namespaces were in use.
+
+Until namespaces exist, no element has an `@id` value (ADR-001 rejects keys starting with `@` on load), so `auto` behaves as `property` when a property is configured and as `generate` when none is.
 
 ### 2.2 Identifiers from a property
 
@@ -46,7 +48,7 @@ For each kind with a configured property, every element of that kind MUST have a
 - **unusable**: the value is not a string or an integer, or is an empty string;
 - **duplicate**: the value's text equals another element's identifier.
 
-The text of an identifier is the string itself, or the decimal form of an integer. Equality is by text, as in ADR-001, so the integer `42` and the string `"42"` are the same identifier. Uniqueness is checked across nodes and relationships together, since they share one identifier space on reload. There is no per-element fallback to a generated identifier. The property stays in the exported record, so a reload still has it as an ordinary property.
+The text of an identifier is the string itself, or the decimal form of an integer. Equality is by text, as in ADR-001, so the integer `42` and the string `"42"` are the same identifier. Uniqueness is checked across nodes and relationships together, since they share one identifier space on reload. The RFC speaks of uniqueness within a kind; the check here spans both. There is no per-element fallback to a generated identifier. The property stays in the exported record, so a reload still has it as an ordinary property.
 
 ### 2.3 Generated identifiers
 
@@ -60,7 +62,7 @@ For a database built by loading a gram file, internal identity follows creation 
 
 ### 2.5 Layout
 
-Every element has an identifier. The file consists of the top-level record, if any, then every node on its own line, then every relationship on its own line, with a blank line between sections:
+Every element is given an identifier, a refinement of the RFC's "referenced more than once" (see 3.6). The file consists of the top-level record (the properties record that may open a gram file), if any, then every node on its own line, then every relationship on its own line, with a blank line between sections:
 
 ```
 (n0:Person {name: "Ada"})
@@ -73,7 +75,7 @@ Nodes are written with their full record. Relationships refer to their endpoints
 
 ### 2.6 Writing an identifier
 
-An identifier's text is written as a bare integer if it matches `-?(0|[1-9][0-9]*)`, as a bare symbol if it matches `[A-Za-z_][0-9A-Za-z_.@-]*`, and otherwise as a backtick-quoted name. Inside a quoted name, a backtick is written `` \` ``, a backslash `\\`, a newline `\n`, a carriage return `\r` and a tab `\t`. Text that starts with `@` is quoted, since a plain symbol cannot start with it.
+An identifier's text is written as a bare integer if it matches `-?(0|[1-9][0-9]*)`, as a bare symbol if it matches `[A-Za-z_][0-9A-Za-z_.@-]*`, and otherwise as a backtick-quoted name. Inside a quoted name, a backtick is written `` \` ``, a backslash `\\`, a newline `\n`, a carriage return `\r` and a tab `\t`. Text that starts with `@` is quoted, since a plain symbol cannot start with it, and so is text equal to `true` or `false`. Other control characters are written raw.
 
 ### 2.7 Failure behavior
 
@@ -99,15 +101,17 @@ An export is all-or-nothing: every identity error is detected before the first b
 
 3.9. **One identifier setting for both nodes and relationships.** Rejected: relationships rarely carry a property that suits as an identifier, so a single setting would make every such export fail.
 
+3.10. **Stream output and report errors midway.** Rejected: an error after output has started leaves a truncated file that may still parse as valid gram, so a reader cannot tell it from a complete export.
+
 ## 4. Consequences
 
 - Generated identifiers are not stable under edits: deleting or inserting an element shifts the numbers after it, and a diff of two exports of an edited database can show many changed lines. Property-based identifiers do not have this effect.
 - Two databases holding the same graph, built in different orders, can export in different orders. Exports are reproducible for a given database, not canonical across databases.
-- The ordering rule assumes Relate exposes elements in a stable, ascending order of internal identity. This has to be confirmed against Relate's public interface before implementation. If it does not, a fallback ordering is needed, and this ADR should be revised.
+- The ordering rule assumes Relate exposes elements in a stable, ascending order of internal identity. This has to be confirmed against Relate's public interface before implementation. If it does not, a fallback ordering is needed, and the ordering rule is revised.
 - A file that was loaded and then exported does not keep its original identifiers, since they were dropped on load. A user who needs them must have them stored as a property and use `property` mode.
 - Every element gets an identifier, so exports are larger than the minimum.
 - Reporting every offending element before writing requires a pass over the graph before the first byte is written.
-- The `@id` step in `auto` mode does nothing until namespaces are decided (RFC-001 question 7.2); at that point this ADR is extended, not replaced.
+- The `@id` step in `auto` mode does nothing until namespaces are decided (RFC-001 question 7.2); namespaces extend this decision and do not replace it.
 - Follow-on decisions: the spelling of values on export (RFC-002), the meta node and top-level record format, and the library settings and CLI flags for `identity`, `node-id-property` and `relationship-id-property`, specified with the CLI integration.
 
 ## 5. Related
