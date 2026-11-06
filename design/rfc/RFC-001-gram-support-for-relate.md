@@ -49,13 +49,15 @@ A gram file is a single artifact that holds nodes, relationships and their prope
 
 3.7. Load multiple graphs in managed fashion, each into its own namespace, and merge graphs loaded into the same namespace.
 
-3.8. Integrate minimally with the `relate` command-line tool at first, and leave room for deeper CLI integration, identity-aware language bindings and graph-shaped client result structures.
+3.8. Map property values between gram and Cypher by a documented rule. The first phase preserves only Cypher's own types. A later, advanced mapping may record metadata about properties, so that information gram can express but Cypher cannot store (for example, that a string is markdown) survives a round trip.
+
+3.9. Integrate minimally with the `relate` command-line tool at first, and leave room for deeper CLI integration, identity-aware language bindings and graph-shaped client result structures.
 
 ## 4. Non-Goals
 
 4.1. Gram annotations and pattern notation (subject patterns, nested and recursive structure). Neither has a counterpart in Cypher's data model.
 
-4.2. Gram values that Cypher cannot store: nested maps and values with no Cypher type, such as tagged strings, ranges and measurements.
+4.2. In the first phase, gram values that Cypher cannot store: nested maps and values with no Cypher type, such as tagged strings, ranges and measurements. Retaining them through metadata is a later direction.
 
 4.3. Gram as a durable storage format for Relate. The extension is an import and export format on top of the engine's own storage.
 
@@ -70,6 +72,8 @@ A gram file is a single artifact that holds nodes, relationships and their prope
 ### 5.1 A strict subset defined by Cypher
 
 The boundary of what is supported is set by one rule: a gram construct is accepted if and only if it maps directly onto Cypher's property graph model. Nodes carry zero or more labels and a property map. A relationship connects two nodes, carries exactly one type and a property map, and has a direction. A path is shorthand for a chain of nodes and relationships. Property values are limited to what Cypher can store: strings, integers, floats, booleans and homogeneous lists of those scalars.
+
+The detailed mapping between gram values and Cypher values is its own topic, taken up in RFC-002. Its first phase preserves Cypher types only; a later phase may record per-property metadata, for instance on the meta node, so that a property known to hold markdown can be written back as a tagged string.
 
 Anything outside this rule is a load error, reported with its position in the file. Silently dropping or approximating a construct would make a loaded database differ from its source without notice.
 
@@ -146,7 +150,7 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 7.5. How does a path that reuses an identifier on one of its inner nodes interact with the rule that the first appearance fixes an identifier as a node or relationship?
 
-7.6. What is the exact subset of property values to support, and how are lists, numeric widths and string escaping mapped between gram and Cypher?
+7.6. How are property values mapped between gram and Cypher, and how might later metadata extend that mapping? (Taken up in RFC-002.)
 
 7.7. How much of a gram file's text survives a load and export, beyond its graph? Do comments, element ordering and layout matter?
 
@@ -154,7 +158,7 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 7.9. What does the minimal `relate` CLI integration look like (verbs, flags, defaults), and what does it need from Relate's extension mechanism?
 
-7.10. What are the follow-on RFCs? Candidates are identity and namespaces, the meta node, CLI integration, and language bindings with client-side result structures.
+7.10. What are the remaining follow-on RFCs? Candidates are identity and namespaces, the meta node, CLI integration, and language bindings with client-side result structures. Value mapping is RFC-002.
 
 ## 8. ADRs
 
