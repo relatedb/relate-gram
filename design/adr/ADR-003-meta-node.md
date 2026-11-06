@@ -1,7 +1,7 @@
 ---
 id: ADR-003
 title: Meta Nodes and the Meta Graph
-status: proposed
+status: accepted
 rfcs: [RFC-001]
 created: 2026-11-06
 ---
