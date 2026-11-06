@@ -66,11 +66,12 @@ Meta nodes are the members of one reserved named graph, called `@@`. The name fa
 A named graph has exactly one meta node, written:
 
 ```
-(:Graph {@id: "roster", revision: 4})
+(:Graph {@id: "roster", @hash: "sha256:9f2c…", revision: 4})
 ```
 
 - The label is `Graph`.
 - `@id` holds the graph's name.
+- `@hash` holds the SHA-256 digest of the file the graph was loaded from (2.4), written `sha256:` followed by 64 lowercase hexadecimal digits.
 - The record's other properties are stored as ordinary properties, under the value mapping of RFC-002. `name` is not stored separately, since `@id` holds it, and `kind` is dropped (2.1). Record keys starting with `@` remain load errors (ADR-001).
 - The meta node has no relationships.
 
@@ -78,9 +79,16 @@ Until the named-graph decision defines how an element is recorded as a member of
 
 A file that has a graph name creates a meta node even when it has no record, so that the graph is named in the database.
 
-### 2.4 Duplicate graph names
+### 2.4 Repeated loads of a named graph
 
-If the database already holds a meta node with the same `@id`, a load that resolves the same name fails with an error that names the graph. A load never merges into an existing graph in this phase. The named-graph decision defines loading into an existing graph.
+A load computes the SHA-256 digest of the file's raw bytes, exactly as read, before any decoding or parsing. It stores the digest in the meta node's `@hash`. The same digest is computed for input read from standard input.
+
+When a load resolves a name for which the database already holds a meta node with that `@id`, the digests are compared:
+
+- **Equal:** the file is unchanged. The load writes nothing, succeeds, and reports that the graph is already loaded.
+- **Different, or the stored meta node has no `@hash`:** the file has changed. Merging the new version into the existing graph is the intended behavior, and it needs the elements of the existing graph to be matched by identity, which they do not carry yet (see below). Until the named-graph decision supplies that, such a load fails with an error that names the graph and both digests.
+
+A gram identifier is dropped after a load (ADR-001), so nothing in the database says which existing element a repeated one corresponds to. Matching needs each element to keep its identity in `@id` and to record the graph it belongs to, which is the named-graph decision (RFC-001 question 7.2). That decision also defines how elements without an identifier are treated on a merge, since they never merge (ADR-001).
 
 ### 2.5 Visibility in queries
 
@@ -88,7 +96,7 @@ Meta nodes appear in every query that scans nodes, in counts and in exports by C
 
 ### 2.6 Export
 
-The exporter reads meta nodes separately from data nodes. A meta node is not a data element: it is not written as a node line, takes no gram identifier, and is not subject to the checks that ADR-002 applies to `@` keys on data elements.
+The exporter reads meta nodes separately from data nodes. A meta node is not a data element: it is not written as a node line, takes no gram identifier, and is not subject to the checks that ADR-002 applies to `@` keys on data elements. The record is built from `@id` (as `name`) and the ordinary properties; `@hash` describes the source file, not the graph, and is not written.
 
 - No meta node: no top-level record is written.
 - One meta node: it is written first in the file as the top-level record, followed by a blank line.
@@ -122,7 +130,11 @@ The record always includes `name`, so an exported file names its graph whatever 
 
 3.7. **One meta node per database, merged across loads.** Rejected: a second load would mix or overwrite the first record's properties. One meta node per graph keeps each graph's information apart.
 
-3.8. **Merge a load into an existing graph of the same name.** Rejected for this phase: it needs the membership model of named graphs. The error is the safe interim behavior.
+3.8. **Merge a changed file into the existing graph now.** Deferred, not rejected: it is the intended behavior, but identifiers are dropped on load, so existing elements cannot be matched to the new file's elements. Merging by name alone would duplicate every element.
+
+3.13. **Fail on any repeated graph name, without a digest.** Rejected: an unchanged file would fail on reload, where a digest comparison makes it a harmless no-op.
+
+3.14. **Hash the normalized content of the parsed graph.** Rejected: it needs a canonical form that does not depend on element identifiers, which the export does not guarantee (ADR-002). Raw bytes are exact and cheap, and a reformatted file is treated as changed.
 
 3.9. **Require every graph to be named.** Rejected: loading a small fixture from standard input with no name would then fail for no benefit.
 
@@ -136,7 +148,8 @@ The record always includes `name`, so an exported file names its graph whatever 
 
 - The meta node is visible in `MATCH (n)` queries and counts. Users and tools exclude it by its `@id` and `Graph` label until named graphs give a membership filter; this has to be documented.
 - The interim recognition rule must be replaced when named graphs exist. Once data elements also carry `@id`, a data node labelled `Graph` would match it.
-- Loading the same named file twice into one database now fails at the second load. This amends the consequence recorded in ADR-001, which expected the second load to duplicate every element. Unnamed loads still duplicate.
+- Loading the same named file twice is a no-op, and a changed file fails until named graphs allow a merge. This amends the consequence recorded in ADR-001, which expected the second load to duplicate every element. Unnamed loads still duplicate.
+- A reformatted or re-commented file has a different digest and counts as changed.
 - A database loaded from several differently named files holds several meta nodes and cannot be exported as one file until elements record the graph they belong to.
 - A graph name with a dot can only come from the record or the caller. A file `roster.v2.gram` is read as graph `roster`, kind `v2`, and fails.
 - Exports always write `name` and never `kind`, so a file that omitted `name` gains it on a round trip. A file that carried `kind: "property-graph"` loses it.
