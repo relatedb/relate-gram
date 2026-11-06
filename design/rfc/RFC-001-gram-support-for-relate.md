@@ -106,7 +106,7 @@ A gram file may open with a record of properties describing the file as a whole.
 
 ### 5.5 Named graphs
 
-A single Relate database can hold several graphs, each a named graph. (Relate itself has three fixed built-in namespaces: the user data graph, the system database and the ontology graph. Named graphs are unrelated to these and live inside the user data graph.) An element's identity within its named graph is stored in a reserved `@id` property. On export, that value becomes the element's gram identifier, so identity survives the round trip: a graph exported from one database and loaded into another as the same named graph lines up with what is already there.
+A single Relate database can hold several graphs, each one a named graph. (Relate itself has three fixed built-in namespaces: the user data graph, the system database and the ontology graph. Named graphs are unrelated to these and live inside the user data graph.) An element's identity within its named graph is stored in a reserved `@id` property. On export, that value becomes the element's gram identifier, so identity survives the round trip: a graph exported from one database and loaded into another as the same named graph lines up with what is already there.
 
 Two operations build on this:
 
