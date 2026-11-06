@@ -57,7 +57,7 @@ A gram file is a single artifact that holds nodes, relationships and their prope
 
 4.1. Gram annotations and pattern notation (subject patterns, nested and recursive structure). Neither has a counterpart in Cypher's data model.
 
-4.2. In the first phase, gram values that Cypher cannot store: nested maps and values with no Cypher type, such as tagged strings, ranges and measurements. Retaining them through metadata is a later direction.
+4.2. In the first phase, gram values that Cypher cannot store: nested maps and values with no Cypher type, such as ranges and measurements. Retaining them through metadata is a later direction.
 
 4.3. Gram as a durable storage format for Relate. The extension is an import and export format on top of the engine's own storage.
 
