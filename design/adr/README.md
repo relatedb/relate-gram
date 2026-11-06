@@ -58,4 +58,4 @@ Use `/adr-review` before moving a draft to `accepted`.
 
 | ADR | Title | Status | RFCs |
 |---|---|---|---|
-| [ADR-001](ADR-001-load-identity-and-merge.md) | Load Identity and Merge Semantics | proposed | RFC-001 |
+| [ADR-001](ADR-001-load-identity-and-merge.md) | Load Identity and Merge Semantics | accepted | RFC-001 |

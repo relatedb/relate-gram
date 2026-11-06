@@ -1,7 +1,7 @@
 ---
 id: ADR-001
 title: Load Identity and Merge Semantics
-status: proposed
+status: accepted
 rfcs: [RFC-001]
 created: 2026-11-06
 ---
@@ -105,7 +105,6 @@ Elements are created in order of first appearance, and merges are applied in fil
 - Atomic load requires the loader to hold the resolved graph before writing it, so very large files need that much memory.
 - Under `first` and `last` the loader reports every discarded value, so a load can emit many warnings.
 - The `on-conflict` option needs a library setting and a CLI flag, specified with the CLI integration.
-- RFC-001 should be updated to mark questions 7.3, 7.4 and 7.6 resolved and 7.5 partly resolved.
 - Follow-on decisions: the export identity scheme, the meta node format (which also needs the top-level record's own rules for `@` keys), and the `@id` format.
 
 ## 5. Related

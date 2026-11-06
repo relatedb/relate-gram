@@ -147,13 +147,13 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 7.2. What is the format of an `@id` value, and how is a namespace named and written in gram? Is namespacing a single prefix on an identifier, a separate property on each element, or something else?
 
-7.3. What are the default merge rules when an element appears more than once, whether within one file or across files in the same namespace? In particular, what happens to conflicting property values, and to labels that differ between appearances?
+7.3. _Resolved by ADR-001 (§2.3)._ Repeated appearances merge: labels union, properties union by key, and differing values are an error unless `on-conflict` selects `first` or `last`.
 
-7.4. What happens to relationships when a merge touches their endpoints? Is a relationship's identity independent of its endpoints?
+7.4. _Resolved by ADR-001 (§2.4)._ A relationship with an identifier keeps its type and endpoints from its first appearance, and a repeat must match them.
 
-7.5. Elements without an identifier never merge (5.2). Is that the right default for relationships in particular, given that a user may expect `(a)-[:R]->(b)` written twice to mean one relationship? Is an opt-in merge key needed?
+7.5. _Partly resolved by ADR-001 (§2.5)._ Elements without an identifier never merge. Still open: is an opt-in merge key needed, so that `(a)-[:R]->(b)` written twice can mean one relationship?
 
-7.6. How does a path that reuses an identifier on one of its inner nodes interact with the rule that the first appearance fixes an identifier as a node or relationship?
+7.6. _Resolved by ADR-001 (§2.6)._ Each element of a path is an ordinary appearance, and a reused inner identifier names the same node.
 
 7.7. How are property values mapped between gram and Cypher, and how might later metadata extend that mapping? (Taken up in RFC-002.)
 
