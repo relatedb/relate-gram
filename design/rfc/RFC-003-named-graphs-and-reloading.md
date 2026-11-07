@@ -49,7 +49,7 @@ Neither lets the user do the one thing they wanted, which is to update the datab
 
 3.5. Give files that carry no identifiers, and graphs that need another key, a way to be matched without guessing.
 
-3.6. Give a load that names no graph a default graph, so that every load keeps element identifiers and a reload behaves the same whether or not a name was given.
+3.6. Give a load that names no graph a catch-all graph, so that every load keeps element identifiers and a reload behaves the same whether or not a name was given.
 
 3.7. Round-trip a named graph through gram, so that an export of a named graph reloads into the same graph without changes.
 
@@ -125,13 +125,13 @@ Exporting a named graph writes each element's `@id` as its gram identifier and i
 
 ### 5.6 Consequences for rules already made
 
-Two existing rules assume identifiers are dropped. The project constitution says identifiers "are not stored", and ADR-001 rejects every property key starting with `@` in a file. The direction here replaces it: every load stores the identifier, because a load that names no graph goes into the default graph (5.7). The keys are still written only by the loader and never read from file content. The constitution has to be amended through an ADR. ADR-001 has been amended so that an element is defined at one site, which removes its conflict option, and its statement that a load never matches existing elements has to be updated again when this direction is decided.
+Two existing rules assume identifiers are dropped. The project constitution says identifiers "are not stored", and ADR-001 rejects every property key starting with `@` in a file. The direction here replaces it: every load stores the identifier, because a load that names no graph goes into the catch-all graph (5.7). The keys are still written only by the loader and never read from file content. The constitution has to be amended through an ADR. ADR-001 has been amended so that an element is defined at one site, which removes its conflict option, and its statement that a load never matches existing elements has to be updated again when this direction is decided.
 
 ### 5.7 Naming a graph
 
 Identity within a graph only helps a reload if the same graph name arrives each time. The scope is best declared by the author in the file, so that it does not depend on where the file is stored: a name taken from a file path is lost when the file is moved or renamed, and the reload silently creates a new graph. The name resolution already in place (the caller's name, then the record's, then the file name) keeps the file name as a last resort, and the summary says which source was used.
 
-A load that resolves no name, such as input from standard input with no record, goes into a default graph with the reserved name `@default`, so it keeps identity like any other. Repeated nameless loads therefore merge by identifier into that graph, as loading two files with overlapping keys into one table would, and the summary reports every element updated. `load` refuses to create a graph that already exists, which also guards against file names that collide (7.13).
+A load that resolves no name, such as input from standard input with no record, goes into a catch-all graph with the reserved name `@_`, the underscore that elsewhere means "no choice made", so it keeps identity like any other. Repeated nameless loads therefore merge by identifier into that graph, as loading two files with overlapping keys into one table would, and the summary reports every element updated. `load` refuses to create a graph that already exists, which also guards against file names that collide (7.13).
 
 pattern-hs proposes declaring a graph's scope with the reserved record key `namespace`, in a registry shared with `kind` and `variant`, and writing authority-qualified scopes with a leading `@` (`@org/sub`). The key, the handling of names that begin with `@`, and the fate of the file-name fallback are open (7.12 to 7.14).
 
@@ -169,7 +169,7 @@ Until identity is stored, a changed file for an existing graph is an error that 
 
 6.14. **One verb whose behavior depends on flags.** Rejected: the effect hides behind defaults the user has to look up. Separate verbs state it, and a `load` that errors on an existing graph prevents silent collisions.
 
-6.15. **Require a name for every load, or derive one from the content digest, when none is given.** Rejected: requiring a name turns the quickest use, loading from standard input, into an error. A digest-derived name never merges unrelated loads but is unfriendly and leaves an edited nameless file with no way to be reloaded as an update. A default graph follows the same one-graph-per-name rule as every other load, and the summary makes any merge visible.
+6.15. **Require a name for every load, or derive one from the content digest, when none is given.** Rejected: requiring a name turns the quickest use, loading from standard input, into an error. A digest-derived name never merges unrelated loads but is unfriendly and leaves an edited nameless file with no way to be reloaded as an update. A catch-all graph follows the same one-graph-per-name rule as every other load, and the summary makes any merge visible.
 
 ## 7. Open Questions
 
@@ -199,7 +199,7 @@ Until identity is stored, a changed file for an existing graph is an error that 
 
 7.13. Does the file-name fallback stay as a last resort, given that moving or renaming a file silently creates a new graph?
 
-7.14. Can a graph name start with `@`, as authority-qualified scopes do (`@org/sub`), given that the default graph is named `@default`? ADR-003 §2.3 reserves `@@` by saying the `@` prefix is reserved, which assumes no user graph name begins with it; the reservation would be narrowed to `@@`.
+7.14. Can a graph name start with `@`, as authority-qualified scopes do (`@org/sub`), given that the catch-all graph is named `@_`. The reservation would then cover exactly `@@` and `@_`, instead of every name that starts with `@`? ADR-003 §2.3 reserves `@@` by saying the `@` prefix is reserved, which assumes no user graph name begins with it; the reservation would be narrowed to `@@`.
 
 7.15. Should a graph keep a count of generated identifiers that is never reused, so that exports of a named graph keep stable identifiers across edits and deletions, and where is that count stored? How does a reload of an exported file whose identifiers were generated behave?
 
