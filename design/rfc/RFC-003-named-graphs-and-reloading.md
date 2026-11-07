@@ -49,7 +49,7 @@ Neither lets the user do the one thing they wanted, which is to update the datab
 
 3.5. Give files that carry no identifiers, and graphs that need another key, a way to be matched without guessing.
 
-3.6. Keep loads that name no graph as they are today: identifiers resolve references and are dropped.
+3.6. Give a load that names no graph a default graph, so that every load keeps element identifiers and a reload behaves the same whether or not a name was given.
 
 3.7. Round-trip a named graph through gram, so that an export of a named graph reloads into the same graph without changes.
 
@@ -100,13 +100,15 @@ Elements the file writes without an identifier cannot be matched by identity. Tw
 
 The reload reports these cases and suggests giving the element an identifier. Generating identifiers for anonymous elements instead is weighed in 6.12.
 
-### 5.3 What a reload never does by default
+### 5.3 Operations
 
-A reload is additive. An element that is in the graph but no longer in the file stays, and the summary counts it. The summary also lists, for every element the file wrote, what it matched or created, so the user can see how each local identifier resolved. Three options change this, each explicit:
+The effect of a load is chosen by the operation the user runs, so it is stated where it is typed. The spellings are settled with the CLI integration (RFC-001 question 7.11); the direction is:
 
-- A preview mode applies nothing and prints the summary.
-- A prune option removes elements that the graph holds as members and that the file no longer names. Because membership records provenance, pruning cannot touch data created in the database by other means.
-- A replace option makes the graph exactly the file, for test fixtures and similar uses where the file is the whole truth.
+- **`merge`** upserts. Elements the file defines are created or updated, and the graph is created if it does not exist. It is additive: an element that is in the graph but no longer in the file stays, and the summary counts it. The summary also lists, for every element the file wrote, what it matched or created, so the user can see how each local identifier resolved. Cypher's `MERGE` matches on the content of a pattern; this operation matches on the stored identifier.
+- **`load`** creates a graph. If a graph of that name already exists, it stops with an error that says to use `merge` to update it or `replace` to overwrite it. A file whose digest matches the stored one is reported as already loaded. In a fresh database `load` and `merge` give the same result.
+- **`replace`** makes the graph exactly the file, for test fixtures and similar uses where the file is the whole truth.
+
+Two options apply to these operations. A preview option applies nothing and prints the summary. A prune option on `merge` removes elements that the graph holds as members and that the file no longer names. Because membership records provenance, pruning cannot touch data created in the database by other means.
 
 ### 5.4 Other match keys
 
@@ -123,11 +125,13 @@ Exporting a named graph writes each element's `@id` as its gram identifier and i
 
 ### 5.6 Consequences for rules already made
 
-Two existing rules assume identifiers are dropped. The project constitution says identifiers "are not stored", and ADR-001 rejects every property key starting with `@` in a file. The direction here keeps the rule for loads that name no graph and replaces it for those that do: storing the identifier is what naming a graph means. The keys are still written only by the loader and never read from file content. The constitution has to be amended through an ADR. ADR-001 has been amended so that an element is defined at one site, which removes its conflict option, and its statement that a load never matches existing elements has to be updated again when this direction is decided.
+Two existing rules assume identifiers are dropped. The project constitution says identifiers "are not stored", and ADR-001 rejects every property key starting with `@` in a file. The direction here replaces it: every load stores the identifier, because a load that names no graph goes into the default graph (5.7). The keys are still written only by the loader and never read from file content. The constitution has to be amended through an ADR. ADR-001 has been amended so that an element is defined at one site, which removes its conflict option, and its statement that a load never matches existing elements has to be updated again when this direction is decided.
 
 ### 5.7 Naming a graph
 
 Identity within a graph only helps a reload if the same graph name arrives each time. The scope is best declared by the author in the file, so that it does not depend on where the file is stored: a name taken from a file path is lost when the file is moved or renamed, and the reload silently creates a new graph. The name resolution already in place (the caller's name, then the record's, then the file name) keeps the file name as a last resort, and the summary says which source was used.
+
+A load that resolves no name, such as input from standard input with no record, goes into a default graph with the reserved name `@default`, so it keeps identity like any other. Repeated nameless loads therefore merge by identifier into that graph, as loading two files with overlapping keys into one table would, and the summary reports every element updated. `load` refuses to create a graph that already exists, which also guards against file names that collide (7.13).
 
 pattern-hs proposes declaring a graph's scope with the reserved record key `namespace`, in a registry shared with `kind` and `variant`, and writing authority-qualified scopes with a leading `@` (`@org/sub`). The key, the handling of names that begin with `@`, and the fate of the file-name fallback are open (7.12 to 7.14).
 
@@ -163,6 +167,10 @@ Until identity is stored, a changed file for an existing graph is an error that 
 
 6.13. **Merge definitions across sites and across loads, with conflict errors (the earlier form of ADR-001 and RFC-001 §5.5).** Rejected: the most common use of a reload, changing a value and loading again, would fail by default, and an element's content could be spread across several places in the file.
 
+6.14. **One verb whose behavior depends on flags.** Rejected: the effect hides behind defaults the user has to look up. Separate verbs state it, and a `load` that errors on an existing graph prevents silent collisions.
+
+6.15. **Require a name for every load, or derive one from the content digest, when none is given.** Rejected: requiring a name turns the quickest use, loading from standard input, into an error. A digest-derived name never merges unrelated loads but is unfriendly and leaves an edited nameless file with no way to be reloaded as an update. A default graph follows the same one-graph-per-name rule as every other load, and the summary makes any merge visible.
+
 ## 7. Open Questions
 
 7.1. Is membership a property on each element, as proposed, or something else, such as a label, a relationship to the meta node, or a combined `@id` value that embeds the graph name, with an empty identifier for anonymous elements? A separate property keeps a missing identifier distinct from membership and fits a composite constraint, which Relate documents as ignoring tuples with a missing component (not yet tested). A combined value needs one property but gives up a single-property uniqueness constraint and makes `@id` mean two things. The choice affects query ergonomics, index use and export.
@@ -179,7 +187,7 @@ Until identity is stored, a changed file for an existing graph is an error that 
 
 7.7. How are renamed identifiers handled? Is a rename always a remove and an add, or can the user declare one?
 
-7.8. How does a user name the graph when loading, and what does the command line look like for load, preview, prune and replace? (Specified with the CLI integration, RFC-001 question 7.11.)
+7.8. How does a user name the graph when loading, and what does the command line look like for `load`, `merge`, `replace`, preview and prune? (Specified with the CLI integration, RFC-001 question 7.11.)
 
 7.9. Can a loaded graph be listed, exported alone, or removed as a unit, and what interface offers that when Cypher is the only enumeration Relate's public library has?
 
@@ -191,7 +199,7 @@ Until identity is stored, a changed file for an existing graph is an error that 
 
 7.13. Does the file-name fallback stay as a last resort, given that moving or renaming a file silently creates a new graph?
 
-7.14. Can a graph name start with `@`, as authority-qualified scopes do (`@org/sub`)? ADR-003 §2.3 reserves `@@` by saying the `@` prefix is reserved, which assumes no user graph name begins with it; the reservation would be narrowed to `@@`.
+7.14. Can a graph name start with `@`, as authority-qualified scopes do (`@org/sub`), given that the default graph is named `@default`? ADR-003 §2.3 reserves `@@` by saying the `@` prefix is reserved, which assumes no user graph name begins with it; the reservation would be narrowed to `@@`.
 
 7.15. Should a graph keep a count of generated identifiers that is never reused, so that exports of a named graph keep stable identifiers across edits and deletions, and where is that count stored? How does a reload of an exported file whose identifiers were generated behave?
 
