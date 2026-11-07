@@ -199,7 +199,7 @@ Until identity is stored, a changed file for an existing graph is an error that 
 
 7.13. Does the file-name fallback stay as a last resort, given that moving or renaming a file silently creates a new graph?
 
-7.14. Can a graph name start with `@`, as authority-qualified scopes do (`@org/sub`), given that the catch-all graph is named `@_`. The reservation would then cover exactly `@@` and `@_`, instead of every name that starts with `@`? ADR-003 §2.3 reserves `@@` by saying the `@` prefix is reserved, which assumes no user graph name begins with it; the reservation would be narrowed to `@@`.
+7.14. Can a graph name start with `@`, as authority-qualified scopes do (`@org/sub`)? ADR-003 §2.3 reserves `@@` by saying the `@` prefix is reserved, which assumes no user graph name begins with it. The catch-all graph is named `@_`, so the reservation would be narrowed to exactly `@@` and `@_`.
 
 7.15. Should a graph keep a count of generated identifiers that is never reused, so that exports of a named graph keep stable identifiers across edits and deletions, and where is that count stored? How does a reload of an exported file whose identifiers were generated behave?
 
