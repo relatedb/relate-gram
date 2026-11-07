@@ -77,7 +77,7 @@ Prior art for these directions is collected in `design/notes/2026-11-06-identity
 
 A load that has a graph name keeps what an unnamed load drops. Each element it creates carries two reserved properties: its gram identifier (the `@id` value) and the name of the graph it belongs to. A candidate for the second is a `@graph` property, so that membership is a plain, queryable property like the rest, with no new element types or relationships.
 
-Identity is the pair of graph and identifier. The same identifier in two graphs is two elements, which is what lets one database hold several revisions of a dataset. The pair is kept as two components, not one concatenated string: a graph name can be authority-qualified (for example `@org/census`), containing characters that a plain gram identifier cannot, and the pair has the shape of a composite uniqueness constraint. A single value with the graph name as a prefix remains a candidate (7.1), with anonymous elements marked by an empty identifier. The meta node, which already represents the graph itself, becomes a member of the reserved graph `@@` by the same mechanism, replacing the interim rule of recognizing it by its label.
+Identity is the pair of graph and identifier. The same identifier in two graphs is two elements, which is what lets one database hold several revisions of a dataset. The pair is kept as two components, not one concatenated string: a graph name can be authority-qualified (for example `@org/census`), containing characters that a plain gram identifier cannot, and the pair has the shape of a composite uniqueness constraint. A single value with the graph name as a prefix remains a candidate (7.1). The meta node, which already represents the graph itself, becomes a member of the reserved graph `@@` by the same mechanism, replacing the interim rule of recognizing it by its label.
 
 Loads that give no graph name behave as before. Nothing is stored and a second such load duplicates, as the first load rule intends.
 
@@ -135,7 +135,15 @@ A load that resolves no name, such as input from standard input with no record, 
 
 pattern-hs proposes declaring a graph's scope with the reserved record key `namespace`, in a registry shared with `kind` and `variant`, and writing authority-qualified scopes with a leading `@` (`@org/sub`). The key, the handling of names that begin with `@`, and the fate of the file-name fallback are open (7.12 to 7.14).
 
-### 5.8 Phasing
+### 5.8 Generated identifiers
+
+An element the file writes without an identifier is given one when it is first stored, so every element has identity. A generated identifier is `_n` (a node) or `_r` (a relationship) followed by 12 characters of lowercase base 32, using the digits and the letters except `i`, `l`, `o` and `u`: 60 bits, about 10^18 values per kind. It is derived from a hash of the graph name, the kind and the element's position in the file, so the same file gives the same identifiers in any database, and no counter is kept. A collision with an identifier already in the graph is resolved by rehashing deterministically. Once stored, an identifier does not change when the file is edited, because a reload matches the element by content or by its endpoints and keeps the identifier it has.
+
+The leading underscore marks the form as generated, echoing RDF's blank node labels (`_:b0`) and the catch-all graph `@_`. Files may contain such identifiers, since an export writes them and a reload must read them back, so the form is a convention and not a reservation. A file that hand-writes an identifier of this form for a different element can collide with a generated one, and the load summary reports the generated-form identifiers it meets. Only letters and digits are used. The other characters a gram symbol allows (`_`, `.`, `-`, `@`) would add less than 2% capacity and make identifiers harder to select, read beside arrows, and dictate.
+
+Because every element carries an identifier, an export can order elements by it, so the order is the same in every database for the same graph.
+
+### 5.9 Phasing
 
 Until identity is stored, a changed file for an existing graph is an error that tells the user to load under another name (ADR-003). The first step of this work is element identity and membership, with reload as an upsert and the summary. Prune, replace, preview and alternative keys follow.
 
@@ -163,7 +171,7 @@ Until identity is stored, a changed file for an existing graph is an error that 
 
 6.11. **Use the file's path or name as the only scope.** Rejected as a sole rule: moving or renaming the file creates a new graph without warning. A name declared in the file takes precedence, and whether the file-name fallback stays is open (7.13).
 
-6.12. **Generate identifiers for anonymous elements on load.** A sequential count restarted for each load is rejected: inserting an element shifts every later one, and the reload overwrites the wrong elements. A hash of the element's content is rejected as a matching key: it changes with any edit, identical elements collide, and a stored hash goes stale after a Cypher edit. A count kept in the graph and never reused avoids shifting, but the file does not state those identifiers, so a reload still cannot connect an anonymous element in the file to an existing one. It does keep exported identifiers stable. Whether it earns its place for that alone is open (7.15).
+6.12. **Generate identifiers for anonymous elements on load by counting.** A sequential count restarted for each load is rejected: inserting an element shifts every later one, and the reload overwrites the wrong elements. A count kept in the graph and never reused avoids shifting, but it needs mutable state on the meta node, and independent databases mint the same sequence, so a later merge of same-named graphs would match unrelated elements. Identifiers derived from a hash (5.8) need no state and rarely collide across databases. A hash of the element's content is rejected as a matching key: it changes with any edit, identical elements collide, and a stored hash goes stale after a Cypher edit.
 
 6.13. **Merge definitions across sites and across loads, with conflict errors (the earlier form of ADR-001 and RFC-001 §5.5).** Rejected: the most common use of a reload, changing a value and loading again, would fail by default, and an element's content could be spread across several places in the file.
 
@@ -171,9 +179,13 @@ Until identity is stored, a changed file for an existing graph is an error that 
 
 6.15. **Require a name for every load, or derive one from the content digest, when none is given.** Rejected: requiring a name turns the quickest use, loading from standard input, into an error. A digest-derived name never merges unrelated loads but is unfriendly and leaves an edited nameless file with no way to be reloaded as an update. A catch-all graph follows the same one-graph-per-name rule as every other load, and the summary makes any merge visible.
 
+6.16. **Random or UUID-sized generated identifiers (nanoid, UUIDv4).** Rejected: random identifiers make two loads of one file differ, which complicates tests and comparing exports, and a UUID adds more than 20 characters to every line for a collision margin that per-graph scope does not need.
+
+6.17. **Use every symbol character gram allows in generated identifiers.** Rejected: the extra four characters add under 2% capacity and make identifiers harder to select and read.
+
 ## 7. Open Questions
 
-7.1. Is membership a property on each element, as proposed, or something else, such as a label, a relationship to the meta node, or a combined `@id` value that embeds the graph name, with an empty identifier for anonymous elements? A separate property keeps a missing identifier distinct from membership and fits a composite constraint, which Relate documents as ignoring tuples with a missing component (not yet tested). A combined value needs one property but gives up a single-property uniqueness constraint and makes `@id` mean two things. The choice affects query ergonomics, index use and export.
+7.1. Is membership a property on each element, as proposed, or something else, such as a label, a relationship to the meta node, or a combined `@id` value that embeds the graph name? With every element carrying an identifier, a composite constraint over the graph and the identifier has no missing components (Relate's handling of those is documented but not yet tested). A combined value needs one property and allows a single-property uniqueness constraint, but an authority-qualified graph name contains characters a plain gram identifier cannot, and it makes `@id` mean two things. The choice affects query ergonomics, index use and export.
 
 7.2. What is the exact format of an `@id` value, and how does it appear in gram, given that a plain symbol cannot start with `@` and that gram identifiers can be integers or quoted names? (This is RFC-001 question 7.2.)
 
@@ -201,7 +213,7 @@ Until identity is stored, a changed file for an existing graph is an error that 
 
 7.14. Can a graph name start with `@`, as authority-qualified scopes do (`@org/sub`)? ADR-003 §2.3 reserves `@@` by saying the `@` prefix is reserved, which assumes no user graph name begins with it. The catch-all graph is named `@_`, so the reservation would be narrowed to exactly `@@` and `@_`.
 
-7.15. Should a graph keep a count of generated identifiers that is never reused, so that exports of a named graph keep stable identifiers across edits and deletions, and where is that count stored? How does a reload of an exported file whose identifiers were generated behave?
+7.15. _Resolved by 5.8._ Generated identifiers are derived from a hash and stored, so no counter is kept, and an exported file whose identifiers were generated reloads by matching them.
 
 7.16. If the loader reuses pattern-rs's reconciliation, does it merge anonymous elements that carry the empty symbol as identity? pattern-hs reports that its own reconciliation does and requires it to be fixed. This belongs to the parser decision.
 
