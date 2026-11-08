@@ -3,7 +3,7 @@ id: RFC-001
 title: Gram Graph Support for Relate
 status: review
 created: 2026-11-06
-adrs: [ADR-001, ADR-002, ADR-003]
+adrs: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005]
 ---
 
 # RFC-001: Gram Graph Support for Relate
@@ -129,7 +129,7 @@ The work comes in three phases, each useful on its own.
 
 1. **One graph space.** Load and export of the strict subset into a single, unconstrained graph space, with identifiers kept as `@id` and a repeated load updating the elements that carry them. There are no named graphs, no top-level record storage and no metadata nodes; a file's top-level record is checked and reported, not stored.
 2. **Named graphs.** Several graphs in one database, with per-graph metadata, managed multi-graph loading and merging. Their metadata lives in the ontology document's custom extension, so this phase sits behind Relate's ontology preview opt-in (RFC-003).
-3. **A graph of graphs.** The metadata of phase 2 is materialized as nodes, so that graphs can be queried and listed with Cypher (ADR-003).
+3. **A graph of graphs.** The metadata of phase 2 is materialized as nodes, so that graphs can be queried and listed with Cypher (ADR-005).
 
 Language bindings and client structures come last.
 
@@ -151,7 +151,7 @@ Language bindings and client structures come last.
 
 ## 7. Open Questions
 
-7.1. _Resolved by ADR-003._ The meta node has the label `Graph`, holds the graph's name in `@id` and the record's other properties as ordinary properties, and belongs to a reserved graph `@@`. It is not hidden from queries.
+7.1. _Resolved by ADR-005 (proposed)._ The meta node has the label `Graph`, holds the graph's name in `@id` and the record's other properties as ordinary properties, and belongs to a reserved graph `@@`. It is not hidden from queries.
 
 7.2. What is the format of an `@id` value, and how is a named graph named and written in gram? Is naming a graph a single prefix on an identifier, a separate property on each element, or something else? (Taken up in RFC-003.)
 
@@ -183,4 +183,6 @@ Language bindings and client structures come last.
 
 - [ADR-001](../adr/ADR-001-load-identity-and-merge.md): Load Identity and Merge Semantics
 - [ADR-002](../adr/ADR-002-export-identity.md): Export Identity
-- [ADR-003](../adr/ADR-003-meta-node.md): Meta Nodes and the Meta Graph
+- [ADR-003](../adr/ADR-003-file-kind-and-record.md): File Kind and the Top-Level Record
+- [ADR-004](../adr/ADR-004-preserved-identity.md): Preserved Identity
+- [ADR-005](../adr/ADR-005-graph-metadata.md): Graph Metadata and Meta Nodes

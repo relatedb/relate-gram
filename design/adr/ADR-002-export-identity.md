@@ -2,11 +2,13 @@
 id: ADR-002
 title: Export Identity
 status: accepted
-rfcs: [RFC-001]
+rfcs: [RFC-001, RFC-003]
 created: 2026-11-06
 ---
 
 # ADR-002: Export Identity
+
+> The amendments of 2026-11-08 (stored `@id` written as the identifier, shared settings with the load) take effect when ADR-004, which amends Constitution III, is accepted.
 
 ## 1. Context
 
@@ -16,7 +18,7 @@ A gram file refers to an element by an identifier written on it: `(n0)-[r0:KNOWS
 - A loaded gram file's own identifiers are kept as `@id`, so an export can write them back. Elements without one, such as anonymous elements and elements created through Cypher, still need an identifier from elsewhere.
 - Many graphs already carry a natural identifier as an ordinary property, such as a `uuid` or `email`, and writing that value as the gram identifier makes the exported file easy to read and compare.
 
-An exported file also has to load back correctly. A reload treats all identifiers in a file as one space shared by nodes and relationships, and two elements with equal identifiers are one element, and an element may be defined only once, so an exporter that wrote a duplicate identifier would produce a file that fails to load. And because exports are meant to be diffed, the same database has to produce the same file every time.
+An exported file also has to load back correctly. A reload treats all identifiers in a file as one space shared by nodes and relationships. Two elements with equal identifiers are one element, and an element may be defined only once, so an exporter that wrote a duplicate identifier would produce a file that fails to load. And because exports are meant to be diffed, the same database has to produce the same file every time.
 
 The identifier syntax constrains what can be written. In the tree-sitter grammar for gram, an identifier is a symbol (a letter or underscore followed by letters, digits, `_`, `.`, `-` or `@`), an integer (`-?(0|[1-9][0-9]*)`), or a backtick-quoted name whose text may contain any character except an unescaped backtick, backslash or newline. A plain symbol cannot start with `@`.
 
@@ -73,7 +75,7 @@ Every element is given an identifier, a refinement of the RFC's "referenced more
 (n0)-[r0:KNOWS {since: 1843}]->(n1)
 ```
 
-Nodes are written with their full record. Relationships refer to their endpoints by identifier alone, in their stored direction. Paths are not produced. The spelling of property values, including quoting of strings, is decided by the value-mapping decision (RFC-002). How the top-level record is written is decided with the meta node format.
+Nodes are written with their full record. Relationships refer to their endpoints by identifier alone, in their stored direction. Paths are not produced. The spelling of property values, including quoting of strings, is decided by the value-mapping decision (RFC-002). The first phase writes no top-level record (ADR-003). Later phases write it from the graph's metadata (ADR-005).
 
 ### 2.6 Writing an identifier
 
@@ -120,8 +122,10 @@ A property key starting with `@` other than `@id` on any exported element is als
 - Relate returns a query result as a whole, so a large export holds every node and relationship row in memory before writing.
 - A database that holds `@`-prefixed property keys other than `@id` cannot be exported until they are given a meaning.
 - Reporting every offending element before writing requires a pass over the graph before the first byte is written.
+- Exporting in `property` mode and reloading with default settings duplicates elements, since the identities do not line up.
+- Elements that carry the same identifier in two exports, as generated identifiers `n0` and `r0` always do, are one element when both files are loaded into the first phase's single identifier space (ADR-001).
 - Named graphs (RFC-003) extend this decision and do not replace it.
-- Follow-on decisions: the spelling of values on export (RFC-002), the meta node and top-level record format, and the library settings and CLI flags for `identity`, `node-id-property` and `relationship-id-property`, specified with the CLI integration.
+- Follow-on decisions: the spelling of values on export (RFC-002), graph metadata and the top-level record (ADR-005), and the library settings and CLI flags for `identity`, `node-id-property` and `relationship-id-property`, specified with the CLI integration.
 
 ## 5. Related
 

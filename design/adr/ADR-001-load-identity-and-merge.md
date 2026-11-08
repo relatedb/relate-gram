@@ -2,11 +2,13 @@
 id: ADR-001
 title: Load Identity and Merge Semantics
 status: accepted
-rfcs: [RFC-001]
+rfcs: [RFC-001, RFC-003]
 created: 2026-11-06
 ---
 
 # ADR-001: Load Identity and Merge Semantics
+
+> The amendments of 2026-11-08 (identifiers kept as `@id`, matching against the database, identity from a property) take effect when ADR-004, which amends Constitution III, is accepted.
 
 ## 1. Context
 
@@ -28,7 +30,7 @@ A file has one identifier space shared by nodes and relationships. Two identifie
 
 An element written without an identifier is anonymous (2.5).
 
-An element's identifier is stored on it as the string property `@id` (2.7). The text is what is stored, so the integer `42` is stored as `"42"`.
+An element's identifier is stored on it as the string property `@id` (2.7). The text is what is stored, so the integer `42` is stored as `"42"`. Identity from a configured property (2.10) is the exception: no `@id` is written for that kind.
 
 ### 2.2 Kind of an identifier
 
@@ -72,12 +74,13 @@ Within a file, identifiers resolve references. Each identified element is also s
 - A reference whose identifier is already present binds to that element and changes nothing.
 - An `@id` that belongs to the other kind of element (a node where the file says relationship, or the reverse) is a load error. So is a relationship whose type or endpoints differ from the stored ones; the error reports both.
 - Elements in the database without an `@id` are never matched, unless a configured identity property matches them (2.10).
+- If more than one element in the database has the `@id` that a file element matches, the load fails and lists them. A relationship's endpoints are compared with the stored ones by the elements they resolve to, not by identifier text.
 
 A load either completes or leaves the database unchanged: all errors found while resolving the file, including those from matching against the database, abort the load before anything is written. Named graphs, in a later phase, scope the match to one graph (RFC-003).
 
 ### 2.8 The reserved `@` key prefix
 
-A property key that starts with `@` is reserved for identity metadata. In the basic phase, a record containing such a key, on a node, a relationship or the top-level record (the properties record that may open a gram file), is a load error that reports the key and its position. `@id` holds an element's identifier (2.7) and is written only by the loader; any other key starting with `@` stays reserved for later decisions. Because a plain symbol cannot start with `@`, such a key can only appear in a gram file in quoted form.
+A property key that starts with `@` is reserved for identity metadata. In the first phase, a record containing such a key, on a node, a relationship or the top-level record (the properties record that may open a gram file), is a load error that reports the key and its position. `@id` holds an element's identifier (2.7) and is written only by the loader; any other key starting with `@` stays reserved for later decisions. Because a plain symbol cannot start with `@`, such a key can only appear in a gram file in quoted form.
 
 ### 2.9 Determinism
 
@@ -107,7 +110,7 @@ A graph exported with a property setting reloads by matching that property when 
 
 3.4. **Require every appearance of an element to be identical.** Rejected: gram files commonly declare a node once with its full record and mention it elsewhere by identifier alone, so the rule would reject ordinary files. References, which carry no content, are the common case and are always allowed.
 
-3.5. **Merge relationships by (start, type, end), as Cypher `MERGE` does.** Rejected for the basic phase: it would merge distinct parallel relationships that a file writes deliberately, such as two `KNOWS` edges between the same pair with different properties. An explicit identifier already provides identity. A merge key can be added later as an opt-in.
+3.5. **Merge relationships by (start, type, end), as Cypher `MERGE` does.** Rejected for the first phase: it would merge distinct parallel relationships that a file writes deliberately, such as two `KNOWS` edges between the same pair with different properties. An explicit identifier already provides identity. A merge key can be added later as an opt-in.
 
 3.6. **Separate identifier spaces for nodes and relationships.** Rejected: the same identifier could then denote two elements in one file, which makes a bare identifier ambiguous when it appears as a reference.
 
@@ -121,6 +124,12 @@ A graph exported with a property setting reloads by matching that property when 
 
 3.11. **Partial load, committing everything up to the first error.** Rejected: a half-loaded graph cannot be told apart from a complete one, and which half is loaded depends on file order.
 
+3.12. **Union labels and properties across appearances, with an error on differing values and an `on-conflict` option (the earlier form of this decision).** Rejected: an element's content could be spread over several places, so a reader has to find all of them to know what the element is, and the option needs `first` and `last` modes whose discarded values must be reported.
+
+3.13. **Allow repeated definitions when they are identical.** Rejected: it adds an equality rule (type, value mapping, NaN) to save a one-line edit, and a file with two identical definitions still has two places to maintain.
+
+3.14. **Make an identifier that is only referenced an error.** Rejected: a node with no content that others point to is legitimate in a property graph, and the rule would force `(a {})` onto every such node. A warning that lists them catches typos instead.
+
 3.15. **Drop identifiers after a load (the earlier form of this decision).** Rejected: identity is fundamental to gram, loading a file again would duplicate every element, and an export could not write the identifiers back.
 
 3.16. **Generate an identifier for each anonymous element in the first phase.** Deferred: with one graph space there is no scope to derive a collision-free identifier from, and a stored identifier is hard to retire. RFC-003 generates them in the second phase, scoped by graph name.
@@ -129,24 +138,19 @@ A graph exported with a property setting reloads by matching that property when 
 
 3.18. **Guess the identity property from names such as `name`, `title` or `*id`.** Rejected: a wrong guess merges distinct elements without notice. Naming the property is explicit.
 
-3.12. **Union labels and properties across appearances, with an error on differing values and an `on-conflict` option (the earlier form of this decision).** Rejected: an element's content could be spread over several places, so a reader has to find all of them to know what the element is, and the option needs `first` and `last` modes whose discarded values must be reported.
-
-3.13. **Allow repeated definitions when they are identical.** Rejected: it adds an equality rule (type, value mapping, NaN) to save a one-line edit, and a file with two identical definitions still has two places to maintain.
-
-3.14. **Make an identifier that is only referenced an error.** Rejected: a node with no content that others point to is legitimate in a property graph, and the rule would force `(a {})` onto every such node. A warning that lists them catches typos instead.
-
 ## 4. Consequences
 
 - A file that defines an element at more than one site fails to load, even when the definitions agree. Users must consolidate the content into one definition and refer to it elsewhere, which the error says.
 - Loading the same file twice updates the elements that carry identifiers and duplicates the anonymous ones. A load into a database that already holds data matches by `@id`. Named graphs, which scope the match, are left to later work (RFC-003).
 - Anonymous relationships never merge. Users who want `(a)-[:R]->(b)` written twice to be one relationship must give it an identifier. An opt-in merge key remains an open follow-up (RFC-001 question 7.5).
-- User property keys starting with `@` cannot be loaded in the basic phase, even though gram permits them in quoted form.
+- User property keys starting with `@` cannot be loaded in the first phase, even though gram permits them in quoted form.
 - The rules for a file depend only on the identity of an element and the order of its appearances, so named graphs can apply them to elements matched by identity within one graph.
-- Storing identifiers extends what Constitution III allows, since it says identifiers "are not stored", so Constitution III has to be amended.
+- Storing identifiers extends what Constitution III allows, since it says identifiers "are not stored". ADR-004 amends Constitution III.
+- In the first phase every file loads into one identifier space. Two unrelated files that define the same identifier, as ADR-002's generated identifiers `n0` and `r0` always do, are one element, and the later file's values win. The summary reports updated elements, so the overlap is visible. Named graphs scope identifiers per graph.
 - Every identified element carries an `@id` property that `RETURN n` and `properties(n)` show. `SET n = {…}` removes it, and Cypher can create duplicate `@id` values, since constraints in Relate apply per label and cannot cover every element.
 - Atomic load requires the loader to hold the resolved graph before writing it, so very large files need that much memory.
 - A load with an identity property can update elements that carry no `@id`, such as ones created through Cypher. Exporting and loading with different property settings duplicates elements.
-- Follow-on decisions: the amendment of Constitution III, generated identifiers and named graphs (RFC-003), and the summary a load prints, specified with the CLI integration.
+- Follow-on decisions: generated identifiers and named graphs (RFC-003), and the summary a load prints, specified with the CLI integration.
 
 ## 5. Related
 

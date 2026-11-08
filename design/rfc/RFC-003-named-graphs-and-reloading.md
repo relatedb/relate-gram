@@ -3,7 +3,7 @@ id: RFC-003
 title: Named Graphs and Reloading Changed Files
 status: draft
 created: 2026-11-06
-adrs: []
+adrs: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005]
 ---
 
 # RFC-003: Named Graphs and Reloading Changed Files
@@ -124,7 +124,7 @@ Exporting a named graph writes each element's `@id` as its gram identifier and i
 
 ### 5.6 Consequences for rules already made
 
-Two existing rules assume identifiers are dropped. The project constitution says identifiers "are not stored", and ADR-001 rejects every property key starting with `@` in a file. The direction here replaces it: every load stores the identifier, in the first phase directly and from the second phase also because a load that names no graph goes into the catch-all graph (5.7). The keys are still written only by the loader and never read from file content. The constitution has to be amended through an ADR. ADR-003, which places the metadata in meta nodes, describes the third phase; its name resolution and digest rules apply from the second phase, with the metadata held in the ontology document. ADR-001 has been amended so that an element is defined at one site, which removes its conflict option, and its statement that a load never matches existing elements has to be updated again when this direction is decided.
+Two existing rules assume identifiers are dropped. The project constitution says identifiers "are not stored", and ADR-001 rejects every property key starting with `@` in a file. The direction here replaces it: every load stores the identifier, in the first phase directly and from the second phase also because a load that names no graph goes into the catch-all graph (5.7). The keys are still written only by the loader and never read from file content. ADR-004 (proposed) amends the constitution. ADR-001 has been amended so that an element is defined at one site, which removes its conflict option, and so that a load matches elements by `@id`. ADR-003 covers the first phase's handling of the top-level record and the file kind. ADR-005 (proposed) covers graph metadata: its naming and digest rules apply from the second phase, with the metadata held in the ontology document, and its meta nodes are the third phase.
 
 ### 5.7 Naming a graph
 
@@ -148,7 +148,7 @@ Because every element carries an identifier, an export can order elements by it,
 
 **Phase 2: named graphs.** Everything that depends on a graph name arrives: the per-element graph marker, `load` and `replace` and prune, the catch-all graph `@_`, generated identifiers (5.8), and matching of anonymous elements on reload (5.2). The graph's name, file digest, record properties and key declarations are kept in the ontology document under `extensions.custom.relate-gram`. Named graphs are therefore gated behind Relate's ontology preview opt-in (`RELATE_PREVIEW=ontology`) and are unavailable where it cannot be set, such as WebAssembly builds. This avoids a metadata node in every query and keeps the first phase free of any dependence on a preview feature.
 
-**Phase 3: a graph of graphs.** The metadata of phase 2 is materialized as a graph, using the meta nodes of ADR-003, so that graphs and their properties can be queried and listed with Cypher.
+**Phase 3: a graph of graphs.** The metadata of phase 2 is materialized as a graph, using the meta nodes of ADR-005, so that graphs and their properties can be queried and listed with Cypher.
 
 ## 6. Alternatives Considered
 
@@ -212,11 +212,11 @@ Because every element carries an identifier, an export can order elements by it,
 
 7.11. What does the meta node's digest do once reload exists? It still shortcuts an unchanged file, but should it also record revision history or the time of the last load?
 
-7.12. Which record key declares the graph's name: `name`, as ADR-003 reads it today, or `namespace`, as pattern-hs proposes? A user's own `name` property (a title, say) would be read as the graph name, and a file that declares only `namespace` would be named from its file name. Aligning needs an amendment to ADR-003.
+7.12. Which record key declares the graph's name: `name`, as ADR-005 reads it today, or `namespace`, as pattern-hs proposes? A user's own `name` property (a title, say) would be read as the graph name, and a file that declares only `namespace` would be named from its file name. Aligning needs an amendment to ADR-003.
 
 7.13. Does the file-name fallback stay as a last resort, given that moving or renaming a file silently creates a new graph?
 
-7.14. Can a graph name start with `@`, as authority-qualified scopes do (`@org/sub`)? ADR-003 §2.3 reserves `@@` by saying the `@` prefix is reserved, which assumes no user graph name begins with it. The catch-all graph is named `@_`, so the reservation would be narrowed to exactly `@@` and `@_`.
+7.14. Can a graph name start with `@`, as authority-qualified scopes do (`@org/sub`)? ADR-005 §2.4 reserves `@@` by saying the `@` prefix is reserved, which assumes no user graph name begins with it. The catch-all graph is named `@_`, so the reservation would be narrowed to exactly `@@` and `@_`.
 
 7.15. _Resolved by 5.8._ Generated identifiers are derived from a hash and stored, so no counter is kept, and an exported file whose identifiers were generated reloads by matching them.
 
@@ -228,4 +228,8 @@ Because every element carries an identifier, an export can order elements by it,
 
 ## 8. ADRs
 
-_(populated automatically as `/adr-create` links ADRs to this RFC)_
+- [ADR-001](../adr/ADR-001-load-identity-and-merge.md): Load Identity and Merge Semantics
+- [ADR-002](../adr/ADR-002-export-identity.md): Export Identity
+- [ADR-003](../adr/ADR-003-file-kind-and-record.md): File Kind and the Top-Level Record
+- [ADR-004](../adr/ADR-004-preserved-identity.md): Preserved Identity
+- [ADR-005](../adr/ADR-005-graph-metadata.md): Graph Metadata and Meta Nodes

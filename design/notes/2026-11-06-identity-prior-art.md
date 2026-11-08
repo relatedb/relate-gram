@@ -108,9 +108,9 @@ The Haskell reference implementation of pattern (`relateby/pattern-hs`) holds a 
 
 ### Where it meets relate-gram
 
-- **Header key.** ADR-003 reads the graph name from `name`; RFC-012 uses `namespace`. A file declaring only `namespace` would be named from its file name here, and a user's own `name` property (for example a title) would be read as the graph name.
-- **Names that start with `@`.** ADR-003 §2.3 says `@@` falls under the reserved `@` prefix, so no user graph can have that name. RFC-012's authority-qualified scopes start with `@`.
-- **File name as fallback.** RFC-012 rejects a file path as scope because moving the file breaks identity. ADR-003 uses the file name when neither the caller nor the record gives a name.
+- **Header key.** ADR-005 reads the graph name from `name`; RFC-012 uses `namespace`. A file declaring only `namespace` would be named from its file name here, and a user's own `name` property (for example a title) would be read as the graph name.
+- **Names that start with `@`.** ADR-005 §2.4 says `@@` falls under the reserved `@` prefix, so no user graph can have that name. RFC-012's authority-qualified scopes start with `@`.
+- **File name as fallback.** RFC-012 rejects a file path as scope because moving the file breaks identity. ADR-005 uses the file name when neither the caller nor the record gives a name.
 - **Shape of identity.** The pair `(scope, local)` supports two properties (`@graph`, `@id`) over one combined value, since an authority-qualified scope contains `@` and `/` and a plain gram symbol allows only one of them.
 - **Anonymous relationships.** relate-gram graphs are flat, but an anonymous relationship has named endpoints that could play the role of the owner: identity from (start, type, end) plus an ordinal among identical parallel relationships. This is a candidate of our own, not in RFC-012.
 - **Empty-symbol hazard.** pattern-rs's `gram-codec` also represents anonymous elements as `Symbol("")`. Whether its reconciliation merges them is not confirmed; it matters if the loader reuses that code.
