@@ -9,6 +9,8 @@ created: 2026-11-06
 # ADR-001: Load Identity and Merge Semantics
 
 > The amendments of 2026-11-08 (identifiers kept as `@id`, matching against the database, identity from a property) took effect on 2026-11-08, when ADR-004 (which amends Constitution III) was accepted.
+>
+> Amended 2026-11-08 after SPIKE-001: §2.7 and §2.10 now say how the loader matches against the database, and alternatives 3.19 and 3.20 record the options the spike rejected.
 
 ## 1. Context
 
@@ -78,6 +80,10 @@ Within a file, identifiers resolve references. Each identified element is also s
 
 A load either completes or leaves the database unchanged: all errors found while resolving the file, including those from matching against the database, abort the load before anything is written. Named graphs, in a later phase, scope the match to one graph (RFC-003).
 
+**How the loader matches.** Relate can look up a node by property quickly only through an index, and an index needs a label, while a file may add a label to an element the database already holds (SPIKE-001). So the loader does not look elements up one at a time. Inside one transaction it first reads every existing element's internal id and `@id` in a single scan (nodes and relationships separately, relationships with their type and endpoint ids), builds a table from `@id` text to elements in the library, and resolves the whole file against that table. This is also where duplicate `@id` values in the database are found. The writes then address matched elements by their internal id, in batches. The loader creates no index or constraint.
+
+**Transaction.** The scan and all writes run in one explicit transaction (`begin`, `commit`). Any error rolls it back. Relate leaves a transaction that has had a failed statement usable only for `rollback`, so the loader does nothing further after a failed statement except roll back.
+
 ### 2.8 The reserved `@` key prefix
 
 A property key that starts with `@` is reserved for identity metadata. In the first phase, a record containing such a key, on a node, a relationship or the top-level record (the properties record that may open a gram file), is a load error that reports the key and its position. `@id` holds an element's identifier (2.7) and is written only by the loader; any other key starting with `@` stays reserved for later decisions. Because a plain symbol cannot start with `@`, such a key can only appear in a gram file in quoted form.
@@ -92,7 +98,7 @@ Many graphs already carry a natural identifier, such as an `email` or a `uuid`. 
 
 When a setting is given for a kind:
 
-- The property's value, taken as text (2.1), is the element's identity, and the key by which a load matches elements of that kind already in the database. The gram identifier resolves references within the file only. It is not stored, and no `@id` is written for elements of that kind.
+- The property's value, taken as text (2.1), is the element's identity, and the key by which a load matches elements of that kind already in the database. Relate treats the integer `42` and the string `"42"` as different values and does not enforce uniqueness across them, so the loader reads every existing element that has the property in one scan (as in 2.7), compares the text itself, and reports two elements whose values are equal as text as duplicates. The gram identifier resolves references within the file only. It is not stored, and no `@id` is written for elements of that kind.
 - A definition in the file that lacks the property is anonymous (2.5), and the load reports it. A node that is only referenced has no property either, so it is also anonymous and is reported with the warning of 2.3.
 - The value MUST be a non-empty string or an integer; any other value is a load error that reports its position. Two definitions of one kind with the same value are a load error that reports both positions.
 - Matching ignores `@id`. An element of that kind in the database with the same property value is the same element and is updated as in 2.7, whether or not it has an `@id`, since naming the key is the explicit act of adoption. If more than one existing element has the value, the load fails and lists them.
@@ -138,6 +144,10 @@ A graph exported with a property setting reloads by matching that property when 
 
 3.18. **Guess the identity property from names such as `name`, `title` or `*id`.** Rejected: a wrong guess merges distinct elements without notice. Naming the property is explicit.
 
+3.19. **Match each element with `MERGE (n:Label {`@id`: …})`.** Rejected: the lookup needs a label, so an existing element that lacks one of the file's labels is missed and duplicated, which defeats label union. A lookup without a label is a full scan per element: 2,000 of them over 50,000 nodes took 54 seconds (SPIKE-001).
+
+3.20. **Create a uniqueness constraint on `@id` for each label.** Rejected: constraints are per label and cannot cover an element across labels, a constraint creates an index that a later `CREATE INDEX` cannot duplicate, and a constraint violation mid-load reports less than the loader's own duplicate listing.
+
 ## 4. Consequences
 
 - A file that defines an element at more than one site fails to load, even when the definitions agree. Users must consolidate the content into one definition and refer to it elsewhere, which the error says.
@@ -148,7 +158,8 @@ A graph exported with a property setting reloads by matching that property when 
 - Storing identifiers extends what Constitution III allows, since it says identifiers "are not stored". ADR-004 amends Constitution III.
 - In the first phase every file loads into one identifier space. Two unrelated files that define the same identifier, as ADR-002's generated identifiers `n0` and `r0` always do, are one element, and the later file's values win. The summary reports updated elements, so the overlap is visible. Named graphs scope identifiers per graph.
 - Every identified element carries an `@id` property that `RETURN n` and `properties(n)` show. `SET n = {…}` removes it, and Cypher can create duplicate `@id` values, since constraints in Relate apply per label and cannot cover every element.
-- Atomic load requires the loader to hold the resolved graph before writing it, so very large files need that much memory.
+- Atomic load requires the loader to hold the resolved graph before writing it, so very large files need that much memory. The table of existing `@id` values costs memory proportional to the identified elements already in the database, and the scan reads all of them even for a small file; 50,000 nodes took 66 ms. Larger databases and persisted stores were not measured.
+- The scan and the writes share one transaction, so the loader sees one state of the database. How Relate resolves a concurrent writer that changes the same elements between them was not tested.
 - A load with an identity property can update elements that carry no `@id`, such as ones created through Cypher. Exporting and loading with different property settings duplicates elements.
 - Follow-on decisions: generated identifiers and named graphs (RFC-003), and the summary a load prints, specified with the CLI integration.
 
