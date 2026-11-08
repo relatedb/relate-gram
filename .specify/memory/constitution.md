@@ -1,11 +1,3 @@
-<!--
-Sync Impact Report (ADR-004)
-Version change: 1.0.0 -> 2.0.0 (MAJOR)
-Modified principles: II (second documented exception: top-level record properties);
-III "Identity Is Explicit" -> "Identity Is Preserved"
-Added/removed sections: none
--->
-
 # relate-gram Constitution
 
 ## Core Principles
