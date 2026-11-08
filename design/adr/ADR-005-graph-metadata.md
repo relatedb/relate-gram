@@ -33,13 +33,21 @@ A load resolves a graph name from, in order of precedence:
 2. the record's `name` property, which MUST be a non-empty string;
 3. the file name: the part before `.gram`, and if that part contains a dot, the part before its last dot, with the last segment read as the kind (ADR-003). A name with a dot in it therefore cannot come from a file name and must be given by the record or the caller.
 
+A resolved name equal to `@@` or `@_` is a load error, since those are the reserved graphs (2.4). Any other name beginning with `@` is also a load error until RFC-003 question 7.14 settles whether such names are allowed.
+
 When the caller's name and the record's `name` differ, the caller's wins and the load reports a warning.
 
 A file that has a non-empty record and no resolvable name is a load error that asks for a name. A file with no record and no resolvable name, such as one read from standard input, is loaded into the catch-all graph `@_` (RFC-003), which has no digest of its own.
 
 ### 2.2 Where the metadata is held
 
-- **Second phase.** The metadata is held in the ontology document under `extensions.custom.relate-gram`, one entry for each graph, keyed by the graph's name. Named graphs are therefore behind Relate's ontology preview opt-in, and the shape of an entry is fixed when this ADR is accepted.
+- **Second phase.** The metadata is held in the ontology document under `extensions.custom.relate-gram`, one entry for each graph, keyed by the graph's name. Named graphs are therefore behind Relate's ontology preview opt-in. An entry has this shape, with the graph's name as the map key only:
+
+  ```json
+  {"roster": {"hash": "sha256:9f2c…", "properties": {"revision": 4}}}
+  ```
+
+  `hash` is the digest (2.3, 2.5) and `properties` holds the record's other properties. The shape is provisional until a spike confirms that Relate's ontology procedures accept and return a `custom` entry unchanged; this ADR is not accepted before then.
 - **Third phase.** Each entry is materialized as a meta node in a reserved graph, `@@` (2.4), so that graphs can be listed and queried with Cypher.
 
 ### 2.3 The metadata
@@ -73,6 +81,8 @@ A load computes the SHA-256 digest of the file's raw bytes, exactly as read, bef
 
 - **Equal:** the file is unchanged. The load writes nothing, succeeds, and reports that the graph is already loaded.
 - **Different, or the stored digest is missing:** the file has changed. The load merges the new version into the existing graph, matching elements by their stored `@id` (RFC-003).
+
+The catch-all graph `@_` has no entry, so a load into it is never skipped as unchanged and always merges.
 
 The comparison is per graph name. The same file loaded under two names produces two graphs, and the load does not detect this. Elements without an identifier follow the rules of RFC-003 on a merge.
 

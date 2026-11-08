@@ -27,7 +27,7 @@ The constitution says an amendment requires an ADR that describes the change and
 Principle III is replaced by the following.
 
 > ### III. Identity Is Preserved
-> On load, gram identifiers MUST resolve references within the file and MUST be kept on the element as the reserved property `@id`, or the element's identity MUST come from a property that the caller names. An element is defined at one site and referenced elsewhere by its identifier alone, and a second definition MUST be an error. The first appearance of an identifier fixes it as a node or a relationship, and a later conflicting use MUST be an error. On export, identity MUST be configurable and MUST have deterministic defaults. A missing or non-unique identifier source MUST be an error that lists the offending elements, never a silent fallback.
+> On load, gram identifiers MUST resolve references within the file and MUST be kept on the element as the reserved property `@id`, or the element's identity MUST come from a property that the caller names. An element is defined at one site and referenced elsewhere by its identifier alone, and a second definition MUST be an error. The first appearance of an identifier fixes it as a node or a relationship, and a later conflicting use MUST be an error. On export, identity MUST be configurable and MUST have deterministic defaults. A missing or non-unique identifier source MUST be an error that lists the offending elements, never a silent fallback. An element that has no identifier in the file is stored without identity, and the loader MUST report how many such elements it loaded.
 >
 > Rationale: identity that is dropped makes a second load duplicate every element and leaves an export unable to restore what the file said. Explicit rules for where identity comes from keep two loads of one file in agreement.
 
@@ -37,7 +37,9 @@ The sentence naming the one documented exception is replaced by: "The documented
 
 ### 2.3 Version
 
-The change redefines a principle, so the constitution's version becomes 2.0.0 when this ADR is accepted, and its last-amended date is that day. Principles I, IV, V and VI are unchanged.
+The change redefines Principle III and adds an exception to Principle II, so the constitution's version becomes 2.0.0 when this ADR is accepted, and its last-amended date is that day. Principles I, IV, V and VI are unchanged.
+
+Accepting this ADR and editing the constitution are one change, made in one commit. The constitution's Sync Impact Report cites this ADR.
 
 ## 3. Alternatives Considered
 
