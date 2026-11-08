@@ -13,14 +13,14 @@ created: 2026-11-06
 A gram file refers to an element by an identifier written on it: `(n0)-[r0:KNOWS]->(n1)` only means something because `n0` and `n1` were declared elsewhere in the file. An exporter has to supply those identifiers for every element it writes. The database cannot supply them:
 
 - Relate's element identity is internal. It is not a stable name for an element, and the same graph loaded into two databases can end up with different internal values.
-- A loaded gram file's own identifiers are dropped after load, so by the time of an export there is nothing to restore them from.
+- A loaded gram file's own identifiers are kept as `@id`, so an export can write them back. Elements without one, such as anonymous elements and elements created through Cypher, still need an identifier from elsewhere.
 - Many graphs already carry a natural identifier as an ordinary property, such as a `uuid` or `email`, and writing that value as the gram identifier makes the exported file easy to read and compare.
 
 An exported file also has to load back correctly. A reload treats all identifiers in a file as one space shared by nodes and relationships, and two elements with equal identifiers are one element, and an element may be defined only once, so an exporter that wrote a duplicate identifier would produce a file that fails to load. And because exports are meant to be diffed, the same database has to produce the same file every time.
 
 The identifier syntax constrains what can be written. In the tree-sitter grammar for gram, an identifier is a symbol (a letter or underscore followed by letters, digits, `_`, `.`, `-` or `@`), an integer (`-?(0|[1-9][0-9]*)`), or a backtick-quoted name whose text may contain any character except an unescaped backtick, backslash or newline. A plain symbol cannot start with `@`.
 
-The parent RFC (RFC-001) sets the direction: export takes an identifier from a `@id` value (an identity stored on an element when one database holds several named graphs), a unique property value, or a generated sequence, in that order, and fails when a configured property is missing or not unique. It leaves the naming scheme for generated identifiers to a decision. The scheme, the configuration, the ordering and the quoting are fixed below. The `@id` step depends on named graphs, which are a later decision (RFC-001 question 7.2).
+The parent RFC (RFC-001) sets the direction: export takes an identifier from a `@id` value (the identifier the loader stored, ADR-001), a unique property value, or a generated sequence, in that order, and fails when a configured property is missing or not unique. It leaves the naming scheme for generated identifiers to a decision. The scheme, the configuration, the ordering and the quoting are fixed below.
 
 ## 2. Decision
 
@@ -38,7 +38,7 @@ Two optional settings name the property to use: `node-id-property` and `relation
 
 `property` exists so that an export can ignore `@id` values and produce the same output as before named graphs were in use.
 
-Until named graphs exist, no element has an `@id` value (ADR-001 rejects keys starting with `@` on load), so `auto` behaves as `property` when a property is configured and as `generate` when none is.
+Elements loaded with an identifier carry `@id` (ADR-001), so `auto` uses it for them and takes the configured property or a generated identifier for the rest.
 
 ### 2.2 Identifiers from a property
 
@@ -48,11 +48,11 @@ For each kind with a configured property, every element of that kind MUST have a
 - **unusable**: the value is not a string or an integer, or is an empty string;
 - **duplicate**: the value's text equals another element's identifier.
 
-The text of an identifier is the string itself, or the decimal form of an integer. Equality is by text, as in ADR-001, so the integer `42` and the string `"42"` are the same identifier. Uniqueness is checked across nodes and relationships together, since they share one identifier space on reload. The RFC speaks of uniqueness within a kind; the check here spans both. There is no per-element fallback to a generated identifier. The property stays in the exported record, so a reload still has it as an ordinary property.
+The text of an identifier is the string itself, or the decimal form of an integer. Equality is by text, as in ADR-001, so the integer `42` and the string `"42"` are the same identifier. Uniqueness is checked across nodes and relationships together, since they share one identifier space on reload. The RFC speaks of uniqueness within a kind; the check here spans both. There is no per-element fallback to a generated identifier. The property stays in the exported record, so a reload still has it as an ordinary property. An `@id` value is held to the same checks, since Cypher edits can change it: it MUST be a string and is subject to the uniqueness test. An element with no `@id` is not an error; it takes its identifier from the property setting or a generated one (2.1). `@id` is written as the element's identifier and never as a record key.
 
 ### 2.3 Generated identifiers
 
-Generated identifiers are `n0`, `n1`, … for nodes and `r0`, `r1`, … for relationships, counted from zero in export order (2.4). A candidate whose text is already in use by a property-derived identifier is skipped, so a node property value `r0` does not collide with a generated relationship identifier.
+Generated identifiers are `n0`, `n1`, … for nodes and `r0`, `r1`, … for relationships, counted from zero in export order (2.4). A candidate whose text is already in use by a property-derived or `@id` identifier is skipped, so a node property value `r0` does not collide with a generated relationship identifier.
 
 ### 2.4 Export order
 
@@ -81,7 +81,7 @@ An identifier's text is written as a bare integer if it matches `-?(0|[1-9][0-9]
 
 An export is all-or-nothing: every error, whether about identity or about a value that has no gram form, is detected before the first byte of output is produced, and the error lists all offending elements, not only the first.
 
-Until named graphs are decided, a property key starting with `@` on any exported element is also an export error, listed with the other offenders, since a reload rejects such keys (ADR-001).
+A property key starting with `@` other than `@id` on any exported element is also an export error, listed with the other offenders, since a reload rejects such keys (ADR-001).
 
 ## 3. Alternatives Considered
 
@@ -112,13 +112,13 @@ Until named graphs are decided, a property key starting with `@` on any exported
 - Generated identifiers are not stable under edits: deleting or inserting an element shifts the numbers after it, and a diff of two exports of an edited database can show many changed lines. Property-based identifiers do not have this effect.
 - Two databases holding the same graph, built in different orders, can export in different orders. Exports are reproducible for a given database, not canonical across databases.
 - The relative order of ids is whatever Relate assigns. The documentation describes `id()` only as the internal id and does not promise that ids ascend in creation order or are never reused after deletion, so the order is reproducible for a given database but carries no other meaning.
-- A file that was loaded and then exported does not keep its original identifiers, since they were dropped on load. A user who needs them must have them stored as a property and use `property` mode.
+- A file that was loaded and then exported keeps the identifiers it wrote. Anonymous elements get generated ones, which can differ from one export to the next as the graph changes.
 - Every element gets an identifier, so exports are larger than the minimum.
 - Labels are written sorted, so a reload can reorder a node's labels compared with the source file.
 - Relate returns a query result as a whole, so a large export holds every node and relationship row in memory before writing.
-- A database that holds `@`-prefixed property keys cannot be exported until named graphs give them a meaning.
+- A database that holds `@`-prefixed property keys other than `@id` cannot be exported until they are given a meaning.
 - Reporting every offending element before writing requires a pass over the graph before the first byte is written.
-- The `@id` step in `auto` mode does nothing until named graphs are decided (RFC-001 question 7.2); named graphs extend this decision and do not replace it.
+- Named graphs (RFC-003) extend this decision and do not replace it.
 - Follow-on decisions: the spelling of values on export (RFC-002), the meta node and top-level record format, and the library settings and CLI flags for `identity`, `node-id-property` and `relationship-id-property`, specified with the CLI integration.
 
 ## 5. Related

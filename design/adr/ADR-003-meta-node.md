@@ -29,10 +29,11 @@ Several forces shape the choice:
 - The project plans for one database to hold several graphs, each a named graph (a set of elements that the database keeps apart from other graphs, identified by a shared `@id` value), with a graph's identity kept in a reserved `@id` property (RFC-001). A graph needs a name and a place to keep information about itself, which is what the record is.
 - A gram file's top-level record also says what kind of file it is. In the wider gram ecosystem the `kind` property selects the semantics, conventions and style of the contents, for example `schema` for a file of constraints. Every gram file is valid data, but only one kind is a property graph.
 - The ecosystem names files `graph-name.kind.gram`, so a file name can carry the graph's name and its kind.
-- Property keys starting with `@` are rejected on load (ADR-001), so data loaded from a file never has an `@id`.
+- Property keys starting with `@` are rejected on load (ADR-001), so a file cannot set an `@id`. The loader writes `@id` on the elements it stores, and on a meta node.
+- Relate's ontology document has a `custom` extension for data that tools keep alongside a model. It can hold per-graph information without adding nodes to queries (RFC-003).
 - The grammar allows a record's values to be maps and arrays, but only values that become Cypher property values can be stored (RFC-002).
 
-The parent RFC (RFC-001) says the record is kept as a "meta node" and written back as the top-level record on export. It leaves the node's label, property layout and handling in queries to a decision (its question 7.1). This ADR decides them for a design in which meta nodes belong to a reserved graph of their own. How elements are recorded as members of any named graph, and the format of `@id`, remain for the named-graph decision (RFC-001 question 7.2).
+The parent RFC (RFC-001) says the record is kept as a "meta node" and written back as the top-level record on export. It leaves the node's label, property layout and handling in queries to a decision (its question 7.1). This ADR decides them for a design in which meta nodes belong to a reserved graph of their own, and says in which phase of RFC-003 each rule applies (2.7). How elements are recorded as members of any named graph remains for the named-graph decision (RFC-001 question 7.2).
 
 ## 2. Decision
 
@@ -57,7 +58,7 @@ A load resolves a graph name from, in order of precedence:
 
 When the caller's name and the record's `name` differ, the caller's wins and the load reports a warning.
 
-A file that has a non-empty record and no resolvable name is a load error that asks for a name. A file with no record and no resolvable name, such as one read from standard input, is loaded as an unnamed graph and gets no meta node.
+A file that has a non-empty record and no resolvable name is a load error that asks for a name. A file with no record and no resolvable name, such as one read from standard input, is loaded into the catch-all graph `@_` (RFC-003), which has no digest of its own.
 
 ### 2.3 The meta graph and the meta node
 
@@ -74,9 +75,9 @@ A named graph has exactly one meta node. For a graph named `roster`, for example
 - `@hash` holds the SHA-256 digest of the file the graph was loaded from (2.4), written `sha256:` followed by 64 lowercase hexadecimal digits.
 - The record's other properties are stored as ordinary properties, under the value mapping of RFC-002. `name` is not stored separately, since `@id` holds it, and `kind` is dropped (2.1). Record keys starting with `@` remain load errors (ADR-001).
 - The meta node has no relationships.
-- `@id` and `@hash` are written by the loader and never read from the file. ADR-001's rejection of `@` keys applies to file content only. A meta node holds the graph's name, not a gram element identifier, so it does not conflict with the rule that gram identifiers are dropped after load.
+- `@id` and `@hash` are written by the loader and never read from the file. ADR-001's rejection of `@` keys applies to file content only. A meta node holds the graph's name, not a gram element identifier.
 
-Until the named-graph decision defines how an element is recorded as a member of a graph, a node is recognized as a meta node if it has the label `Graph` and an `@id` property. A node that has the label `Graph` and no `@id`, such as one loaded from a file, is ordinary data. Before named graphs exist no data element can have an `@id`, so the rule cannot misread one. The named-graph decision replaces this rule with membership of `@@`.
+Data elements carry `@id` too (ADR-001), so a meta node cannot be recognized by its label and `@id`: a data node labelled `Graph` would match. A meta node is recognized by membership of `@@` (RFC-003). Before meta nodes exist there is nothing to recognize.
 
 A file that has a graph name creates a meta node even when it has no record, so that the graph is named in the database.
 
@@ -87,15 +88,15 @@ A load computes the SHA-256 digest of the file's raw bytes, exactly as read, bef
 When a load resolves a name for which the database already holds a meta node with that `@id`, the digests are compared:
 
 - **Equal:** the file is unchanged. The load writes nothing, succeeds, and reports that the graph is already loaded.
-- **Different, or the stored meta node has no `@hash`:** the file has changed. Merging the new version into the existing graph is the intended behavior, and it needs the elements of the existing graph to be matched by identity, which they do not carry yet (see below). Until the named-graph decision supplies that, such a load fails with an error that names the graph and both digests and says what to do: load the file under a different graph name, or wait for merge support.
+- **Different, or the stored digest is missing:** the file has changed. The load merges the new version into the existing graph, matching elements by their stored `@id` (RFC-003).
 
 The comparison is per graph name. The same file loaded under two names produces two graphs, and the load does not detect this.
 
-A gram identifier is dropped after a load (ADR-001), so nothing in the database says which existing element a repeated one corresponds to. Matching needs each element to keep its identity in `@id` and to record the graph it belongs to, which is the named-graph decision (RFC-001 question 7.2). That decision also defines how elements without an identifier are treated on a merge, since they never merge (ADR-001).
+Elements without an identifier follow the rules of RFC-003 on a merge.
 
 ### 2.5 Visibility in queries
 
-Meta nodes appear in every query that scans nodes, in counts and in exports by Cypher. Queries that want data nodes only exclude them, for example with ``WHERE NOT (n:Graph AND n.`@id` IS NOT NULL)``. The loader does not hide them.
+Meta nodes appear in every query that scans nodes, in counts and in exports by Cypher. Queries that want data nodes only exclude them by membership of `@@` (RFC-003). The loader does not hide them.
 
 ### 2.6 Export
 
@@ -117,6 +118,14 @@ The record has one property per line, indented by two spaces, with `name` taken 
 
 The record always includes `name`, so an exported file names its graph whatever the original file name was.
 
+### 2.7 Phasing
+
+RFC-003 stages the work in three phases, and these decisions apply as follows.
+
+- **First phase, one graph space.** There are no named graphs and no stored metadata. The kind rules (2.1) apply, including the check of the kind in the file name. A top-level record is parsed, and a record key starting with `@` is still an error (ADR-001). The load reports a warning that lists the record's properties as not stored. The `name` property is among them, since no graph is named. An export writes no record.
+- **Second phase, named graphs.** Naming (2.2) and the digest rules (2.4) apply, and an export writes the record (2.6). The metadata that 2.3 describes, namely the name, the digest and the record's other properties, is held in the ontology document under `extensions.custom.relate-gram`, one entry for each graph. Named graphs are therefore behind Relate's ontology preview opt-in (RFC-003).
+- **Third phase, a graph of graphs.** The entries become meta nodes in `@@` as 2.3 describes, so graphs can be listed and queried with Cypher. Visibility (2.5) applies from this phase.
+
 ## 3. Alternatives Considered
 
 3.1. **Discard the record.** Rejected: information in the source file is lost without notice, which contradicts the strict-subset rule that nothing is dropped.
@@ -127,13 +136,13 @@ The record always includes `name`, so an exported file names its graph whatever 
 
 3.4. **Hide the meta node from queries.** Rejected: Relate's public interface cannot do it, and the constitution requires depending on that interface only. Placing meta nodes in their own graph makes the separation a matter of membership instead.
 
-3.5. **A reserved label such as `_GramMeta` as the marker.** Rejected: once meta nodes belong to the meta graph, membership is the marker, and `Graph` says what the node is. The interim recognition rule (label plus `@id`) avoids misreading data nodes that have a `Graph` label.
+3.5. **A reserved label such as `_GramMeta` as the marker.** Rejected: once meta nodes belong to the meta graph, membership is the marker, and `Graph` says what the node is. Recognition by membership also avoids misreading data nodes that have a `Graph` label.
 
 3.6. **Name the meta graph `meta`.** Rejected: a user could name a graph `meta`. The `@` prefix is reserved already, so `@@` cannot collide.
 
 3.7. **One meta node per database, merged across loads.** Rejected: a second load would mix or overwrite the first record's properties. One meta node per graph keeps each graph's information apart.
 
-3.8. **Merge a changed file into the existing graph now.** Deferred, not rejected: it is the intended behavior, but identifiers are dropped on load, so existing elements cannot be matched to the new file's elements. Merging by name alone would duplicate every element.
+3.8. **Merge a changed file into the existing graph in the first phase.** Deferred to the second phase, where graph membership exists (RFC-003). In the first phase elements are matched by `@id` alone.
 
 3.9. **Fail on any repeated graph name, without a digest.** Rejected: an unchanged file would fail on reload, where a digest comparison makes it a harmless no-op.
 
@@ -147,21 +156,26 @@ The record always includes `name`, so an exported file names its graph whatever 
 
 3.14. **Store `kind` on the meta node.** Rejected: only one kind is supported, so the value carries no information, and an exported file is the same kind whatever the original said.
 
+3.15. **Store graph metadata in meta nodes in every phase.** Rejected for the first two phases: meta nodes appear in every query that scans nodes, and nothing in the first phase needs per-graph metadata. They return in the third phase as a materialization of metadata held in the ontology document.
+
+3.16. **Fail on a file that has a top-level record in the first phase.** Rejected: an exported file carries one from the second phase on, so failing would reject every such file. A warning that lists what is not stored loses nothing silently.
+
 ## 4. Consequences
 
-- The meta node is visible in `MATCH (n)` queries and counts. Users and tools exclude it by its `@id` and `Graph` label until named graphs give a membership filter; this has to be documented.
-- The interim recognition rule must be replaced when named graphs exist. Once data elements also carry `@id`, a data node labelled `Graph` would match it.
+- From the third phase the meta node is visible in `MATCH (n)` queries and counts. Users and tools exclude it by membership of `@@`; this has to be documented.
+- A meta node is never recognized by its label and `@id`, because data elements carry `@id` from the first phase; membership of `@@` replaces that rule in the third phase.
 - Loading the same file under two different names creates two graphs with duplicated elements and no warning.
-- Element identity stored for named graphs will extend what Constitution III allows to be stored, so the named-graph decision has to amend it.
-- Loading the same named file twice is a no-op, and a changed file fails until named graphs allow a merge. This amends the consequence recorded in ADR-001, which expected the second load to duplicate every element. Unnamed loads still duplicate.
+- Storing identifiers extends what Constitution III allows, so Constitution III has to be amended.
+- From the second phase, loading the same named file twice is a no-op and a changed file merges by `@id` (RFC-003). The first phase keeps no digest.
 - A reformatted or re-commented file has a different digest and counts as changed.
-- A database loaded from several differently named files holds several meta nodes and cannot be exported as one file until elements record the graph they belong to.
+- A database loaded from several differently named files holds an entry for each graph and cannot be exported as one file until elements record the graph they belong to.
 - A graph name with a dot can only come from the record or the caller. A file `roster.v2.gram` is read as graph `roster`, kind `v2`, and fails.
 - Exports always write `name` and never `kind`, so a file that omitted `name` gains it on a round trip. A file that carried `kind: "property-graph"` loses it.
-- A file read from standard input with no record and no name loads as an unnamed graph and leaves no trace of itself in the database.
+- A file read from standard input with no record and no name loads into the catch-all graph `@_`, which has no digest of its own.
 - `Graph` is an ordinary label in gram files and is not reserved. A file cannot set `@id`, so it cannot forge a meta node.
 - The `kind` assumption is recorded here; the file-kind conventions of the wider gram ecosystem (for example `.schema.gram`) are not loaded, and the error says so.
-- Follow-on decisions: how elements record membership of a named graph and the format of `@id` (RFC-001 question 7.2), loading into an existing graph, and the CLI flag for the graph name, specified with the CLI integration.
+- A file with a top-level record loses it in the first phase, with a warning that lists its properties.
+- Follow-on decisions: how elements record membership of a named graph (RFC-001 question 7.2), the shape of the entry in the ontology document, and the CLI flag for the graph name, specified with the CLI integration.
 
 ## 5. Related
 
