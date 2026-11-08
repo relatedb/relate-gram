@@ -8,7 +8,7 @@ created: 2026-11-06
 
 # ADR-002: Export Identity
 
-> The amendments of 2026-11-08 (stored `@id` written as the identifier, shared settings with the load) take effect when ADR-004, which amends Constitution III, is accepted.
+> The amendments of 2026-11-08 (stored `@id` written as the identifier, shared settings with the load) took effect on 2026-11-08, when ADR-004 (which amends Constitution III) was accepted.
 
 ## 1. Context
 

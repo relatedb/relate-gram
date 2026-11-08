@@ -8,7 +8,7 @@ created: 2026-11-06
 
 # ADR-001: Load Identity and Merge Semantics
 
-> The amendments of 2026-11-08 (identifiers kept as `@id`, matching against the database, identity from a property) take effect when ADR-004, which amends Constitution III, is accepted.
+> The amendments of 2026-11-08 (identifiers kept as `@id`, matching against the database, identity from a property) took effect on 2026-11-08, when ADR-004 (which amends Constitution III) was accepted.
 
 ## 1. Context
 

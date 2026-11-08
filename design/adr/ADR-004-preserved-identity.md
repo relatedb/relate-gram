@@ -1,7 +1,7 @@
 ---
 id: ADR-004
 title: Preserved Identity
-status: proposed
+status: accepted
 rfcs: [RFC-001, RFC-003]
 created: 2026-11-08
 ---

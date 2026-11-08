@@ -8,7 +8,7 @@ created: 2026-11-06
 
 # ADR-003: File Kind and the Top-Level Record
 
-> Amended 2026-11-08. The meta node, graph naming and file digest that this ADR first decided moved to ADR-005, which is proposed. What remains is what the first phase of RFC-003 needs. The amendment takes effect when ADR-004, which amends Constitution II and III, is accepted.
+> Amended 2026-11-08. The meta node, graph naming and file digest that this ADR first decided moved to ADR-005, which is proposed. What remains is what the first phase of RFC-003 needs. The amendment took effect on 2026-11-08, when ADR-004 (which amends Constitution II and III) was accepted.
 
 ## 1. Context
 
