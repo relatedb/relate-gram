@@ -71,7 +71,7 @@ Within a file, identifiers resolve references. Each identified element is also s
 - An element whose `@id` is absent is created.
 - A reference whose identifier is already present binds to that element and changes nothing.
 - An `@id` that belongs to the other kind of element (a node where the file says relationship, or the reverse) is a load error. So is a relationship whose type or endpoints differ from the stored ones; the error reports both.
-- Elements in the database without an `@id` are never matched.
+- Elements in the database without an `@id` are never matched, unless a configured identity property matches them (2.10).
 
 A load either completes or leaves the database unchanged: all errors found while resolving the file, including those from matching against the database, abort the load before anything is written. Named graphs, in a later phase, scope the match to one graph (RFC-003).
 
@@ -82,6 +82,20 @@ A property key that starts with `@` is reserved for identity metadata. In the ba
 ### 2.9 Determinism
 
 Elements are created in order of first appearance, so a given file always produces the same graph.
+
+### 2.10 Identity from a property
+
+Many graphs already carry a natural identifier, such as an `email` or a `uuid`. A load can use it as the element's identity instead of the gram identifier. The settings are `node-id-property` and `relationship-id-property`, the same two that ADR-002 uses on export. Each names one property and applies to one kind of element, and by default neither is set, so identity is the gram identifier stored as `@id` (2.7).
+
+When a setting is given for a kind:
+
+- The property's value, taken as text (2.1), is the element's identity, and the key by which a load matches elements of that kind already in the database. The gram identifier resolves references within the file only. It is not stored, and no `@id` is written for elements of that kind.
+- A definition in the file that lacks the property is anonymous (2.5), and the load reports it. A node that is only referenced has no property either, so it is also anonymous and is reported with the warning of 2.3.
+- The value MUST be a non-empty string or an integer; any other value is a load error that reports its position. Two definitions of one kind with the same value are a load error that reports both positions.
+- Matching ignores `@id`. An element of that kind in the database with the same property value is the same element and is updated as in 2.7, whether or not it has an `@id`, since naming the key is the explicit act of adoption. If more than one existing element has the value, the load fails and lists them.
+- The property remains an ordinary property of the element, written from the file's definition like any other.
+
+A graph exported with a property setting reloads by matching that property when the same setting is given to the load. With different settings in each direction the identities do not line up and the load duplicates elements.
 
 ## 3. Alternatives Considered
 
@@ -111,6 +125,10 @@ Elements are created in order of first appearance, so a given file always produc
 
 3.16. **Generate an identifier for each anonymous element in the first phase.** Deferred: with one graph space there is no scope to derive a collision-free identifier from, and a stored identifier is hard to retire. RFC-003 generates them in the second phase, scoped by graph name.
 
+3.17. **Let the identity property replace `@id` for every kind at once.** Rejected: one setting per kind keeps a graph that mixes natural keys and file identifiers loadable, and a kind without a setting behaves as before.
+
+3.18. **Guess the identity property from names such as `name`, `title` or `*id`.** Rejected: a wrong guess merges distinct elements without notice. Naming the property is explicit.
+
 3.12. **Union labels and properties across appearances, with an error on differing values and an `on-conflict` option (the earlier form of this decision).** Rejected: an element's content could be spread over several places, so a reader has to find all of them to know what the element is, and the option needs `first` and `last` modes whose discarded values must be reported.
 
 3.13. **Allow repeated definitions when they are identical.** Rejected: it adds an equality rule (type, value mapping, NaN) to save a one-line edit, and a file with two identical definitions still has two places to maintain.
@@ -127,6 +145,7 @@ Elements are created in order of first appearance, so a given file always produc
 - Storing identifiers extends what Constitution III allows, since it says identifiers "are not stored", so Constitution III has to be amended.
 - Every identified element carries an `@id` property that `RETURN n` and `properties(n)` show. `SET n = {…}` removes it, and Cypher can create duplicate `@id` values, since constraints in Relate apply per label and cannot cover every element.
 - Atomic load requires the loader to hold the resolved graph before writing it, so very large files need that much memory.
+- A load with an identity property can update elements that carry no `@id`, such as ones created through Cypher. Exporting and loading with different property settings duplicates elements.
 - Follow-on decisions: the amendment of Constitution III, generated identifiers and named graphs (RFC-003), and the summary a load prints, specified with the CLI integration.
 
 ## 5. Related

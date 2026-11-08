@@ -36,6 +36,8 @@ Export has three identity modes, selected by an `identity` setting. The default 
 
 Two optional settings name the property to use: `node-id-property` and `relationship-id-property`. Each applies to one kind of element. In `property` mode at least one of them MUST be set, or the export fails with a configuration error. A property setting given in `generate` mode is also a configuration error.
 
+These are the same two settings that a load uses to take identity from a property (ADR-001), so a graph exported with a property setting reloads by matching that property. Exporting and loading with different settings duplicates elements.
+
 `property` exists so that an export can ignore `@id` values and produce the same output as before named graphs were in use.
 
 Elements loaded with an identifier carry `@id` (ADR-001), so `auto` uses it for them and takes the configured property or a generated identifier for the rest.

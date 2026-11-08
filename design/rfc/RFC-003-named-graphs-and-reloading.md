@@ -114,12 +114,9 @@ Two options apply to these operations. A preview option applies nothing and prin
 
 ### 5.4 Other match keys
 
-A graph whose file carries no identifiers needs another key. Two sources are candidates, both explicit:
+Many graphs carry a natural identifier already, such as an `email` or a `uuid`, and a file may have no identifiers of its own. In the first phase a load can take identity from a property: a setting names one property for nodes and one for relationships, the same settings an export uses to choose identifiers. The property's value is then the identity and the match key, the gram identifier only resolves references inside the file, and an element that already carries the value in the database is updated whether or not it has an `@id`. Elements without the property are anonymous and are reported, duplicate values in one file are an error, and a value that matches several existing elements is an error, not a pick. Details are in ADR-001.
 
-- A hint given on load, naming a property to match on for a label.
-- A uniqueness or node-key constraint declared in the database, which already states that a property identifies an element.
-
-Neither replaces the file's identifiers where they exist, and an element that matches on more than one element under a hint is an error, not a pick.
+Later phases can add keys declared per label (`Person.email`, `Company.domain`), taken from uniqueness or node-key constraints or from the ontology, and a hint given on load. None of them replaces the identifiers a file states where it states them.
 
 ### 5.5 Export
 
@@ -147,7 +144,7 @@ Because every element carries an identifier, an export can order elements by it,
 
 ### 5.9 Phasing
 
-**Phase 1: one graph space.** There are no named graphs, no ontology and no metadata nodes. Elements keep the identifiers the file gave them as `@id`, and `merge` updates them by `@id` with the file's values winning (5.2). An element written without an identifier is stored without one: nothing is generated in this phase, anonymous elements are not matched on reload, and loading a file again can duplicate them. The operation is additive and the summary reports what it did. A file's top-level record is parsed and its `kind` checked. Its properties are reported in a warning as not stored, a documented exception to the rule against dropping, as with an unrecognized tag. An export writes no record. There is no digest shortcut, no prune and no `replace`, since without membership none of them can be limited to what a load created.
+**Phase 1: one graph space.** There are no named graphs, no ontology and no metadata nodes. Elements keep the identifiers the file gave them as `@id`, and `merge` updates them by `@id` with the file's values winning (5.2). An element written without an identifier is stored without one: nothing is generated in this phase, anonymous elements are not matched on reload, and loading a file again can duplicate them. A load and an export can instead take identity from a configured property (5.4), which makes elements that carry a natural key reloadable without an `@id`. The operation is additive and the summary reports what it did. A file's top-level record is parsed and its `kind` checked. Its properties are reported in a warning as not stored, a documented exception to the rule against dropping, as with an unrecognized tag. An export writes no record. There is no digest shortcut, no prune and no `replace`, since without membership none of them can be limited to what a load created.
 
 **Phase 2: named graphs.** Everything that depends on a graph name arrives: the per-element graph marker, `load` and `replace` and prune, the catch-all graph `@_`, generated identifiers (5.8), and matching of anonymous elements on reload (5.2). The graph's name, file digest, record properties and key declarations are kept in the ontology document under `extensions.custom.relate-gram`. Named graphs are therefore gated behind Relate's ontology preview opt-in (`RELATE_PREVIEW=ontology`) and are unavailable where it cannot be set, such as WebAssembly builds. This avoids a metadata node in every query and keeps the first phase free of any dependence on a preview feature.
 
