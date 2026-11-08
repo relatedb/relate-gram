@@ -1,0 +1,235 @@
+
+== 7. match-by-@id strategies at 50k nodes
+  create 50k: 152.841042ms
+  plan MATCH (n) WHERE id(n) = 5 RETURN n
+      -> ["AllNodesScan"]
+  plan UNWIND [1,2,3] AS i MATCH (n) WHERE id(n) = i RETURN n
+      -> ["AllNodesScan"]
+  plan MATCH (n) WHERE id(n) IN [1,2,3] RETURN n
+      -> ["AllNodesScan"]
+  one scan returning id+@id for 50000 nodes: 53.978417ms
+  2000 unlabelled lookups by @id (no index): 53.048689542s
+  50k updates by id(): 201.374125ms
+  50k label+@id MERGEs with unique constraint: 371.624375ms
+  ok  MATCH (n:A) RETURN count(n), count(n.merged), count(n.byid)
+      -> [Int(50000), Int(50000), Int(50000)]
+
+== 6. what backs MERGE, relationships, and typed-either lookups
+  ok  CREATE CONSTRAINT a_id FOR (n:A) REQUIRE n.`@id` IS UNIQUE
+      -> 
+  ok  CREATE CONSTRAINT r_id FOR ()-[r:R]-() REQUIRE r.`@id` IS UNIQUE
+      -> 
+  ok  CREATE CONSTRAINT u_uid FOR (n:U) REQUIRE n.uid IS UNIQUE
+      -> 
+  plan MATCH (n:A {`@id`: 'x'}) RETURN n
+      -> ["NodeIndexSeek"]
+  plan MERGE (n:A {`@id`: 'x'}) RETURN n
+      -> ["Merge"]
+  plan MATCH (n:A) WHERE n.`@id` IN ['x','y'] RETURN n
+      -> ["NodeByLabelScan"]
+  plan MATCH (n:U) WHERE n.uid IN [42, '42'] RETURN n
+      -> ["NodeByLabelScan"]
+  plan MATCH (n:U) WHERE n.uid = 42 OR n.uid = '42' RETURN n
+      -> ["NodeByLabelScan"]
+  plan MATCH ()-[r:R {`@id`: 'x'}]->() RETURN r
+      -> ["Expand"]
+  plan MATCH (n) WHERE n.`@id` = 'x' RETURN n
+      -> ["AllNodesScan", "AllNodesScan"]
+  plan UNWIND [{k:'x'},{k:'y'}] AS row MATCH (n:A {`@id`: row.k}) RETURN n
+      -> ["NodeByLabelScan"]
+  plan UNWIND [{k:'x'},{k:'y'}] AS row MERGE (n:A {`@id`: row.k}) RETURN n
+      -> ["Merge"]
+  ok  CREATE (:U {uid: 42}), (:U {uid: '42'})
+      -> 
+  ok  MATCH (n:U) WHERE n.uid IN [42, '42'] RETURN count(n)
+      -> [Int(2)]
+  ok  MERGE (a:A {`@id`:'a'}) MERGE (b:A {`@id`:'b'}) MERGE (a)-[r:R {`@id`:'r0'}]->(b) RETURN id(a), id(b), id(r)
+      -> [Int(2), Int(3), Int(0)]
+  ok  MERGE (a:A {`@id`:'a'}) MERGE (b:A {`@id`:'b'}) MERGE (a)-[r:R {`@id`:'r0'}]->(b) RETURN id(a), id(b), id(r)
+      -> [Int(2), Int(3), Int(0)]
+  ok  MATCH (n) RETURN count(n)
+      -> [Int(4)]
+  ok  MERGE (n:A {`@id`:'a'}) SET n:Extra, n += {name:'Ada'} RETURN labels(n), properties(n)
+      -> [List([String("A"), String("Extra")]), Map({"@id": String("a"), "name": String("Ada")})]
+  ok  MERGE (n:A {`@id`:'a'}) SET n += {age: 3} RETURN properties(n)
+      -> [Map({"@id": String("a"), "age": Int(3), "name": String("Ada")})]
+  ok  CREATE ({`@id`:'z'})
+      -> 
+  ok  MERGE (n:A {`@id`:'z'}) RETURN id(n)
+      -> [Int(5)]
+
+== 1. `@id` as a property key
+  ok  CREATE (:P {`@id`: 'a', name: 'Ada'})
+      -> 
+  ok  MATCH (n:P) WHERE n.`@id` = 'a' RETURN n.`@id`, n.name
+      -> [String("a"), String("Ada")]
+  ok  MATCH (n:P {`@id`: 'a'}) RETURN count(n)
+      -> [Int(1)]
+  ok  MATCH (n:P) RETURN properties(n)
+      -> [Map({"@id": String("a"), "name": String("Ada")})]
+  ok  MATCH (n:P) RETURN keys(n)
+      -> [List([String("@id"), String("name")])]
+  ok  MATCH (n:P) RETURN n
+      -> [Node(Node { id: 0, labels: ["P"], properties: PropertyMap { entries: [("@id", String("a")), ("name", String("Ada"))] } })]
+  ok  SET n = $props with @id
+      -> [String("b")]
+  ok  CREATE (a:Q {`@id`:'x'})-[:R {`@id`:'r1'}]->(b:Q {`@id`:'y'}) RETURN a.`@id`, b.`@id`
+      -> [String("x"), String("y")]
+  ok  MATCH ()-[r:R]->() RETURN r.`@id`
+      -> [String("r1")]
+  ok  CREATE INDEX p_atid FOR (n:P) ON (n.`@id`)
+      -> 
+  ERR CREATE CONSTRAINT p_atid_u FOR (n:P) REQUIRE n.`@id` IS UNIQUE
+      -> semantic error: AlreadyExists: there already exists an index (:P {@id}). A constraint cannot be created until the index has been dropped.
+  ok  CREATE (:P {`@id`: 'a'})
+      -> 
+  ok  CREATE CONSTRAINT r_atid_u FOR ()-[r:R]-() REQUIRE r.`@id` IS UNIQUE
+      -> 
+  ok  SHOW CONSTRAINTS
+      -> [Int(0), String("r_atid_u"), String("RELATIONSHIP_PROPERTY_UNIQUENESS"), String("RELATIONSHIP"), List([String("R")]), List([String("@id")]), String("r_atid_u"), Null, Null]
+  ok  SHOW INDEXES
+      -> [Int(0), String("p_atid"), String("ONLINE"), Float(100.0), String("RANGE"), String("NODE"), List([String("P")]), List([String("@id")]), String("range-1.0"), Null, Null, Int(0)] | [Int(0), String("r_atid_u"), String("ONLINE"), Float(100.0), String("RANGE"), String("RELATIONSHIP"), List([String("R")]), List([String("@id")]), String("range-1.0"), String("r_atid_u"), Null, Int(0)]
+  ok  CREATE (:Z {`@hash`: 'sha256:x', `@@`: 1})
+      -> 
+  ok  MATCH (n:Z) RETURN keys(n)
+      -> [List([String("@@"), String("@hash")])]
+
+== 2. id() determinism and order
+  db1: [Int(0), Int(0)] | [Int(1), Int(1)] | [Int(2), Int(2)] | [Int(3), Int(3)] | [Int(4), Int(4)] | [Int(5), Int(5)] | [Int(6), Int(6)] | [Int(7), Int(7)] | [Int(8), Int(8)] | [Int(9), Int(9)]
+  db2 equal to db1: true
+  creation order == id order: true
+  rels: [Int(0), Int(100)] | [Int(1), Int(101)]
+  ok  MATCH (n:N) WHERE n.seq IN [2,3] DETACH DELETE n
+      -> 
+  ok  CREATE (:N {seq:10}), (:N {seq:11})
+      -> 
+  after delete+create: [Int(0), Int(0)] | [Int(1), Int(1)] | [Int(4), Int(4)] | [Int(5), Int(5)] | [Int(6), Int(6)] | [Int(7), Int(7)] | [Int(8), Int(8)] | [Int(9), Int(9)] | [Int(10), Int(10)] | [Int(11), Int(11)]
+  unordered scan : [Int(0)] | [Int(1)] | [Int(4)] | [Int(5)] | [Int(6)] | [Int(7)] | [Int(8)] | [Int(9)] | [Int(10)] | [Int(11)]
+  ok  CREATE (a:A)-[:R]->(b:B), (c:C)
+      -> 
+  ok  MATCH (n) RETURN id(n), labels(n) ORDER BY id(n)
+      -> [Int(0), List([String("A")])] | [Int(1), List([String("B")])] | [Int(2), List([String("C")])]
+
+== 3. integer vs string identity
+  ok  CREATE (:P {`@id`: '42'})
+      -> 
+  ok  MATCH (n:P) WHERE n.`@id` = 42 RETURN count(n)
+      -> [Int(0)]
+  ok  MATCH (n:P) WHERE n.`@id` = '42' RETURN count(n)
+      -> [Int(1)]
+  ok  MATCH (n:P) WHERE n.`@id` = toString(42) RETURN count(n)
+      -> [Int(1)]
+  ok  MERGE (n:P {`@id`: '42'}) RETURN count(n)
+      -> [Int(1)]
+  ok  MERGE (n:P {`@id`: 42}) RETURN count(n)
+      -> [Int(1)]
+  ok  MATCH (n:P) RETURN count(n)
+      -> [Int(2)]
+  ok  CREATE (:U {uid: 42}), (:U {uid: '42'}), (:U {uid: 7})
+      -> 
+  ok  MATCH (n:U) WHERE toString(n.uid) = '42' RETURN count(n)
+      -> [Int(2)]
+  ok  MATCH (n:U) WHERE n.uid = 42 RETURN count(n)
+      -> [Int(1)]
+  ok  MATCH (n:U) RETURN n.uid, valueType(n.uid)
+      -> [Int(42), String("INTEGER NOT NULL")] | [String("42"), String("STRING NOT NULL")] | [Int(7), String("INTEGER NOT NULL")]
+  ok  CREATE INDEX u_uid FOR (n:U) ON (n.uid)
+      -> 
+  plan MATCH (n:U) WHERE n.uid = 42 RETURN n
+      -> operators seen: ["IndexSeek"]
+  plan MATCH (n:U) WHERE toString(n.uid) = '42' RETURN n
+      -> operators seen: ["NodeByLabelScan"]
+  ok  RETURN toString(9007199254740993), toString(-0), toString(1.0)
+      -> [String("9007199254740993"), String("0"), String("1.0")]
+
+== 4. transactions
+  in_transaction before begin: false
+  ok  CREATE CONSTRAINT k FOR (n:K) REQUIRE n.id IS UNIQUE
+      -> 
+  begin ok
+  ok  CREATE (:K {id: 1})
+      -> 
+  ok  CREATE (:K {id: 2})
+      -> 
+  ERR CREATE (:K {id: 1})
+      -> semantic error: ConstraintValidationFailed: `k` uniqueness
+  in_transaction after failed stmt: true
+  ERR MATCH (n:K) RETURN count(n)
+      -> semantic error: transaction failed; rollback required
+  rollback ok
+  ok  MATCH (n:K) RETURN count(n)
+      -> [Int(0)]
+  ok  CREATE (:T {x:1})
+      -> 
+  other connection before commit: [Int(0)]
+  commit ok bookmark=Some("relate:1")
+  other connection after commit : [Int(1)]
+  ok  CREATE (:T {x:1})
+      -> 
+  ERR CREATE (:T {x: [1, [2]]})
+      -> type error: InvalidPropertyType
+  in_transaction after type error: true
+  ok  MATCH (n:T) RETURN count(n)
+      -> [Int(0)]
+  ok  CREATE (:D)
+      -> 
+  ok  MATCH (n:D) RETURN count(n)
+      -> [Int(0)]
+  ok  CREATE CONSTRAINT q FOR (n:Q) REQUIRE n.id IS UNIQUE
+      -> 
+  ok  SHOW CONSTRAINTS
+      -> 
+
+== 5. identity constraints and indexes
+  ok  CREATE CONSTRAINT u1 FOR (n:A) REQUIRE n.id IS UNIQUE
+      -> 
+  ok  CREATE (:A), (:A), (:A {id: 1})
+      -> 
+  ERR CREATE (:A {id: 1})
+      -> semantic error: ConstraintValidationFailed: `u1` uniqueness
+  ok  CREATE CONSTRAINT u2 FOR (n:B) REQUIRE (n.k1, n.k2) IS UNIQUE
+      -> 
+  ok  CREATE (:B {k1: 1}), (:B {k1: 1})
+      -> 
+  ERR CREATE (:B {k1: 1, k2: 2}), (:B {k1: 1, k2: 2})
+      -> semantic error: ConstraintValidationFailed: `u2` uniqueness
+  ok  CREATE CONSTRAINT nk FOR (n:C) REQUIRE (n.k1, n.k2) IS NODE KEY
+      -> 
+  ERR CREATE (:C {k1: 1})
+      -> semantic error: ConstraintValidationFailed: `nk` requires properties
+  ok  CREATE (:C {k1: 1, k2: 2})
+      -> 
+  ERR CREATE (:C {k1: 1, k2: 2})
+      -> semantic error: ConstraintValidationFailed: `nk` uniqueness
+  ok  CREATE (:A {id: '1'})
+      -> 
+  ok  CREATE CONSTRAINT ru FOR ()-[r:R]-() REQUIRE r.id IS UNIQUE
+      -> 
+  ERR CREATE (:X)-[:R {id: 1}]->(:X), (:X)-[:R {id: 1}]->(:X)
+      -> semantic error: ConstraintValidationFailed: `ru` uniqueness
+  ok  CREATE CONSTRAINT rk FOR ()-[r:S]-() REQUIRE r.id IS NOT NULL
+      -> 
+  ERR CREATE (:X)-[:S]->(:X)
+      -> semantic error: ConstraintValidationFailed: `rk` requires properties
+  ok  CREATE (:D {id: 1}), (:D {id: 1})
+      -> 
+  ERR CREATE CONSTRAINT du FOR (n:D) REQUIRE n.id IS UNIQUE
+      -> semantic error: ConstraintValidationFailed: `du` uniqueness
+  plan MATCH (n:A {id: 1}) RETURN n
+      -> operators seen: ["IndexSeek"]
+  plan MATCH (n:B {k1: 1, k2: 2}) RETURN n
+      -> operators seen: ["IndexSeek"]
+  plan MERGE (n:A {id: 5}) RETURN n
+      -> operators seen: []
+  plan MATCH ()-[r:R {id: 1}]->() RETURN r
+      -> operators seen: []
+  ok  SHOW CONSTRAINTS
+      -> [Int(0), String("nk"), String("NODE_KEY"), String("NODE"), List([String("C")]), List([String("k1"), String("k2")]), String("nk"), Null, Null] | [Int(0), String("rk"), String("RELATIONSHIP_PROPERTY_EXISTENCE"), String("RELATIONSHIP"), List([String("S")]), List([String("id")]), Null, Null, Null] | [Int(0), String("ru"), String("RELATIONSHIP_PROPERTY_UNIQUENESS"), String("RELATIONSHIP"), List([String("R")]), List([String("id")]), String("ru"), Null, Null] | [Int(0), String("u1"), String("NODE_PROPERTY_UNIQUENESS"), String("NODE"), List([String("A")]), List([String("id")]), String("u1"), Null, Null] | [Int(0), String("u2"), String("NODE_PROPERTY_UNIQUENESS"), String("NODE"), List([String("B")]), List([String("k1"), String("k2")]), String("u2"), Null, Null]
+  ok  SHOW INDEXES
+      -> [Int(0), String("nk"), String("ONLINE"), Float(100.0), String("RANGE"), String("NODE"), List([String("C")]), List([String("k1"), String("k2")]), String("range-1.0"), String("nk"), Null, Int(0)] | [Int(0), String("ru"), String("ONLINE"), Float(100.0), String("RANGE"), String("RELATIONSHIP"), List([String("R")]), List([String("id")]), String("range-1.0"), String("ru"), Null, Int(0)] | [Int(0), String("u1"), String("ONLINE"), Float(100.0), String("RANGE"), String("NODE"), List([String("A")]), List([String("id")]), String("range-1.0"), String("u1"), Null, Int(0)] | [Int(0), String("u2"), String("ONLINE"), Float(100.0), String("RANGE"), String("NODE"), List([String("B")]), List([String("k1"), String("k2")]), String("range-1.0"), String("u2"), Null, Int(0)]
+  ok  MERGE (n:A {id: 9}) RETURN id(n)
+      -> [Int(20)]
+  ok  MERGE (n:A {id: 9}) RETURN id(n)
+      -> [Int(20)]
+  ok  CREATE (:A:M {id: 20}), (:M {id: 20})
+      -> 

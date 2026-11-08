@@ -54,3 +54,4 @@ into the RFC rather than copied verbatim.
 
 | Spike | Title | Status | RFCs |
 |---|---|---|---|
+| [SPIKE-001](SPIKE-001-relate-phase1-behaviors/SPIKE.md) | Relate Behaviors Assumed by Phase 1 | done | RFC-003, RFC-001 |
