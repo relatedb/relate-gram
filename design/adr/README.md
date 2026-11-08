@@ -58,6 +58,8 @@ Use `/adr-review` before moving a draft to `accepted`.
 
 | ADR | Title | Status | RFCs |
 |---|---|---|---|
-| [ADR-001](ADR-001-load-identity-and-merge.md) | Load Identity and Merge Semantics | accepted (amended 2026-11-06) | RFC-001 |
-| [ADR-002](ADR-002-export-identity.md) | Export Identity | accepted | RFC-001 |
-| [ADR-003](ADR-003-meta-node.md) | Meta Nodes and the Meta Graph | accepted | RFC-001 |
+| [ADR-001](ADR-001-load-identity-and-merge.md) | Load Identity and Merge Semantics | accepted (amended 2026-11-08) | RFC-001, RFC-003 |
+| [ADR-002](ADR-002-export-identity.md) | Export Identity | accepted (amended 2026-11-08) | RFC-001, RFC-003 |
+| [ADR-003](ADR-003-file-kind-and-record.md) | File Kind and the Top-Level Record | accepted (amended 2026-11-08) | RFC-001, RFC-003 |
+| [ADR-004](ADR-004-preserved-identity.md) | Preserved Identity | accepted | RFC-001, RFC-003 |
+| [ADR-005](ADR-005-graph-metadata.md) | Graph Metadata and Meta Nodes | proposed | RFC-001, RFC-003 |

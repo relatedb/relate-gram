@@ -14,19 +14,26 @@ one authoritative record keeps specifications and code from drifting apart.
 ### II. Strict Subset, Loud Failures
 The loader MUST accept only gram constructs that map directly to Cypher's property graph model.
 Every other construct MUST be a load error that reports its position in the source file. Nothing
-is dropped or approximated silently. The one documented exception is an unrecognized tag on a
-tagged string: the tag is dropped and the loader MUST report it.
+is dropped or approximated silently. The documented exceptions are an unrecognized tag on a
+tagged string, whose tag is dropped, and the properties of a file's top-level record while nothing
+stores them; the loader MUST report each.
 
 Rationale: a loaded database that differs from its source without notice cannot be trusted.
 
-### III. Identity Is Explicit
-On load, gram identifiers MUST only resolve references within the file; they are not stored. The
-first appearance of an identifier fixes it as a node or a relationship, and a later conflicting use
-MUST be an error. On export, identity MUST be configurable and MUST have deterministic defaults.
-A missing or non-unique identifier source MUST be an error that lists the offending elements, never
-a silent fallback.
+### III. Identity Is Preserved
+On load, gram identifiers MUST resolve references within the file and MUST be kept on the element
+as the reserved property `@id`, or the element's identity MUST come from a property that the caller
+names. An element is defined at one site and referenced elsewhere by its identifier alone, and a
+second definition MUST be an error. The first appearance of an identifier fixes it as a node or a
+relationship, and a later conflicting use MUST be an error. On export, identity MUST be
+configurable and MUST have deterministic defaults. A missing or non-unique identifier source MUST
+be an error that lists the offending elements, never a silent fallback. An element that has no
+identifier in the file is stored without identity, and the loader MUST report how many such
+elements it loaded.
 
-Rationale: implicit identity makes two loads of one file disagree and makes exports unloadable.
+Rationale: identity that is dropped makes a second load duplicate every element and leaves an
+export unable to restore what the file said. Explicit rules for where identity comes from keep two
+loads of one file in agreement.
 
 ### IV. Round-Trip Fidelity
 Loading a file and exporting the result MUST preserve the graph and its property types. Exports of
@@ -75,4 +82,4 @@ or materially expanding guidance, PATCH for clarifications. Every plan and pull 
 verify compliance with the principles above, and any deviation MUST be justified in writing.
 Runtime guidance for agents lives in `CLAUDE.md`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-06
+**Version**: 2.0.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-08
