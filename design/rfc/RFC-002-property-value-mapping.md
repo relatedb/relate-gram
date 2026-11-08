@@ -3,7 +3,7 @@ id: RFC-002
 title: Property Value Mapping Between Gram and Cypher
 status: review
 created: 2026-11-06
-adrs: []
+adrs: [ADR-006]
 ---
 
 # RFC-002: Property Value Mapping Between Gram and Cypher
@@ -110,5 +110,7 @@ The mapping applies equally to node properties, relationship properties and the 
 7.10. How are property keys quoted and escaped? What happens to duplicate keys in one map, and how does export treat Cypher values for which no gram form exists (for example vectors or byte arrays), given that Cypher has no null property and gram has no null?
 
 ## 8. ADRs
+
+- ADR-006: Property Value Mapping (first phase; resolves questions 7.1, 7.2, 7.5, 7.6 and 7.10)
 
 _(populated automatically as `/adr-create` links ADRs to this RFC)_

@@ -63,3 +63,4 @@ Use `/adr-review` before moving a draft to `accepted`.
 | [ADR-003](ADR-003-file-kind-and-record.md) | File Kind and the Top-Level Record | accepted (amended 2026-11-08) | RFC-001, RFC-003 |
 | [ADR-004](ADR-004-preserved-identity.md) | Preserved Identity | accepted | RFC-001, RFC-003 |
 | [ADR-005](ADR-005-graph-metadata.md) | Graph Metadata and Meta Nodes | proposed | RFC-001, RFC-003 |
+| [ADR-006](ADR-006-property-value-mapping.md) | Property Value Mapping | proposed | RFC-002 |

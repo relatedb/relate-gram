@@ -1,0 +1,92 @@
+== numbers
+  ok  CREATE (:N {a: 9223372036854775807, b: -9223372036854775808})
+      -> 
+  ok  MATCH (n:N) RETURN n.a, n.b
+      -> [Int(9223372036854775807), Int(-9223372036854775808)]
+  ERR CREATE (:N2 {a: 9223372036854775808})
+      -> syntax error: IntegerOverflow: parse error: integer overflow: 9223372036854775808
+  CREATE (:N2 {a: 9223372036854775808})
+                  ^
+  ok  CREATE (:N3 {f: 1.0, g: 0.1, h: 1.0e300, i: -0.0})
+      -> 
+  ok  MATCH (n:N3) RETURN n.f, n.g, n.h, n.i, toString(n.f), toString(n.h)
+      -> [Float(1.0), Float(0.1), Float(1e300), Float(-0.0), String("1.0"), String("1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0")]
+  ok  NaN param
+      -> [Float(NaN)]
+  ok  Inf param
+      -> [Float(inf)]
+  ok  -Inf param
+      -> [Float(-inf)]
+  ok  RETURN toString(1.5e-7), toString(123456789.123456789), toString(1e21)
+      -> [String("0.00000015"), String("123456789.12345679"), String("1000000000000000000000.0")]
+== strings
+  ok  CREATE (:S {a: 'it\'s', b: "tab\there", c: 'é😀', d: ''})
+      -> 
+  ok  MATCH (n:S) RETURN n.a, n.b, n.c, size(n.d)
+      -> [String("it's"), String("tab\there"), String("é😀"), Int(0)]
+  ok  string with NUL and control chars
+      -> [Int(6)]
+== lists
+  ok  CREATE (:L {a: [1,2,3], b: ['x','y'], c: [true,false], d: [1.5, 2.5], e: []})
+      -> 
+  ok  MATCH (n:L) RETURN n.a, n.b, n.c, n.d, n.e, valueType(n.e)
+      -> [List([Int(1), Int(2), Int(3)]), List([String("x"), String("y")]), List([Bool(true), Bool(false)]), List([Float(1.5), Float(2.5)]), List([]), String("LIST<NOTHING> NOT NULL")]
+  ERR CREATE (:L2 {a: [1, 'x']})
+      -> type error: InvalidPropertyType
+  ok  CREATE (:L2 {a: [1, 2.5]})
+      -> 
+  ERR CREATE (:L2 {a: [1, null]})
+      -> type error: InvalidPropertyType
+  ERR CREATE (:L2 {a: [[1],[2]]})
+      -> type error: InvalidPropertyType
+  ERR CREATE (:L2 {a: {k: 1}})
+      -> type error: InvalidPropertyType
+  ok  CREATE (:L2 {a: null})
+      -> 
+  ok  MATCH (n:L2) RETURN n.a, valueType(n.a)
+      -> [List([Float(1.0), Float(2.5)]), String("LIST<FLOAT NOT NULL> NOT NULL")] | [Null, String("NULL")]
+== other storable types
+  ok  CREATE (:T {d: date('2024-01-15'), dt: datetime('2024-01-15T10:30:00Z'), ldt: localdatetime('2024-01-15T10:30:00'), t: time('10:30:00Z'), lt: localtime('10:30:00'), du: duration('P1DT2H')})
+      -> 
+  ok  MATCH (n:T) RETURN n.d, n.dt, n.ldt, n.t, n.lt, n.du
+      -> [Temporal(Date(2024-01-15)), Temporal(DateTime { utc: 2024-01-15T10:30:00, offset: 0, zone: Some("Z") }), Temporal(LocalDateTime(2024-01-15T10:30:00)), Temporal(Time { time: 10:30:00, offset: 0 }), Temporal(LocalTime(10:30:00)), Temporal(Duration { months: 0, days: 1, nanos: 7200000000000 })]
+  ok  MATCH (n:T) RETURN toString(n.d), toString(n.dt), toString(n.ldt), toString(n.t), toString(n.lt), toString(n.du)
+      -> [String("2024-01-15"), String("2024-01-15T10:30:00Z"), String("2024-01-15T10:30:00"), String("10:30:00Z"), String("10:30:00"), String("P1DT2H")]
+  ok  CREATE (:P {p: point({x: 1.0, y: 2.0}), q: point({latitude: 1.0, longitude: 2.0, crs: 'WGS-84'})})
+      -> 
+  ok  MATCH (n:P) RETURN n.p, n.q
+      -> [Point(PointValue { srid: 7203, x: 1.0, y: 2.0, z: None }), Point(PointValue { srid: 4326, x: 2.0, y: 1.0, z: None })]
+  ok  CREATE (:V {v: vector([1.0, 2.0, 3.0], 3, FLOAT32)})
+      -> 
+  ok  CREATE (:U {u: randomUUID()})
+      -> 
+  ok  MATCH (n:U) RETURN n.u, valueType(n.u)
+      -> [String("01a1bbe0-0727-7f91-806a-55959d50e047"), String("STRING NOT NULL")]
+  ERR bytes param
+      -> type error: TypeError: byte array values cannot be stored as node or relationship properties; they live only inside a statement (parameter to result)
+  ok  CREATE (:T2 {l: [date('2024-01-15'), date('2024-02-01')]})
+      -> 
+  ok  MATCH (n:T2) RETURN n.l, valueType(n.l)
+      -> [List([Temporal(Date(2024-01-15)), Temporal(Date(2024-02-01))]), String("LIST<DATE NOT NULL> NOT NULL")]
+== keys
+  ok  CREATE (:K {`with space`: 1, `a.b`: 2, `ünï`: 3, `x`: 4, `x`: 5})
+      -> 
+  ok  MATCH (n:K) RETURN keys(n)
+      -> [List([String("a.b"), String("with space"), String("x"), String("ünï")])]
+  ok  CREATE (:K2 {``: 1})
+      -> 
+  ok  MATCH (n:K2) RETURN keys(n)
+      -> [List([String("")])]
+== parameter-supplied values (what a loader would use)
+  ok  int
+      -> [String("INTEGER NOT NULL")]
+  ok  list of ints
+      -> [String("LIST<INTEGER NOT NULL> NOT NULL")]
+  ok  empty list
+      -> [String("LIST<NOTHING> NOT NULL")]
+  ERR mixed list
+      -> type error: InvalidPropertyType
+  ok  int+float list
+      -> [List([Float(1.0), Float(2.5)])]
+  ok  null in SET
+      -> [List([])]

@@ -1,0 +1,10 @@
+[package]
+name = "probe2"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+relate = { path = "/Users/abk/Developer/neo4j-labs/cypherlite/relate/relate" }
