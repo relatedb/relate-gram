@@ -49,7 +49,7 @@ Neither lets the user do the one thing they wanted, which is to update the datab
 
 3.5. Give files that carry no identifiers, and graphs that need another key, a way to be matched without guessing.
 
-3.6. Give a load that names no graph a catch-all graph, so that every load keeps element identifiers and a reload behaves the same whether or not a name was given.
+3.6. From the second phase on, give a load that names no graph a catch-all graph, so that every load keeps element identifiers and a reload behaves the same whether or not a name was given.
 
 3.7. Round-trip a named graph through gram, so that an export of a named graph reloads into the same graph without changes.
 
@@ -70,6 +70,8 @@ Neither lets the user do the one thing they wanted, which is to update the datab
 4.6. Language bindings and client structures that expose identity. They build on this and come later.
 
 ## 5. Proposed Approach (high-level)
+
+The directions span three phases (5.9). Identity-based upsert (5.2) applies from the first phase, in one unconstrained graph space. Everything that depends on a graph name, membership or stored per-graph metadata applies from the second phase.
 
 Prior art for these directions is collected in `design/notes/2026-11-06-identity-prior-art.md`, which includes the scoped-identity work in pattern-hs (the Haskell reference implementation of pattern).
 
@@ -125,7 +127,7 @@ Exporting a named graph writes each element's `@id` as its gram identifier and i
 
 ### 5.6 Consequences for rules already made
 
-Two existing rules assume identifiers are dropped. The project constitution says identifiers "are not stored", and ADR-001 rejects every property key starting with `@` in a file. The direction here replaces it: every load stores the identifier, because a load that names no graph goes into the catch-all graph (5.7). The keys are still written only by the loader and never read from file content. The constitution has to be amended through an ADR. ADR-001 has been amended so that an element is defined at one site, which removes its conflict option, and its statement that a load never matches existing elements has to be updated again when this direction is decided.
+Two existing rules assume identifiers are dropped. The project constitution says identifiers "are not stored", and ADR-001 rejects every property key starting with `@` in a file. The direction here replaces it: every load stores the identifier, in the first phase directly and from the second phase also because a load that names no graph goes into the catch-all graph (5.7). The keys are still written only by the loader and never read from file content. The constitution has to be amended through an ADR. ADR-003, which places the metadata in meta nodes, describes the third phase; its name resolution and digest rules apply from the second phase, with the metadata held in the ontology document. ADR-001 has been amended so that an element is defined at one site, which removes its conflict option, and its statement that a load never matches existing elements has to be updated again when this direction is decided.
 
 ### 5.7 Naming a graph
 
@@ -145,7 +147,11 @@ Because every element carries an identifier, an export can order elements by it,
 
 ### 5.9 Phasing
 
-Until identity is stored, a changed file for an existing graph is an error that tells the user to load under another name (ADR-003). The first step of this work is element identity and membership, with reload as an upsert and the summary. Prune, replace, preview and alternative keys follow.
+**Phase 1: one graph space.** There are no named graphs, no ontology and no metadata nodes. Elements keep the identifiers the file gave them as `@id`, and `merge` updates them by `@id` with the file's values winning (5.2). An element written without an identifier is stored without one: nothing is generated in this phase, anonymous elements are not matched on reload, and loading a file again can duplicate them. The operation is additive and the summary reports what it did. A file's top-level record is parsed and its `kind` checked. Its properties are reported in a warning as not stored, a documented exception to the rule against dropping, as with an unrecognized tag. An export writes no record. There is no digest shortcut, no prune and no `replace`, since without membership none of them can be limited to what a load created.
+
+**Phase 2: named graphs.** Everything that depends on a graph name arrives: the per-element graph marker, `load` and `replace` and prune, the catch-all graph `@_`, generated identifiers (5.8), and matching of anonymous elements on reload (5.2). The graph's name, file digest, record properties and key declarations are kept in the ontology document under `extensions.custom.relate-gram`. Named graphs are therefore gated behind Relate's ontology preview opt-in (`RELATE_PREVIEW=ontology`) and are unavailable where it cannot be set, such as WebAssembly builds. This avoids a metadata node in every query and keeps the first phase free of any dependence on a preview feature.
+
+**Phase 3: a graph of graphs.** The metadata of phase 2 is materialized as a graph, using the meta nodes of ADR-003, so that graphs and their properties can be queried and listed with Cypher.
 
 ## 6. Alternatives Considered
 
@@ -183,6 +189,8 @@ Until identity is stored, a changed file for an existing graph is an error that 
 
 6.17. **Use every symbol character gram allows in generated identifiers.** Rejected: the extra four characters add under 2% capacity and make identifiers harder to select and read.
 
+6.18. **Store graph metadata in meta nodes from the first release.** Deferred: meta nodes appear in every node query, and nothing in the first phase needs per-graph metadata. They return in the third phase, as a materialization of metadata held elsewhere.
+
 ## 7. Open Questions
 
 7.1. Is membership a property on each element, as proposed, or something else, such as a label, a relationship to the meta node, or a combined `@id` value that embeds the graph name? With every element carrying an identifier, a composite constraint over the graph and the identifier has no missing components (Relate's handling of those is documented but not yet tested). A combined value needs one property and allows a single-property uniqueness constraint, but an authority-qualified graph name contains characters a plain gram identifier cannot, and it makes `@id` mean two things. The choice affects query ergonomics, index use and export.
@@ -218,6 +226,8 @@ Until identity is stored, a changed file for an existing graph is an error that 
 7.16. If the loader reuses pattern-rs's reconciliation, does it merge anonymous elements that carry the empty symbol as identity? pattern-hs reports that its own reconciliation does and requires it to be fixed. This belongs to the parser decision.
 
 7.17. Do files produced by other gram tools commonly split an element's labels and properties across several sites? If so, the single defining site rule (ADR-001) may need a relaxation, such as accepting identical repeats.
+
+7.18. What happens to the ontology document when graph metadata lives in `extensions.custom.relate-gram`? `db.ontology.set` replaces the whole single document, so a user who sets an ontology of their own erases every graph's record. The write cannot share a transaction with the data load. Creating the document where none exists produces a stub the user did not write, and what `db.ontology.apply` does with it is not confirmed. Relate's ontology feature is itself a preview whose spec is not final.
 
 ## 8. ADRs
 

@@ -40,7 +40,7 @@ A gram file is a single artifact that holds nodes, relationships and their prope
 3.3. Support only the gram constructs that map directly onto Cypher's property graph model (nodes, relationships, paths and the top-level record), and reject every other construct that does not map directly, with an error that locates the offending text.
 
 3.4. Make identity behavior explicit and configurable, with defaults that need no configuration:
-  - On load, gram identifiers resolve references within the file and are then dropped.
+  - On load, gram identifiers resolve references within the file and are kept as the element's `@id`, so identity survives the load.
   - On export, identifiers come from an `@id` value, are copied from a property whose values are unique, or are generated.
 
 3.5. Preserve a gram file's top-level record by loading it as a distinguished "meta node".
@@ -83,14 +83,14 @@ The parser is expected to come from the existing gram tooling rather than being 
 
 ### 5.2 Identity on load
 
-Gram identifiers exist to say "this element, again." On load they are used for exactly that, and then dropped:
+Gram identifiers exist to say "this element, again." On load they resolve references within the file, and they are kept as the element's identity:
 
 - The first appearance of an identifier fixes whether it names a node or a relationship. Using the same identifier later as the other kind is an error.
 - A later appearance of an identifier refers to the same element. An element is defined, with its labels and properties, at one site in a file and may be referred to anywhere else by its identifier alone (ADR-001).
-- Elements written without an identifier cannot be referred to again, so each appearance is a separate element. `(a)-->(b)` written twice, with no identifier on the relationship, yields two relationships.
-- After loading, the identifier is not stored on the element. The database's own internal identity applies.
+- An identifier is stored on the element as the reserved property `@id`, so a later load can tell which elements it already holds, and an export can write the identifier back.
+- Elements written without an identifier cannot be referred to again, so each appearance is a separate element. `(a)-->(b)` written twice, with no identifier on the relationship, yields two relationships. In the first phase no identifier is generated for them, so loading the same file again can duplicate them.
 
-Loading the same file twice into a fresh database each time therefore yields equivalent graphs, and a file that mentions an element in several places yields one element.
+Loading a file again therefore updates the elements that carry identifiers instead of duplicating them, and a file that mentions an element in several places yields one element. RFC-003 sets what an update does.
 
 ### 5.3 Identity on export
 
@@ -108,7 +108,7 @@ A gram file may open with a record of properties describing the file as a whole.
 
 ### 5.5 Named graphs
 
-A single Relate database can hold several graphs, each one a named graph. (Relate itself has three fixed built-in namespaces: the user data graph, the system database and the ontology graph. Named graphs are unrelated to these and live inside the user data graph.) An element's identity within its named graph is stored in a reserved `@id` property. On export, that value becomes the element's gram identifier, so identity survives the round trip: a graph exported from one database and loaded into another as the same named graph lines up with what is already there.
+Named graphs belong to the second phase (5.7). A single Relate database can hold several graphs, each one a named graph. (Relate itself has three fixed built-in namespaces: the user data graph, the system database and the ontology graph. Named graphs are unrelated to these and live inside the user data graph.) An element's identity within its named graph is stored in a reserved `@id` property. On export, that value becomes the element's gram identifier, so identity survives the round trip: a graph exported from one database and loaded into another as the same named graph lines up with what is already there.
 
 Two operations build on this:
 
@@ -125,7 +125,13 @@ Identity-aware libraries for TypeScript and Python, and client-side data structu
 
 ### 5.7 Phasing
 
-Basic capability comes first: load and export of the strict subset, with the default identity behavior. Named graphs, managed multi-graph loading and merging come second, since they depend on the identity model being settled. Language bindings and client structures come last.
+The work comes in three phases, each useful on its own.
+
+1. **One graph space.** Load and export of the strict subset into a single, unconstrained graph space, with identifiers kept as `@id` and a repeated load updating the elements that carry them. There are no named graphs, no top-level record storage and no metadata nodes; a file's top-level record is checked and reported, not stored.
+2. **Named graphs.** Several graphs in one database, with per-graph metadata, managed multi-graph loading and merging. Their metadata lives in the ontology document's custom extension, so this phase sits behind Relate's ontology preview opt-in (RFC-003).
+3. **A graph of graphs.** The metadata of phase 2 is materialized as nodes, so that graphs can be queried and listed with Cypher (ADR-003).
+
+Language bindings and client structures come last.
 
 ## 6. Alternatives Considered
 
@@ -135,7 +141,7 @@ Basic capability comes first: load and export of the strict subset, with the def
 
 6.3. **Support the full gram language.** Rejected: annotations and pattern notation have no meaning in Cypher's data model. Supporting them would mean inventing a mapping, and files that use them would not round-trip.
 
-6.4. **Store gram identifiers on elements as an ordinary property by default.** Rejected as the default: identifiers in a file are scoped to the file, and persisting them would make a second load duplicate the first. The reserved `@id` property provides persisted identity as an explicit choice in named graphs.
+6.4. **Drop gram identifiers after a load.** Rejected: identity is fundamental to gram, a second load would duplicate every element, and an export could not write the identifiers back. Identifiers are kept in the reserved `@id` property, which a file cannot set itself (ADR-001).
 
 6.5. **Make gram a storage format (a snapshot codec) for Relate.** Rejected for now: the strict subset cannot carry everything a database holds, such as indexes, schema and vector types, so it does not suit a durable form. It remains possible to revisit if gram's coverage grows.
 
