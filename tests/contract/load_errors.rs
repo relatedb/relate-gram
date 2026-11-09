@@ -187,8 +187,8 @@ fn repeated_and_conflicting_constructs_point_back_at_the_first() {
     let (_db, mut c) = fresh_db();
     let f = load_str(&mut c, "(a {k: 1, k: 2})").unwrap_err();
     assert_eq!(f.diagnostics[0].code, code::KEY_DUPLICATE);
-    assert_eq!(f.diagnostics[0].span.unwrap().column, 13);
-    assert_eq!(f.diagnostics[0].related[0].1.column, 7);
+    assert_eq!(f.diagnostics[0].span.unwrap().column, 11);
+    assert_eq!(f.diagnostics[0].related[0].1.column, 5);
 
     let f = load_str(&mut c, "(a:L)\n(a:M)").unwrap_err();
     assert_eq!(f.diagnostics[0].code, code::ID_DUPLICATE_DEFINITION);
