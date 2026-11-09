@@ -6,6 +6,11 @@ stops depending on a pinned git commit. It binds no decision; if a step needs on
 
 ## Launch week
 
+Status on the day after the note was written: items 2 to 5 are done (the `relate-gram` command, rendered
+diagnostics, `docs/supported-gram.md`, `docs/quickstart.md`). Item 1 is blocked: GitHub CI cannot clone
+`neo4j-labs/cypherlite`, which is internal until Relate is public. The workflow now uses a read-only token
+in the repository secret `RELATE_READ_TOKEN` if one exists, and needs nothing once Relate is public.
+
 Phase 1 (specification `specs/001-phase1-load-export/`) is the product; the week goes into making it
 usable by someone who does not write Rust. In order:
 

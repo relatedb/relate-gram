@@ -10,6 +10,7 @@ pub mod export;
 pub(crate) mod load;
 pub mod names;
 pub mod plan;
+pub mod render;
 pub mod settings;
 pub mod syntax;
 pub mod values;
@@ -65,6 +66,40 @@ impl LoadFailure {
             total,
         }
     }
+}
+
+/// The result of [`check`]: every error and warning, in source order.
+#[derive(Clone, Debug)]
+pub struct CheckReport {
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+impl CheckReport {
+    pub fn has_errors(&self) -> bool {
+        self.diagnostics.iter().any(Diagnostic::is_error)
+    }
+}
+
+/// Parse and plan `source` as a load would, without a database. It finds every
+/// error a load finds except those that depend on what a database holds (`match.*`).
+pub fn check(source: &[u8], settings: &LoadSettings) -> CheckReport {
+    let syn = match syntax::parse(source, settings.max_diagnostics) {
+        Ok(s) => s,
+        Err(f) => {
+            return CheckReport {
+                diagnostics: f.diagnostics,
+            }
+        }
+    };
+    let plan = plan::build(&syn, settings);
+    let mut diagnostics = plan.diagnostics.clone();
+    diagnostics.extend(
+        plan.nodes
+            .iter()
+            .filter_map(plan::PlannedNode::reference_only_warning),
+    );
+    diagnostics.sort_by_key(|d| d.span.map(|s| s.start).unwrap_or(usize::MAX));
+    CheckReport { diagnostics }
 }
 
 /// Load gram text into the database behind `conn` (contracts/library-api.md).

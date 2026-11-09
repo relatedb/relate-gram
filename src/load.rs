@@ -469,12 +469,8 @@ fn write_plan(
 
     // Nodes created only because they were referenced (ADR-001 section 2.3).
     for (k, n) in plan.nodes.iter().enumerate() {
-        if let (Some(key), false, None) = (&n.key, n.defined, res.node[k]) {
-            written.warnings.push(Diagnostic::warning(
-                code::ID_REFERENCE_ONLY,
-                n.span,
-                format!("`{key}` is referenced but never defined; an empty node was created"),
-            ));
+        if res.node[k].is_none() {
+            written.warnings.extend(n.reference_only_warning());
         }
     }
     Ok(written)

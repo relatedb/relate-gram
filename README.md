@@ -7,6 +7,24 @@ Gram is a plain-text notation for graphs. `relate-gram` supports a strict subset
 map directly to Cypher's property graph model (nodes, relationships, paths and the top-level record).
 Anything else is rejected with an error that says what it is and where it is.
 
+## Quick start
+
+```bash
+git clone --recurse-submodules https://github.com/relatedb/relate-gram
+cd relate-gram && cargo build --release
+
+target/release/relate-gram check people.gram                 # find every problem, with line and marker
+target/release/relate-gram load people.gram --db ./people    # load it into a Relate database
+relate query --database ./people "MATCH (n) RETURN n"        # query it with Relate
+target/release/relate-gram export --db ./people              # write it back out
+```
+
+The [five-minute quickstart](docs/quickstart.md) walks through this, and
+[what is supported, and why](docs/supported-gram.md) lists every construct that is rejected, its error
+code, and what to write instead. `relate-gram --help` lists the commands and options.
+
+## As a library
+
 ```rust
 use relate::Database;
 use relate_gram::settings::{ExportSettings, LoadSettings};
