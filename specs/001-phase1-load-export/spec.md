@@ -10,6 +10,13 @@
 
 This specification implements the first phase of RFC-003 (§5.9): one unconstrained graph space, with no named graphs, no ontology and no metadata nodes. It names the accepted ADRs that decide each behavior and does not restate them; where they differ, the ADR wins (Constitution I). The ADRs are ADR-001 (load identity and merge), ADR-002 (export identity), ADR-003 (file kind and the top-level record), ADR-004 (preserved identity), ADR-006 (property values) and ADR-007 (parsing).
 
+## Clarifications
+
+### Session 2026-11-09
+
+- Q: When a file writes a relationship with no type, what should the load do? → A: Load error that names the relationship and its position and says to add a type. (Resolves RFC-001 question 7.8 in part; the decision needs an ADR before the plan, and the ADR wins on conflict.)
+- Q: How should the load treat undirected (`-[:T]-`) and bidirectional (`<-[:T]->`) thin arrows? → A: Load error naming the construct and its position and saying to write a right or left arrow. (Same ADR as above.)
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Load a gram file into an in-memory database (Priority: P1)
@@ -23,7 +30,7 @@ A developer has a gram file that describes a small property graph, for example p
 **Acceptance Scenarios**:
 
 1. **Given** a file with labelled nodes with properties and typed relationships between them, **When** it is loaded into an empty database, **Then** the database holds those nodes and relationships with their labels, types, endpoints and properties, in the order the file introduced them.
-2. **Given** a file that writes a path such as `(a)-->(b)-->(c)`, **When** it is loaded, **Then** it yields the same elements as writing each relationship separately (ADR-001 §2.6).
+2. **Given** a file that writes a path such as `(a)-[:KNOWS]->(b)-[:KNOWS]->(c)`, **When** it is loaded, **Then** it yields the same elements as writing each relationship separately (ADR-001 §2.6).
 3. **Given** a file whose elements carry identifiers, **When** it is loaded, **Then** each element carries its identifier as the reserved property `@id`, and an element without an identifier carries none, with the load reporting how many such elements it created (ADR-004; ADR-001 §2.1, §2.5).
 4. **Given** a file whose properties use each accepted value kind (strings in every quoting style, integers, hexadecimal integers, decimals, booleans, arrays of one scalar kind), **When** it is loaded, **Then** each value is stored as the Cypher value ADR-006 §2.1 and §2.2 give.
 5. **Given** a file with comments, **When** it is loaded, **Then** the comments have no effect on the result and nothing is reported about them (ADR-007 §2.5).
@@ -40,7 +47,7 @@ A developer loads a file that contains something the first phase does not suppor
 
 **Acceptance Scenarios**:
 
-1. **Given** a file using a range, a measurement, a nested map, an octal literal, a mixed-type array, an integer beyond 64 bits, or an annotation, **When** it is loaded, **Then** it fails with the construct named and its position (ADR-006 §2.1, §2.2; ADR-007 §2.4).
+1. **Given** a file using a range, a measurement, a nested map, an octal literal, a mixed-type array, an integer beyond 64 bits, an annotation, a relationship with no type, or an undirected or bidirectional arrow, **When** it is loaded, **Then** it fails with the construct named and its position (ADR-006 §2.1, §2.2; ADR-007 §2.4).
 2. **Given** a file that defines one element twice, uses one identifier as both a node and a relationship, repeats a property key, or uses a key starting with `@`, **When** it is loaded, **Then** it fails and reports the positions involved (ADR-001 §2.2 to §2.4, §2.8; ADR-006 §2.4).
 3. **Given** a file with malformed syntax, **When** it is loaded, **Then** every syntax error found is reported with its position, up to a cap, with the total (ADR-007 §2.2).
 4. **Given** a file whose top-level record has a `kind` other than `property-graph`, **When** it is loaded, **Then** it fails with a message stating the supported kind (ADR-003 §2.1).
@@ -103,7 +110,8 @@ A developer loads a file and exports the result, or exports a database and loads
 
 - A file with no elements, only a record, or an empty file.
 - An identifier that is only referenced and never defined creates an empty node and is listed in a warning (ADR-001 §2.3).
-- A relationship identifier that is only referenced has no type and is an error (ADR-001 §2.4).
+- An undirected (`-[:KNOWS]-`) or bidirectional (`<-[:KNOWS]->`) arrow is a load error; right and left arrows are accepted, and other arrow families are rejected (RFC-001 §5.1).
+- A relationship with no type, whether written `-->` or `-[r {since: 1843}]->`, is a load error that names it and says to add a type; a relationship identifier that is only referenced has no type either (ADR-001 §2.4).
 - The identifiers `42` and `` `42` `` are one identifier, and the integer 42 is stored as the string `"42"` (ADR-001 §2.1).
 - Input that is not valid UTF-8, a leading byte order mark, and CRLF line endings (ADR-007 §2.2).
 - An empty string value, a string with newlines in a fenced string, and a property key with spaces.
@@ -118,17 +126,18 @@ A developer loads a file and exports the result, or exports a database and loads
 - **FR-001**: The library MUST load gram text into a Relate in-memory database and MUST export a Relate database as gram text, each as a single operation that either completes or changes nothing (ADR-001 §2.7; ADR-002 §2.7).
 - **FR-002**: The loader MUST read the gram text through the tree-sitter-gram syntax tree and MUST report every syntax error with a line, a column and a byte offset (ADR-007).
 - **FR-003**: The loader MUST accept nodes, relationships, paths and the top-level record, and MUST reject every other construct with an error that names the construct and its position (RFC-001 §5.1; ADR-007 §2.4).
-- **FR-004**: The loader MUST map property values by ADR-006 §2.1 to §2.4, and MUST report every dropped tag (ADR-006 §2.3).
-- **FR-005**: The loader MUST resolve identifiers, definitions and references, and MUST store each identifier as `@id`, by ADR-001 §2.1 to §2.8, and MUST report the number of elements it created without an identifier (ADR-004).
-- **FR-006**: The loader MUST match the file's identified elements against the database by `@id`, or by a caller-named property, by ADR-001 §2.7 and §2.10.
-- **FR-007**: The loader MUST check the file kind and the top-level record, and MUST report the record's properties as not stored, by ADR-003.
-- **FR-008**: The loader MUST ignore comments (ADR-007 §2.5).
-- **FR-009**: The exporter MUST choose identifiers by ADR-002 §2.1 to §2.3, in the order and layout of ADR-002 §2.4 and §2.5, and MUST write values by ADR-006 §2.5.
-- **FR-010**: The exporter MUST fail before producing any output when an identity source is missing or not unique, or a value has no gram form, and MUST list every offending element (ADR-002 §2.2, §2.7; ADR-006 §2.6).
-- **FR-011**: Two exports of one unchanged database MUST be identical, and a load followed by an export MUST be stable, as ADR-002 §2.4 requires.
-- **FR-012**: The library MUST take its settings (identity properties for load and export, the export identity mode, and the tag policy) as ordinary inputs and MUST NOT depend on the `relate` command-line tool.
-- **FR-013**: The library MUST depend only on Relate's public library interface (Constitution V).
-- **FR-014**: Every error that concerns the source text MUST carry the position of the offending text, and a test MUST assert that position (Constitution VI).
+- **FR-004**: The loader MUST reject a relationship that has no type, and an undirected or bidirectional arrow, with an error that names it and its position and says what to write instead (a type; a right or left arrow).
+- **FR-005**: The loader MUST map property values by ADR-006 §2.1 to §2.4, and MUST report every dropped tag (ADR-006 §2.3).
+- **FR-006**: The loader MUST resolve identifiers, definitions and references, and MUST store each identifier as `@id`, by ADR-001 §2.1 to §2.8, and MUST report the number of elements it created without an identifier (ADR-004).
+- **FR-007**: The loader MUST match the file's identified elements against the database by `@id`, or by a caller-named property, by ADR-001 §2.7 and §2.10.
+- **FR-008**: The loader MUST check the file kind and the top-level record, and MUST report the record's properties as not stored, by ADR-003.
+- **FR-009**: The loader MUST ignore comments (ADR-007 §2.5).
+- **FR-010**: The exporter MUST choose identifiers by ADR-002 §2.1 to §2.3, in the order and layout of ADR-002 §2.4 and §2.5, and MUST write values by ADR-006 §2.5.
+- **FR-011**: The exporter MUST fail before producing any output when an identity source is missing or not unique, or a value has no gram form, and MUST list every offending element (ADR-002 §2.2, §2.7; ADR-006 §2.6).
+- **FR-012**: Two exports of one unchanged database MUST be identical, and a load followed by an export MUST be stable, as ADR-002 §2.4 requires.
+- **FR-013**: The library MUST take its settings (identity properties for load and export, the export identity mode, and the tag policy) as ordinary inputs and MUST NOT depend on the `relate` command-line tool.
+- **FR-014**: The library MUST depend only on Relate's public library interface (Constitution V).
+- **FR-015**: Every error that concerns the source text MUST carry the position of the offending text, and a test MUST assert that position (Constitution VI).
 
 ### Key Entities
 
