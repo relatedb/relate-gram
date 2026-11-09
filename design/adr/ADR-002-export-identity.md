@@ -9,6 +9,8 @@ created: 2026-11-06
 # ADR-002: Export Identity
 
 > The amendments of 2026-11-08 (stored `@id` written as the identifier, shared settings with the load) took effect on 2026-11-08, when ADR-004 (which amends Constitution III) was accepted.
+>
+> Amended 2026-11-09: §2.5 now says how a label is written (with ADR-008).
 
 ## 1. Context
 
@@ -75,7 +77,7 @@ Every element is given an identifier, a refinement of the RFC's "referenced more
 (n0)-[r0:KNOWS {since: 1843}]->(n1)
 ```
 
-Nodes are written with their full record. Relationships refer to their endpoints by identifier alone, in their stored direction. Paths are not produced. The spelling of property values, including quoting of strings, is decided by the value mapping (ADR-006). The first phase writes no top-level record (ADR-003). Later phases write it from the graph's metadata (ADR-005).
+Nodes are written with their full record. A label is written as a bare symbol if it matches `[A-Za-z_][0-9A-Za-z_.@-]*`, and otherwise as a backtick-quoted name with the escapes of 2.6 (added with ADR-008, which applies the same rule to relationship types). Relationships refer to their endpoints by identifier alone, in their stored direction. Paths are not produced. The spelling of property values, including quoting of strings, is decided by the value mapping (ADR-006). The first phase writes no top-level record (ADR-003). Later phases write it from the graph's metadata (ADR-005).
 
 ### 2.6 Writing an identifier
 

@@ -55,7 +55,7 @@ A relationship with an identifier has a fixed type, a fixed start node and a fix
 
 - A relationship identifier has at most one definition, which carries the type and the properties. A second definition is a load error that reports both positions.
 - Every appearance MUST name the same two nodes as the first appearance, by identifier, in the same direction; the written direction (`-[r]->` or `<-[r]-`) is irrelevant as long as start and end are the same. An anonymous endpoint in a later appearance never matches and is an error.
-- A relationship identifier that is only referenced has no type, and a Cypher relationship has exactly one, so it is a load error. Untyped relationships are otherwise governed by RFC-001 question 7.8.
+- A relationship identifier that is only referenced has no type, and a Cypher relationship has exactly one, so it is a load error. Untyped relationships and arrow forms are governed by ADR-008.
 
 A relationship without an identifier is anonymous and never merges (2.5).
 

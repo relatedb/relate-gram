@@ -65,3 +65,4 @@ Use `/adr-review` before moving a draft to `accepted`.
 | [ADR-005](ADR-005-graph-metadata.md) | Graph Metadata and Meta Nodes | proposed | RFC-001, RFC-003 |
 | [ADR-006](ADR-006-property-value-mapping.md) | Property Value Mapping | accepted | RFC-002 |
 | [ADR-007](ADR-007-parser-path.md) | Parsing Through the tree-sitter-gram Syntax Tree | accepted | RFC-001, RFC-002 |
+| [ADR-008](ADR-008-relationship-forms.md) | Relationship Types and Arrow Forms | accepted | RFC-001 |
