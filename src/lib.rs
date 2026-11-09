@@ -13,3 +13,9 @@ pub mod plan;
 pub mod settings;
 pub mod syntax;
 pub mod values;
+
+/// Test hooks. Not part of the public API.
+#[doc(hidden)]
+pub mod __test_support {
+    pub use crate::syntax::{parse, Syntax, SyntaxFailure};
+}
