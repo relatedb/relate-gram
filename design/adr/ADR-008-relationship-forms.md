@@ -26,17 +26,25 @@ Each of these is a load error that names the construct, reports the position of 
 
 - an undirected arrow (`-[:KNOWS]-`, `--`): "write a right or left arrow";
 - a bidirectional arrow (`<-[:KNOWS]->`, `<-->`): "write a right or left arrow";
-- a fat or wavy arrow of any direction (`=>`, `~>` and their bracketed, left, undirected and bidirectional forms): "fat and wavy arrows are not data relationships; use a thin arrow" (RFC-001 §5.1).
+- a fat arrow (`==>`, `=[:KNOWS]=>`) or a wavy arrow (`~~>`, `~[:KNOWS]~>`), in any direction: "fat and wavy arrows are not data relationships; use a thin arrow" (RFC-001 §5.1).
+
+The syntax tree has one node kind for each direction and does not distinguish the three families, so the loader reads the family from the first character of the arrow's text (`-`, `=` or `~`).
 
 ### 2.3 Relationship type
 
-A relationship appearance that carries a record or labels is a definition (ADR-001 §2.4). A definition MUST have exactly one label, and that label is the relationship's type. A definition with no label, such as `-->` with a record (`-[{since: 1843}]->`) or `-[r {since: 1843}]->`, is a load error that reports the position and says to add a type. A definition with two or more labels is a load error that reports the position, lists the labels and says a relationship has exactly one type. A relationship appearance with neither type nor record and no identifier, such as `-->`, is also a load error, since it is an anonymous definition with no type. An identified appearance with neither labels nor record is a reference, and ADR-001 §2.4 governs it.
+A relationship appearance that carries a record or labels is a definition (ADR-001 §2.4). A definition MUST have exactly one label, and that label is the relationship's type. These are load errors that report the position of the relationship:
+
+- a definition with no label (`-[{since: 1843}]->`, `-[r {since: 1843}]->`): "add a type";
+- a definition with two or more labels (`-[:A:B]->`, `-[r:A:B]->`): the message lists the labels and says a relationship has exactly one type;
+- a bare arrow with no brackets (`-->`): it is an anonymous relationship with no type, so "add a type".
+
+An identified appearance with neither labels nor record (`-[r]->`) is a reference, and ADR-001 §2.4 governs it.
 
 Type text follows the rules for labels: a symbol or a quoted name, kept as written with the quotes removed.
 
 ### 2.4 Export
 
-The exporter writes every relationship as a right arrow from its start node to its end node with its type, as ADR-002 §2.5 describes. It writes no other arrow form.
+The exporter writes every relationship as a right arrow from its start node to its end node with its type, as ADR-002 §2.5 describes. It writes no other arrow form. A type is written as a bare symbol if it matches `[A-Za-z_][0-9A-Za-z_.@-]*`, and otherwise as a backtick-quoted name with the escapes ADR-002 §2.6 gives for identifiers. Node labels are written the same way (ADR-002 §2.5 carries the matching rule).
 
 ## 3. Alternatives Considered
 
@@ -50,7 +58,9 @@ The exporter writes every relationship as a right arrow from its start node to i
 
 3.5. **Take the first of several labels as the type and ignore the rest, or store the rest as a property.** Rejected: dropping a stated label is a silent drop, and moving it to a property creates data the file did not write.
 
-3.6. **Accept fat and wavy arrows as thin arrows.** Rejected: pattern-rs reserves them for schema intent (RFC-001 §5.1), so accepting them would erase that meaning.
+3.6. **A setting that accepts an undirected arrow as a relationship in its written order.** Rejected: the same file would load to different graphs under different settings, as in 3.2 and 3.4.
+
+3.7. **Accept fat and wavy arrows as thin arrows.** Rejected: pattern-rs reserves them for schema intent (RFC-001 §5.1), so accepting them would erase that meaning.
 
 ## 4. Consequences
 
@@ -59,6 +69,8 @@ The exporter writes every relationship as a right arrow from its start node to i
 - A relationship needs a type on its defining line, so the shorthand `(a)-->(b)` is not available for data files.
 - Relationship identifiers that are only referenced stay an error (ADR-001 §2.4).
 - The spec's examples and tests must use typed, directed relationships.
+- A relationship written with two or more labels has no help beyond the error message; the author chooses the type and moves the rest to properties.
+- ADR-002 gains a rule for writing labels (follow-up made with this ADR).
 - Open: whether a file kind for schemas or ontologies reads the fat and wavy arrows with their own meaning (RFC-001 §5.1).
 
 ## 5. Related
