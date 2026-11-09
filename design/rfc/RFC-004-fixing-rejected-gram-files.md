@@ -1,7 +1,7 @@
 ---
 id: RFC-004
 title: Fixing Rejected Gram Files
-status: draft
+status: review
 created: 2026-11-09
 adrs: []
 ---
@@ -16,8 +16,9 @@ A loader that accepts only the gram constructs that map directly to Cypher refus
 
 The strict subset (RFC-001) rejects constructs such as `(a)-->(b)` (no relationship type), `(a)--(b)` (no direction), fat and wavy arrows, `::` labels, mixed integer and decimal arrays, and octal literals. Evidence that these are the common failures:
 
-- Of the 201 cases in the tree-sitter-gram corpus, 139 are rejected, and 75 of those are rejected only for their arrows: 36 for a missing type, 26 for a fat or wavy arrow, 13 for an undirected one. Gram written for pattern matching uses these arrows by default.
-- `docs/supported-gram.md` lists 22 rejected constructs, and 14 of them have a mechanical correction.
+- The tree-sitter-gram corpus has 211 cases of gram written by the grammar's own authors. 100 of them are rejected for a construct outside the subset (39 more are syntax errors that the corpus itself expects). 45 of those 100 are rejected only because of their arrows: no type, an undirected or bidirectional direction, or a fat or wavy arrow. Gram written for pattern matching uses these arrows by default.
+- 49 of the 100 would load after the corrections this RFC proposes, given a relationship type and a direction.
+- `docs/supported-gram.md` lists 22 rejected constructs, and 7 of them have a mechanical correction.
 - `relate-gram check` on a file of 500 untyped relationships prints 500 errors with the same advice. The advice is right and nobody should have to follow it 500 times.
 
 The cost lands at the first contact: a new user's first file is more likely to fail than to load, and the way forward is an editor session.
@@ -62,15 +63,15 @@ A fix is a set of edits to the source text, each replacing a byte range with new
 
 Some corrections need nothing from the user: dropping a tag the loader would drop anyway, writing `:` for `::`, replacing a fat or wavy arrow with a thin one, writing the integers of a mixed numeric array as decimals. Others need a value only the user has: the type of an untyped relationship, the direction of an undirected or bidirectional arrow, the meaning of an octal literal. These apply only when the user states the value.
 
-### 5.2.1 Rounds
+### 5.3 Rounds
 
 A correction can reveal another: after an undirected arrow gets a direction, the relationship may still need a type. The fixer repeats check, fix and re-check until nothing applies, and reports whatever errors remain.
 
-### 5.3 Safe output
+### 5.4 Safe output
 
 By default the fixed text goes to a new file next to the input, or to standard output when the input is standard input or the user asks. Overwriting the input is a separate, explicit option, and it keeps a copy of the original. A fixer that writes nothing when there is nothing to fix, or when it would make things worse, never leaves the user with a file they did not ask for.
 
-### 5.4 Surface
+### 5.5 Surface
 
 A `fix` command of the `relate-gram` tool and a function in the library, so that other tools can use the same corrections.
 
@@ -84,17 +85,19 @@ A `fix` command of the `relate-gram` tool and a function in the library, so that
 
 6.4. **A lenient load that repairs the file as it reads it.** Rejected: the loader's promise is that the database holds what the file says. A repaired load would hold something the file does not say.
 
-6.5. **Choose a default relationship type or direction.** Rejected: that is the invention the strict loader refuses to make, moved into the fixer.
+6.5. **Leave it to `sed` or an editor's search and replace.** Rejected: a pattern cannot tell an arrow from the same characters inside a string or a comment, and it cannot see what the file defines (a relationship that already has a type must not get a second).
+
+6.6. **Choose a default relationship type or direction.** Rejected: that is the invention the strict loader refuses to make, moved into the fixer.
+
+Related: RFC-001 defines the strict subset whose rejections this RFC addresses, and the design note `design/notes/2026-11-09-fixing-rejected-files.md` records the first sketch.
 
 ## 7. Open Questions
 
 7.1. Which further errors should get fixes: merging an identical duplicate definition into a reference, and renaming a reserved `@` key are candidates, and each needs a notion of equality or a new name.
 
-7.2. How is the output file named when the input does not end in `.gram`?
+7.2. Should the fixes be available to editors as data attached to errors, and in what format?
 
-7.3. Should the fixes be available to editors as data attached to errors, and in what format?
-
-7.4. Should a fix that changes the meaning a little (writing `:` for `::`, which the pattern-rs schema work uses for type slots) require the user's agreement as a decision, or is reporting it enough?
+7.3. Should a fix that changes the meaning a little (writing `:` for `::`, which the gram schema conventions use to mark a type slot) require the user's agreement as a decision, or is reporting it enough?
 
 ## 8. ADRs
 
