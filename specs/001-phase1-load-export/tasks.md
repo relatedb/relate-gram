@@ -120,16 +120,16 @@ description: "Task list for Phase 1 Gram Load and Export"
 
 ### Tests for User Story 3 (write first; they must fail)
 
-- [ ] T043 [P] [US3] Create fixtures `tests/fixtures/reload/v1.gram`, `v2.gram` (changed property, added label, new element), `v-type-changed.gram`, `v-kind-swapped.gram`
-- [ ] T044 [P] [US3] Write `tests/contract/reload.rs` (ADR-001 §2.7): loading the same file twice leaves the graph identical (SC-003); an edited file updates matched elements, unions labels, takes the file's property values, leaves unstated properties and unmentioned elements alone, and creates new ones; a reference binds to a stored element; elements without `@id` are never matched; a relationship whose type or endpoints differ fails with `match.type-differs` and nothing is written; an element of the other kind fails with `match.kind-differs`; several stored elements with one `@id` fail with `match.db-duplicate` listing them
-- [ ] T045 [P] [US3] Write `tests/contract/identity_property.rs` (ADR-001 §2.10): with `node_id_property`, elements match on that property's text (integer `42` equals string `"42"`), no `@id` is written for that kind, a definition without the property is anonymous with `id.property-missing`, and two stored elements with equal text are reported
+- [X] T043 [P] [US3] Create fixtures `tests/fixtures/reload/v1.gram`, `v2.gram` (changed property, added label, new element), `v-type-changed.gram`, `v-kind-swapped.gram`
+- [X] T044 [P] [US3] Write `tests/contract/reload.rs` (ADR-001 §2.7): loading the same file twice leaves the graph identical (SC-003); an edited file updates matched elements, unions labels, takes the file's property values, leaves unstated properties and unmentioned elements alone, and creates new ones; a reference binds to a stored element; elements without `@id` are never matched; a relationship whose type or endpoints differ fails with `match.type-differs` and nothing is written; an element of the other kind fails with `match.kind-differs`; several stored elements with one `@id` fail with `match.db-duplicate` listing them
+- [X] T045 [P] [US3] Write `tests/contract/identity_property.rs` (ADR-001 §2.10): with `node_id_property`, elements match on that property's text (integer `42` equals string `"42"`), no `@id` is written for that kind, a definition without the property is anonymous with `id.property-missing`, and two stored elements with equal text are reported
 
 ### Implementation for User Story 3
 
-- [ ] T046 [US3] In `src/load.rs`, scan existing nodes and relationships once inside the transaction (`id()`, `@id` or the identity property, relationship type and endpoint ids) and build the `IdentityTable` with duplicate tracking (research R4; data-model.md)
-- [ ] T047 [US3] Resolve the plan against the table in `src/plan.rs` or `src/load.rs`: match or create each element, bind references, and return the `match.*` errors before any write (ADR-001 §2.7)
-- [ ] T048 [US3] Write matched elements in `src/load.rs`: property merge (`SET n += r.props`) and label union in batches addressed by internal id; compare relationship endpoints by the elements they resolve to; keep creation order for new elements
-- [ ] T049 [US3] Implement the identity-property settings in `src/plan.rs` and `src/load.rs` (ADR-001 §2.10): text comparison in the library, no `@id` for that kind, the missing-property warning, duplicates by text
+- [X] T046 [US3] In `src/load.rs`, scan existing nodes and relationships once inside the transaction (`id()`, `@id` or the identity property, relationship type and endpoint ids) and build the `IdentityTable` with duplicate tracking (research R4; data-model.md)
+- [X] T047 [US3] Resolve the plan against the table in `src/plan.rs` or `src/load.rs`: match or create each element, bind references, and return the `match.*` errors before any write (ADR-001 §2.7)
+- [X] T048 [US3] Write matched elements in `src/load.rs`: property merge (`SET n += r.props`) and label union in batches addressed by internal id; compare relationship endpoints by the elements they resolve to; keep creation order for new elements
+- [X] T049 [US3] Implement the identity-property settings in `src/plan.rs` and `src/load.rs` (ADR-001 §2.10): text comparison in the library, no `@id` for that kind, the missing-property warning, duplicates by text
 
 **Checkpoint**: Stories 1 to 3 pass; reloads match instead of duplicating.
 

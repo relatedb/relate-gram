@@ -167,12 +167,10 @@ fn a_connection_already_in_a_transaction_is_refused() {
 #[test]
 fn a_relate_error_is_reported_and_rolled_back() {
     let (_db, mut c) = fresh_db();
-    run(
-        &mut c,
-        "CREATE CONSTRAINT FOR (n:L) REQUIRE n.`@id` IS UNIQUE",
-    );
-    run(&mut c, "CREATE (:L {`@id`: 'a'})");
-    let f = load_str(&mut c, "(fresh:Other)\n(a:L)").unwrap_err();
+    run(&mut c, "CREATE CONSTRAINT FOR (n:L) REQUIRE n.k IS UNIQUE");
+    run(&mut c, "CREATE (:L {k: 1})");
+    // the second statement of the load violates the constraint
+    let f = load_str(&mut c, "(fresh:Other)\n(x:L {k: 1})").unwrap_err();
     assert_eq!(errors(&f), vec![code::LOAD_DATABASE_ERROR]);
     assert_eq!(f.diagnostics[0].span, None);
     assert!(!c.in_transaction());

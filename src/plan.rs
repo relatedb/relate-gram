@@ -53,6 +53,39 @@ impl LoadPlan {
     }
 }
 
+/// The text of an identity value: a string as written, an integer in decimal.
+/// Other values are not usable as an identity (ADR-001 section 2.1).
+pub fn value_text(v: &PropValue) -> Option<String> {
+    match v {
+        PropValue::Str(s) => Some(s.clone()),
+        PropValue::Int(i) => Some(i.to_string()),
+        _ => None,
+    }
+}
+
+fn property_identity(props: &[(String, PropValue)], property: &str) -> Option<String> {
+    props
+        .iter()
+        .find(|(k, _)| k == property)
+        .and_then(|(_, v)| value_text(v))
+}
+
+/// The identity a node is matched by: its gram identifier, or the value of the
+/// configured identity property (ADR-001 sections 2.7 and 2.10).
+pub fn node_identity(n: &PlannedNode, settings: &LoadSettings) -> Option<String> {
+    match &settings.node_id_property {
+        None => n.key.clone(),
+        Some(p) => property_identity(&n.props, p),
+    }
+}
+
+pub fn rel_identity(r: &PlannedRel, settings: &LoadSettings) -> Option<String> {
+    match &settings.relationship_id_property {
+        None => r.key.clone(),
+        Some(p) => property_identity(&r.props, p),
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
     Node,
@@ -505,16 +538,72 @@ impl<'a> Builder<'a> {
         rel.def_ident = ident_span;
     }
 
-    fn finish(mut self) -> LoadPlan {
-        for n in &self.plan.nodes {
-            if let (Some(key), false) = (&n.key, n.defined) {
-                self.plan.diagnostics.push(Diagnostic::warning(
-                    code::ID_REFERENCE_ONLY,
-                    n.span,
-                    format!("`{key}` is referenced but never defined; an empty node was created"),
-                ));
+    /// With an identity property configured: a definition without a usable value
+    /// is anonymous and reported, and two elements with one value are an error
+    /// (ADR-001 section 2.10).
+    fn check_identity_properties(&mut self) {
+        if let Some(p) = self.settings.node_id_property.clone() {
+            let mut first: HashMap<String, Span> = HashMap::new();
+            for n in &self.plan.nodes {
+                if !n.defined {
+                    continue;
+                }
+                match node_identity(n, self.settings) {
+                    None => self.plan.diagnostics.push(Diagnostic::warning(
+                        code::ID_PROPERTY_MISSING,
+                        n.span,
+                        format!("this node has no usable `{p}` value, so it has no identity and is loaded as a new node"),
+                    )),
+                    Some(text) => {
+                        if let Some(f) = first.get(&text) {
+                            self.plan.diagnostics.push(
+                                Diagnostic::error(
+                                    code::ID_DUPLICATE_DEFINITION,
+                                    n.span,
+                                    format!("two nodes have the same `{p}` value `{text}`"),
+                                )
+                                .with_related("first node with this value", *f),
+                            );
+                        } else {
+                            first.insert(text, n.span);
+                        }
+                    }
+                }
             }
         }
+        if let Some(p) = self.settings.relationship_id_property.clone() {
+            let mut first: HashMap<String, Span> = HashMap::new();
+            for r in &self.plan.rels {
+                if !r.defined {
+                    continue;
+                }
+                match rel_identity(r, self.settings) {
+                    None => self.plan.diagnostics.push(Diagnostic::warning(
+                        code::ID_PROPERTY_MISSING,
+                        r.span,
+                        format!("this relationship has no usable `{p}` value, so it has no identity and is loaded as a new relationship"),
+                    )),
+                    Some(text) => {
+                        if let Some(f) = first.get(&text) {
+                            self.plan.diagnostics.push(
+                                Diagnostic::error(
+                                    code::ID_DUPLICATE_DEFINITION,
+                                    r.span,
+                                    format!("two relationships have the same `{p}` value `{text}`"),
+                                )
+                                .with_related("first relationship with this value", *f),
+                            );
+                        } else {
+                            first.insert(text, r.span);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn finish(mut self) -> LoadPlan {
+        self.check_identity_properties();
         for r in &self.plan.rels {
             if let (Some(key), None) = (&r.key, &r.rel_type) {
                 self.plan.diagnostics.push(Diagnostic::error(

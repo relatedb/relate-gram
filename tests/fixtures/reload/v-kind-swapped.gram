@@ -1,0 +1,3 @@
+// ada is a stored node, not a relationship.
+(grace:Person)
+(grace)-[ada:KNOWS]->(grace)

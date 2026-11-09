@@ -89,32 +89,42 @@ pub fn load(
     if plan.has_errors() {
         return Err(LoadFailure::new(plan.diagnostics, settings.max_diagnostics));
     }
-    let written = load::write(conn, &plan)
-        .map_err(|d| LoadFailure::new(vec![d], settings.max_diagnostics))?;
+    let written = load::write(conn, &plan, settings).map_err(|errors| {
+        let mut all = plan.diagnostics.clone();
+        all.extend(errors);
+        LoadFailure::new(all, settings.max_diagnostics)
+    })?;
 
     let mut diagnostics = plan.diagnostics.clone();
-    let anonymous = plan.nodes.iter().filter(|n| n.key.is_none()).count()
-        + plan.rels.iter().filter(|r| r.key.is_none()).count();
+    diagnostics.extend(written.warnings.iter().cloned());
+    let anonymous = plan
+        .nodes
+        .iter()
+        .filter(|n| plan::node_identity(n, settings).is_none())
+        .count()
+        + plan
+            .rels
+            .iter()
+            .filter(|r| plan::rel_identity(r, settings).is_none())
+            .count();
     if anonymous > 0 {
         diagnostics.push(Diagnostic::warning_without_span(
             code::LOAD_ANONYMOUS,
             format!("{anonymous} element(s) were loaded without an identifier"),
         ));
     }
+    diagnostics.sort_by_key(|d| d.span.map(|s| s.start).unwrap_or(usize::MAX));
     let counts = LoadCounts {
         nodes_created: written.nodes_created,
+        nodes_updated: written.nodes_updated,
         relationships_created: written.relationships_created,
+        relationships_updated: written.relationships_updated,
         elements_without_identifier: anonymous,
-        reference_only_nodes: plan
-            .nodes
-            .iter()
-            .filter(|n| n.key.is_some() && !n.defined)
-            .count(),
+        reference_only_nodes: written.warnings.len(),
         tags_dropped: diagnostics
             .iter()
             .filter(|d| d.code == code::VALUE_TAG_DROPPED)
             .count(),
-        ..LoadCounts::default()
     };
     Ok(LoadReport {
         diagnostics,
