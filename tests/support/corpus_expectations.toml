@@ -1,0 +1,1147 @@
+# Expected outcome of each tree-sitter-gram corpus case under the phase 1 subject (ADR-007 section 2.6).
+# `accept`: loads, and the node and relationship counts match an independent count over the tree.
+# `reject`: fails with at least one of `codes` among its errors.
+
+[[case]]
+file = "annotation.txt"
+name = "Annotate a single node with a named string value"
+expect = "reject"
+codes = ["construct.annotation"]
+
+[[case]]
+file = "annotation.txt"
+name = "Annotate a single node twice"
+expect = "reject"
+codes = ["construct.annotation"]
+
+[[case]]
+file = "annotation.txt"
+name = "Annotate a relationship"
+expect = "reject"
+codes = ["construct.annotation", "rel.no-type"]
+
+[[case]]
+file = "annotation.txt"
+name = "Annotate a node twice, stacking the annotations"
+expect = "reject"
+codes = ["construct.annotation"]
+
+[[case]]
+file = "annotation.txt"
+name = "Annotate an empty subject"
+expect = "reject"
+codes = ["construct.annotation", "construct.subject-pattern"]
+
+[[case]]
+file = "annotation.txt"
+name = "Annotate an in-line subject member is not allowed"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "array_properties.txt"
+name = "Array of numbers in a property"
+expect = "accept"
+
+[[case]]
+file = "array_properties.txt"
+name = "Array of arrays is not ok."
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "brackets.txt"
+name = "Subject Pattern: empty"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "brackets.txt"
+name = "Subject Pattern: named"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "brackets.txt"
+name = "Subject Pattern: named, labeled"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "brackets.txt"
+name = "Subject Pattern: named, labeled with a record"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "brackets.txt"
+name = "Subject Pattern: complete bracket with annotation, subject, and a qualified association"
+expect = "reject"
+codes = ["construct.annotation", "construct.subject-pattern"]
+
+[[case]]
+file = "comments.txt"
+name = "Line comment standalone"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Multiple line comments"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Line comment with special characters"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Line comment at file start"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "comments.txt"
+name = "Line comment at file end"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "comments.txt"
+name = "Empty line comment"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Comment markers in string literals preserved"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Comment before top-level node"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Comment before top-level relationship"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "comments.txt"
+name = "Comment before top-level pattern"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "comments.txt"
+name = "Comment before graph-level record"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "End-of-line comment after node"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "End-of-line comment after relationship"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "comments.txt"
+name = "End-of-line comment after subject"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "comments.txt"
+name = "End-of-line comment after pattern element"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "comments.txt"
+name = "Multiple end-of-line comments"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "End-of-line comment with special characters"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Comment between pattern elements after comma. No top-level sequences allowed"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "comments.txt"
+name = "In-line comment between adjacent tokens (subject_patterns)"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "comments.txt"
+name = "In-line comment between adjacent tokens (braces)"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "comments.txt"
+name = "In-line comment between adjacent tokens (parentheses)"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "doc_comments.txt"
+name = "Doc comment before node with property docs"
+expect = "accept"
+
+[[case]]
+file = "doc_comments.txt"
+name = "Doc comment before annotation-style subject pattern"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "doc_comments.txt"
+name = "Single-line doc comment"
+expect = "accept"
+
+[[case]]
+file = "doc_comments.txt"
+name = "Doc comment before annotated pattern"
+expect = "reject"
+codes = ["construct.annotation"]
+
+[[case]]
+file = "doc_comments.txt"
+name = "Doc comment before relationship pattern"
+expect = "accept"
+
+[[case]]
+file = "doc_comments.txt"
+name = "Doc comments inside a record before properties"
+expect = "accept"
+
+[[case]]
+file = "doc_comments.txt"
+name = "Doc comments inside subject pattern elements"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "doc_comments.txt"
+name = "Doc comment inside relationship record"
+expect = "accept"
+
+[[case]]
+file = "doc_comments.txt"
+name = "Doc comment between top-level patterns"
+expect = "accept"
+
+[[case]]
+file = "doc_comments.txt"
+name = "Empty doc comment with three stars"
+expect = "accept"
+
+[[case]]
+file = "doc_comments.txt"
+name = "Doc comment containing slashes and stars"
+expect = "accept"
+
+[[case]]
+file = "doc_comments.txt"
+name = "Doc comment alongside line comment"
+expect = "accept"
+
+[[case]]
+file = "doc_comments.txt"
+name = "Unterminated doc comment"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "doc_comments.txt"
+name = "Plain block comment is not a doc comment"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "doc_comments.txt"
+name = "Empty plain block comment is not a doc comment"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "double_arrows.txt"
+name = "Double-arrow relationships: Undirected relationship"
+expect = "reject"
+codes = ["rel.undirected", "rel.arrow-family"]
+
+[[case]]
+file = "double_arrows.txt"
+name = "Double-arrow relationships: Bidirectional relationship"
+expect = "reject"
+codes = ["rel.bidirectional", "rel.arrow-family"]
+
+[[case]]
+file = "double_arrows.txt"
+name = "Double-arrow right"
+expect = "reject"
+codes = ["rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "double_arrows.txt"
+name = "Double-arrow right with identifier"
+expect = "reject"
+codes = ["rel.arrow-family", "id.rel-never-defined"]
+
+[[case]]
+file = "double_arrows.txt"
+name = "Double-arrow left relationship"
+expect = "reject"
+codes = ["rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "double_arrows.txt"
+name = "Double-arrow left with identifier"
+expect = "reject"
+codes = ["rel.arrow-family", "id.rel-never-defined"]
+
+[[case]]
+file = "double_arrows.txt"
+name = "Double-arrow relationships: Undirected relationships"
+expect = "reject"
+codes = ["rel.undirected", "rel.arrow-family"]
+
+[[case]]
+file = "double_arrows.txt"
+name = "Double-arrow relationships: Right relationships"
+expect = "reject"
+codes = ["rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "double_arrows.txt"
+name = "Double-arrow relationships: Left relationships"
+expect = "reject"
+codes = ["rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "double_arrows.txt"
+name = "Double-arrow relationships: Alternating left, right relationship"
+expect = "reject"
+codes = ["rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "double_arrows.txt"
+name = "Double-arrow relationships: Alternating right, left relationship"
+expect = "reject"
+codes = ["rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "double_arrows.txt"
+name = "Double-arrow relationships: Alternating left, right, undirected relationship"
+expect = "reject"
+codes = ["rel.undirected", "rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "empty_nodes.txt"
+name = "Empty nodes: Single empty node pattern"
+expect = "accept"
+
+[[case]]
+file = "empty_nodes.txt"
+name = "Empty nodes: Two empty node patterns"
+expect = "accept"
+
+[[case]]
+file = "empty_nodes.txt"
+name = "Empty nodes: Pair of empty nodes in a single pattern. No top-level sequences"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "empty_relationships.txt"
+name = "Empty relationships: Single relationship pattern"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "empty_relationships.txt"
+name = "Empty relationships: Two relationship patterns"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "empty_relationships.txt"
+name = "Empty relationships: Pair of relationships in a comma sequence not allowed at top-level"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "empty_relationships.txt"
+name = "Empty relationships: Pattern with a relationship and isolated node"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "empty_relationships.txt"
+name = "Empty relationships: Three node path"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "extended_annotations.txt"
+name = "Extended annotations: @@ (identified) and @ (property-style)"
+expect = "reject"
+codes = ["construct.annotation"]
+
+[[case]]
+file = "extended_annotations.txt"
+name = "US1: Identifier-only @@p (a)"
+expect = "reject"
+codes = ["construct.annotation"]
+
+[[case]]
+file = "extended_annotations.txt"
+name = "US1: Identifier-only with quoted identifier @@`wrapped id` (a)"
+expect = "reject"
+codes = ["construct.annotation"]
+
+[[case]]
+file = "extended_annotations.txt"
+name = "US1: Identifier-only @@r1 (a)-[r]->(b)"
+expect = "reject"
+codes = ["construct.annotation", "id.rel-never-defined"]
+
+[[case]]
+file = "extended_annotations.txt"
+name = "US2: Labels-only @@:L (a)"
+expect = "reject"
+codes = ["construct.annotation"]
+
+[[case]]
+file = "extended_annotations.txt"
+name = "US2: Labels-only with quoted label @@:`Label Type` (a)"
+expect = "reject"
+codes = ["construct.annotation"]
+
+[[case]]
+file = "extended_annotations.txt"
+name = "US2: Labels-only @@::Label (a)"
+expect = "reject"
+codes = ["construct.annotation", "construct.double-colon"]
+
+[[case]]
+file = "extended_annotations.txt"
+name = "US3: Identifier and labels @@p:L (a)"
+expect = "reject"
+codes = ["construct.annotation"]
+
+[[case]]
+file = "extended_annotations.txt"
+name = "US3: Identifier and quoted labels @@`wrap id`:`Label Type` (a)"
+expect = "reject"
+codes = ["construct.annotation"]
+
+[[case]]
+file = "extended_annotations.txt"
+name = "US4: Property-style @desc(a) (a) — key with symbol value"
+expect = "reject"
+codes = ["construct.annotation"]
+
+[[case]]
+file = "extended_annotations.txt"
+name = "US4: Property-style @desc(\"historic route\") (a)-->(b)"
+expect = "reject"
+codes = ["construct.annotation", "rel.no-type"]
+
+[[case]]
+file = "extended_annotations.txt"
+name = "Edge case: invalid empty header @@ (a)"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "gql_grqph_type.txt"
+name = "GQL Node Type Definition"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "gql_grqph_type.txt"
+name = "GQL Relationship Type Definition"
+expect = "reject"
+codes = ["construct.double-colon", "rel.arrow-family"]
+
+[[case]]
+file = "graph_global.txt"
+name = "Graph: top-level record"
+expect = "accept"
+
+[[case]]
+file = "graph_global.txt"
+name = "Graph: top-level record and a node"
+expect = "accept"
+
+[[case]]
+file = "graph_global.txt"
+name = "Graph: top-level record and a path"
+expect = "reject"
+codes = ["rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "graph_global.txt"
+name = "Graph: top-level record, a path and a path"
+expect = "reject"
+codes = ["construct.subject-pattern", "rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "identifiers.txt"
+name = "Identifier cannot start with '@'"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "identifiers.txt"
+name = "Identifier can use '@' after first character"
+expect = "accept"
+
+[[case]]
+file = "identifiers.txt"
+name = "Identifier using snakecase '_' and mixed case"
+expect = "accept"
+
+[[case]]
+file = "identifiers.txt"
+name = "Identifier using kebabcase '-' and mixed case"
+expect = "accept"
+
+[[case]]
+file = "identifiers.txt"
+name = "Identifier using numbers"
+expect = "accept"
+
+[[case]]
+file = "identifiers.txt"
+name = "Identifier using numbers with units are not allowed"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "identifiers.txt"
+name = "Identifier using backticks"
+expect = "accept"
+
+[[case]]
+file = "identifiers.txt"
+name = "Identifier using backticks with escaped backtick"
+expect = "accept"
+
+[[case]]
+file = "labeled_nodes.txt"
+name = "Labeled nodes: No label"
+expect = "accept"
+
+[[case]]
+file = "labeled_nodes.txt"
+name = "Labeled nodes: Single label"
+expect = "accept"
+
+[[case]]
+file = "labeled_nodes.txt"
+name = "Labeled nodes: Backtick label"
+expect = "accept"
+
+[[case]]
+file = "labeled_nodes.txt"
+name = "Labeled nodes: Two labels"
+expect = "accept"
+
+[[case]]
+file = "labeled_nodes.txt"
+name = "Labeled nodes: Identity followed by labels"
+expect = "accept"
+
+[[case]]
+file = "labeled_relationships.txt"
+name = "Labeled relationship: Single label"
+expect = "reject"
+codes = ["rel.undirected"]
+
+[[case]]
+file = "labeled_relationships.txt"
+name = "Labeled relationship: Backtick label"
+expect = "reject"
+codes = ["rel.undirected"]
+
+[[case]]
+file = "labeled_relationships.txt"
+name = "Labeled relationship: Two labels"
+expect = "reject"
+codes = ["rel.undirected"]
+
+[[case]]
+file = "labeled_relationships.txt"
+name = "Labeled relationship: Two labels with an identity"
+expect = "reject"
+codes = ["rel.undirected"]
+
+[[case]]
+file = "map_values.txt"
+name = "Map values are non-nested maps, similar in syntax to records but only accepting scalar values."
+expect = "reject"
+codes = ["value.map"]
+
+[[case]]
+file = "map_values.txt"
+name = "Map values may use quoted keys"
+expect = "reject"
+codes = ["value.map"]
+
+[[case]]
+file = "map_values.txt"
+name = "Map values may not be nested"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "map_values.txt"
+name = "Map values may appear in node properties"
+expect = "reject"
+codes = ["value.map"]
+
+[[case]]
+file = "map_values.txt"
+name = "Map values may not appear within an array"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "map_values.txt"
+name = "Map values may contain arrays of scalars"
+expect = "reject"
+codes = ["value.map"]
+
+[[case]]
+file = "map_values.txt"
+name = "Map values may not contain arrays of maps"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "map_values.txt"
+name = "Map values may not contain nested arrays"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "node_annotations.txt"
+name = "Node: single annotation, no subject (disallowed)"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "node_annotations.txt"
+name = "Node: two annotations, no subject (disallowed)"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "node_annotations.txt"
+name = "Node: annotation with identifier (disallowed)"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "node_annotations.txt"
+name = "Node: annotation with identifier, labels, and record (disallowed)"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "node_annotations.txt"
+name = "Node: annotation must precede subject (disallowed after identifier)"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "nodes.txt"
+name = "Node empty"
+expect = "accept"
+
+[[case]]
+file = "nodes.txt"
+name = "Node with empty record"
+expect = "accept"
+
+[[case]]
+file = "nodes.txt"
+name = "Node with record"
+expect = "accept"
+
+[[case]]
+file = "nodes.txt"
+name = "Node identified and with a record"
+expect = "accept"
+
+[[case]]
+file = "nodes.txt"
+name = "Node identified, labeled and with a record"
+expect = "accept"
+
+[[case]]
+file = "number_graphs.txt"
+name = "Number graph: 1, 2 buckle your shoe"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "number_graphs.txt"
+name = "Number graph: 1 +1 = 2"
+expect = "reject"
+codes = ["id.rel-never-defined"]
+
+[[case]]
+file = "number_values.txt"
+name = "Numbers: integers"
+expect = "accept"
+
+[[case]]
+file = "number_values.txt"
+name = "Numbers: decimal"
+expect = "accept"
+
+[[case]]
+file = "number_values.txt"
+name = "Number: hexadecimal"
+expect = "accept"
+
+[[case]]
+file = "number_values.txt"
+name = "Number: octal with an '0'"
+expect = "reject"
+codes = ["value.octal"]
+
+[[case]]
+file = "number_values.txt"
+name = "Number: measurements are numbers with some letters as a suffix"
+expect = "reject"
+codes = ["value.measurement"]
+
+[[case]]
+file = "number_values.txt"
+name = "Number: boolean true"
+expect = "accept"
+
+[[case]]
+file = "patterns.txt"
+name = "Pattern: Single member subject"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "patterns.txt"
+name = "Pattern: single member node"
+expect = "accept"
+
+[[case]]
+file = "patterns.txt"
+name = "Pattern: Two node sequence cannot appear at top-level. Must be contained in a subject pattern"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "patterns.txt"
+name = "Pattern: one relationship"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "patterns.txt"
+name = "Pattern: 2 single-hop relationships cannot be at top-level. Must be contained in subject pattern."
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "patterns.txt"
+name = "Pattern: two-hop path is parsed like a chain of relationships, which is a path"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "patterns.txt"
+name = "Pattern: 2 annotated nodes is not allowed. Sequences cannot appear as top-level elements"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "range_values.txt"
+name = "Range: 1 to 10"
+expect = "reject"
+codes = ["value.range"]
+
+[[case]]
+file = "range_values.txt"
+name = "Range: 1 to infinity!"
+expect = "reject"
+codes = ["value.range"]
+
+[[case]]
+file = "range_values.txt"
+name = "Range: up to 100"
+expect = "reject"
+codes = ["value.range"]
+
+[[case]]
+file = "records.txt"
+name = "Record empty"
+expect = "accept"
+
+[[case]]
+file = "records.txt"
+name = "Record with integer property"
+expect = "accept"
+
+[[case]]
+file = "records.txt"
+name = "Record with double-quoted string property"
+expect = "accept"
+
+[[case]]
+file = "records.txt"
+name = "Record with declare separator and a symbol property"
+expect = "reject"
+codes = ["construct.double-colon"]
+
+[[case]]
+file = "records.txt"
+name = "Record with quoted keys"
+expect = "accept"
+
+[[case]]
+file = "records.txt"
+name = "Record followed by a Node"
+expect = "accept"
+
+[[case]]
+file = "records.txt"
+name = "Record property may not us greater than operator"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "relationship_annotations.txt"
+name = "Relationship annotation: undirected, annotations only"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "relationship_annotations.txt"
+name = "Relationship annotation: undirected, two annotations"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "relationship_annotations.txt"
+name = "Relationship annotation: undirected with identifier"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "relationship_annotations.txt"
+name = "Relationship annotation: undirected with labels"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "relationship_annotations.txt"
+name = "Relationship annotation: undirected with identifier, labels, and record"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "relationship_annotations.txt"
+name = "Relationship annotation: right arrow, annotations only"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "relationship_annotations.txt"
+name = "Relationship annotation: left arrow, annotations only"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "relationship_annotations.txt"
+name = "Relationship annotation: bidirectional arrow, annotations only"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "relationship_annotations.txt"
+name = "Relationship annotation: undirected, annotation after identifier is not allowed"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "single_arrows.txt"
+name = "Single-arrow: Undirected relationship"
+expect = "reject"
+codes = ["rel.undirected"]
+
+[[case]]
+file = "single_arrows.txt"
+name = "Single-arrow: Bidirectional relationship"
+expect = "reject"
+codes = ["rel.bidirectional"]
+
+[[case]]
+file = "single_arrows.txt"
+name = "Single-arrow: Right relationship"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "single_arrows.txt"
+name = "Single-arrow: Left relationship"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "single_arrows.txt"
+name = "Single-arrow: Undirected relationships"
+expect = "reject"
+codes = ["rel.undirected"]
+
+[[case]]
+file = "single_arrows.txt"
+name = "Single-arrow: Right relationships"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "single_arrows.txt"
+name = "Single-arrow: Left relationships"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "single_arrows.txt"
+name = "Single-arrow: Alternating left, right relationship"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "single_arrows.txt"
+name = "Single-arrow: Alternating right, left relationship"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "single_arrows.txt"
+name = "Single-arrow: Alternating left, right, undirected relationship qd"
+expect = "reject"
+codes = ["rel.undirected", "rel.no-type"]
+
+[[case]]
+file = "squiggle_arrows.txt"
+name = "Squiggle-arrow relationships: Undirected relationship"
+expect = "reject"
+codes = ["rel.undirected", "rel.arrow-family"]
+
+[[case]]
+file = "squiggle_arrows.txt"
+name = "Squiggle-arrow right"
+expect = "reject"
+codes = ["rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "squiggle_arrows.txt"
+name = "Squiggle-arrow right with subject"
+expect = "reject"
+codes = ["rel.arrow-family", "id.rel-never-defined"]
+
+[[case]]
+file = "squiggle_arrows.txt"
+name = "Squiggle-arrow Left"
+expect = "reject"
+codes = ["rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "squiggle_arrows.txt"
+name = "Squiggle-arrow Left with subject"
+expect = "reject"
+codes = ["rel.arrow-family", "id.rel-never-defined"]
+
+[[case]]
+file = "squiggle_arrows.txt"
+name = "Squiggle-arrow relationships: Undirected relationships"
+expect = "reject"
+codes = ["rel.undirected", "rel.arrow-family"]
+
+[[case]]
+file = "squiggle_arrows.txt"
+name = "Squiggle-arrow relationships: Right relationships"
+expect = "reject"
+codes = ["rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "squiggle_arrows.txt"
+name = "Squiggle-arrow relationships: Left relationships"
+expect = "reject"
+codes = ["rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "squiggle_arrows.txt"
+name = "Squiggle-arrow relationships: Alternating left, right relationship"
+expect = "reject"
+codes = ["rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "squiggle_arrows.txt"
+name = "Squiggle-arrow relationships: Alternating right, left relationship"
+expect = "reject"
+codes = ["rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "squiggle_arrows.txt"
+name = "Squiggle-arrow relationships: Alternating left, right, undirected relationship"
+expect = "reject"
+codes = ["rel.undirected", "rel.arrow-family", "rel.no-type"]
+
+[[case]]
+file = "subject_pattern.txt"
+name = "Subject Pattern: empty"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "subject_pattern.txt"
+name = "Subject Pattern: named"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "subject_pattern.txt"
+name = "Subject Pattern: named, labeled"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "subject_pattern.txt"
+name = "Subject Pattern: named, labeled with a record"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "subject_pattern.txt"
+name = "Subject Pattern: quoted label and quoted key"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "subject_pattern.txt"
+name = "Subject Pattern: complete subject pattern with annotation, subject, and a qualified association"
+expect = "reject"
+codes = ["construct.annotation", "construct.subject-pattern"]
+
+[[case]]
+file = "text_graphs.txt"
+name = "Hello world"
+expect = "reject"
+codes = ["rel.no-type"]
+
+[[case]]
+file = "text_graphs.txt"
+name = "Hello dear world"
+expect = "reject"
+codes = ["id.rel-never-defined"]
+
+[[case]]
+file = "text_graphs.txt"
+name = "Hello dear world over there"
+expect = "reject"
+codes = ["id.rel-never-defined"]
+
+[[case]]
+file = "text_graphs.txt"
+name = "Hello \"dear world\" \"over there\""
+expect = "reject"
+codes = ["id.rel-never-defined"]
+
+[[case]]
+file = "text_values.txt"
+name = "Text: single character string"
+expect = "accept"
+
+[[case]]
+file = "text_values.txt"
+name = "Text: long string"
+expect = "accept"
+
+[[case]]
+file = "text_values.txt"
+name = "Text: fenced multiline string"
+expect = "accept"
+
+[[case]]
+file = "text_values.txt"
+name = "Text: tagged fence multiline string"
+expect = "accept"
+
+[[case]]
+file = "text_values.txt"
+name = "Text: nested quotes within single-quoted string"
+expect = "accept"
+
+[[case]]
+file = "text_values.txt"
+name = "Text: nested quotes within double-quoted string"
+expect = "accept"
+
+[[case]]
+file = "text_values.txt"
+name = "Text: single-quoted string property"
+expect = "accept"
+
+[[case]]
+file = "text_values.txt"
+name = "Text: backtick-quoted string property"
+expect = "accept"
+
+[[case]]
+file = "text_values.txt"
+name = "Text: weird characters in string property"
+expect = "accept"
+
+[[case]]
+file = "text_values.txt"
+name = "Text: tagged string properties"
+expect = "accept"
+
+[[case]]
+file = "value_pair.txt"
+name = "Value pair: define values"
+expect = "accept"
+
+[[case]]
+file = "value_pair.txt"
+name = "Value pair: declare values"
+expect = "reject"
+codes = ["construct.double-colon"]
+
+[[case]]
+file = "value_pair.txt"
+name = "Value pair: key names which start with '@' must be quoted"
+expect = "reject"
+codes = ["key.reserved"]
+
+[[case]]
+file = "value_pair.txt"
+name = "Value pair: key names may use backticks"
+expect = "accept"
