@@ -13,14 +13,15 @@ As in linters and compilers (clippy and `cargo fix` separate suggestions that ar
 - **Safe, applied with `fix`:**
   - a raw newline in a quoted string becomes the escape `\n`;
   - a hexadecimal or decimal spelling is normalized, an exponent in a decimal is expanded (`1e5` to `100000.0`) when the value is exact;
-  - a mixed integer and float array gets its integers written as decimals (`[1, 2.5]` stays `[1, 2.5]` and becomes `[1.0, 2.5]`), since Relate would do the same silently (ADR-006 §2.2);
+  - a mixed integer and float array gets its integers written as decimals (`[1, 2.5]` becomes `[1.0, 2.5]`), since Relate would do the same silently (ADR-006 §2.2);
   - an exact duplicate definition of one element is removed (ADR-001 §2.3);
-  - a `::` before a label becomes `:` (RFC-001 7.12), and an annotation that has no effect on the graph is removed.
+  - a `::` before a label becomes `:`, if the author confirms it was not marking a type slot (RFC-001 7.12).
 - **Suggested, applied only when chosen:** the fix changes meaning or needs a choice.
   - an untyped relationship needs a type (ADR-008 §2.3); the fixer could offer one type for all of them;
   - an undirected or bidirectional arrow needs a direction (ADR-008 §2.2);
   - an octal literal needs the author's intent, 8 or 10 (ADR-006 §2.1);
   - a repeated key needs the winning value (ADR-006 §2.4); two different definitions of one element need a merge (ADR-001 §2.3);
+  - an annotation would have to be removed, which drops what it says;
   - a range, measurement, nested map or tag has to become a string, a flattened set of properties or a dropped tag.
 - **No fix:** a syntax error with no clear repair, input that is not valid UTF-8, an integer beyond 64 bits.
 
