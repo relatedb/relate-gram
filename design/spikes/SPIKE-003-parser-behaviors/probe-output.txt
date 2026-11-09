@@ -1,0 +1,69 @@
+== empty array: "(a {xs: []})"
+  ts has_error=true
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (array (MISSING symbol))))))
+  lowered: [{"xs": []}]
+== missing value: "(a {k: })"
+  ts has_error=true
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (MISSING symbol)))))
+  lowered: [{}]
+== octal: "(a {n: 010})"
+  ts has_error=false
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (octal)))))
+  lowered: [{"n": VInteger(10)}]
+== octal 08: "(a {n: 08})"
+  ts has_error=true
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (integer)) (ERROR (integer)))))
+  lowered: [{"n": VInteger(8)}]
+== dup key: "(a {k: 1, k: 2})"
+  ts has_error=false
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (integer)) (record_property key: (symbol) value: (integer)))))
+  lowered: [{"k": VInteger(2)}]
+== fenced tag: "(a {s: ```md\nbody\n```})"
+  ts has_error=false
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (tagged_string tag: (symbol) content: (string_content))))))
+  string_content "body\n" at 2:1
+  lowered: [{"s": VString("body\n")}]
+== fenced backslash: "(a {s: ```\na\\nb\n```})"
+  ts has_error=false
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (string_literal content: (string_content))))))
+  string_content "a\\nb\n" at 2:1
+  lowered: [{"s": VString("a\\nb\n")}]
+== raw newline dq: "(a {s: \"a\nb\"})"
+  ts has_error=true
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (string_literal content: (string_content) (ERROR (symbol)))))))
+  string_content "a" at 1:9
+  lowered: [{"s": VString("a\nb")}]
+== raw newline sq: "(a {s: 'a\nb'})"
+  ts has_error=true
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (string_literal content: (string_content) (ERROR (symbol)))))))
+  string_content "a" at 1:9
+  lowered: [{"s": VString("a\nb")}]
+== raw newline bt: "(a {s: `a\nb`})"
+  ts has_error=true
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (string_literal content: (string_content) (ERROR (symbol)))))))
+  string_content "a" at 1:9
+  lowered: [{"s": VString("a\nb")}]
+== raw CR dq: "(a {s: \"a\rb\"})"
+  ts has_error=false
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (string_literal content: (string_content))))))
+  string_content "a\rb" at 1:9
+  lowered: [{"s": VString("a\rb")}]
+== raw 0x01 dq: "(a {s: \"a\u{1}b\"})"
+  ts has_error=false
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (string_literal content: (string_content))))))
+  string_content "a\u{1}b" at 1:9
+  lowered: [{"s": VString("a\u{1}b")}]
+== raw DEL dq: "(a {s: \"a\u{7f}b\"})"
+  ts has_error=false
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (string_literal content: (string_content))))))
+  string_content "a\u{7f}b" at 1:9
+  lowered: [{"s": VString("a\u{7f}b")}]
+== empty key: "(a {\"\": 1})"
+  ts has_error=false
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (double_quoted_name content: (string_content)) value: (integer)))))
+  string_content "" at 1:6
+  lowered: [{"": VInteger(1)}]
+== i64 overflow: "(a {n: 9223372036854775808})"
+  ts has_error=false
+  (gram_pattern (node_pattern identifier: (symbol) record: (record (record_property key: (symbol) value: (integer)))))
+  lowered: [{}]

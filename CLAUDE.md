@@ -12,8 +12,9 @@ ADR-0429/0431 upstream). It may be brought in-house later.
 
 - Gram graph notation only: nodes, relationships, paths, and the top-level record. No annotations, no pattern notation.
 - **Strictness rule:** reject anything that does not map directly to Cypher, with a located error. Property values are
-  string, integer, float, boolean and homogeneous arrays of scalars; no nested maps, tagged strings, ranges or
-  measurements. Nodes may have several labels; a relationship has exactly one type.
+  string, integer, float, boolean and homogeneous arrays of scalars; no nested maps, ranges or
+  measurements. A tagged string loads as a plain string, and its tag is dropped and reported (ADR-006; typed tags
+  such as dates come later). Nodes may have several labels; a relationship has exactly one type.
 - **Phases** (RFC-003 §5.9): the first phase is one unconstrained graph space with no named graphs, no ontology and no metadata nodes; named graphs and their metadata come second, behind `RELATE_PREVIEW=ontology`; meta nodes are third.
 - The top-level record: in the first phase it is checked (`kind`) and its properties are reported as not stored (ADR-003). Later, graph metadata (name, digest, record properties) lives in the ontology document under `extensions.custom.relate-gram`, and the third phase materializes it as `Graph` meta nodes in the reserved graph `@@` (ADR-005, proposed).
 - **Assumption:** only gram kind `property-graph` is supported (assumed when absent; other kinds are errors that say so). Files follow `graph-name.kind.gram`; the kind is checked in the first phase, and from the second phase the graph name comes from the record's `name`, else the file name (ADR-003, ADR-005).

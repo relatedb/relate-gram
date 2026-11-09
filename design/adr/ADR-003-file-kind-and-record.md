@@ -30,7 +30,7 @@ Several forces shape the choice:
 - A gram file's top-level record also says what kind of file it is. In the wider gram ecosystem the `kind` property selects the semantics, conventions and style of the contents, for example `schema` for a file of constraints. Every gram file is valid data, but only one kind is a property graph.
 - The ecosystem names files `graph-name.kind.gram`, so a file name can carry the kind as well as a name.
 - Property keys starting with `@` are rejected on load (ADR-001), so a file cannot set an `@id` or any other key the loader reserves.
-- The grammar allows a record's values to be maps and arrays, but only values that become Cypher property values can be stored (RFC-002).
+- The grammar allows a record's values to be maps and arrays, but only values that become Cypher property values can be stored (ADR-006).
 - From the second phase on the record is stored as graph metadata and written back on export (ADR-005). A file that loads in the first phase should still load then, and an exported file carries a record from the second phase on.
 
 The parent RFC (RFC-001) says the record is kept as a "meta node" and written back as the top-level record on export. RFC-003 stages that work, so the first phase needs only the rules in this ADR. Where the record is stored from the second phase on is decided in ADR-005.
@@ -50,7 +50,7 @@ The `kind` property is checked and then dropped: it is not stored, and exports d
 
 ### 2.2 The record in the first phase
 
-- The record is parsed. Its property values are checked under the value mapping (RFC-002) like those of any element, and a value that cannot be stored is a load error that reports its position. A key starting with `@` is a load error (ADR-001).
+- The record is parsed. Its property values are checked under the value mapping (ADR-006) like those of any element, and a value that cannot be stored is a load error that reports its position. A key starting with `@` is a load error (ADR-001).
 - The loader reports a warning that lists the record's properties, `name` among them, as not stored. `kind` is checked (2.1) and is not listed.
 - The record does not change the graph, and its `name` names nothing in this phase.
 - An export writes no top-level record.

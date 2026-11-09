@@ -3,7 +3,7 @@ id: RFC-002
 title: Property Value Mapping Between Gram and Cypher
 status: review
 created: 2026-11-06
-adrs: []
+adrs: [ADR-006, ADR-007]
 ---
 
 # RFC-002: Property Value Mapping Between Gram and Cypher
@@ -28,7 +28,7 @@ The mapping tables, edge cases and metadata format are left to ADRs.
 
 3.1. Define, for every value kind gram can express, whether it is accepted on load and what Cypher value it becomes.
 
-3.2. Define, for every Cypher property value Relate can store, the gram value it is written as on export.
+3.2. Define, for every Cypher property value Relate can store, the gram value it is written as on export, or why it cannot be written (ADR-006 lists those, such as dates and points, until tags are decided).
 
 3.3. In the first phase, preserve Cypher types exactly through a round trip, convert alternative spellings of integers and strings to those types, and reject any other value that does not become a Cypher type with an error that locates it.
 
@@ -52,11 +52,13 @@ The mapping tables, edge cases and metadata format are left to ADRs.
 
 ### 5.1 Strict first phase
 
-A gram value is accepted if it becomes a type Cypher stores. The accepted set is strings, integers, decimals (as floats), booleans, arrays whose elements are all of one such type, and tagged strings (5.2). Alternative spellings are accepted and converted: hexadecimal and octal integers become integers; bare symbols used as values (unquoted names such as `active`), and single-quoted, backticked and fenced strings, become strings. Whatever is accepted is stored as an ordinary Cypher value. Gram constructs that cannot become a Cypher type (ranges, measurements, nested maps) are load errors.
+A gram value is accepted if it becomes a type Cypher stores. The accepted set is strings, integers, decimals (as floats), booleans, arrays whose elements are all of one such type, and tagged strings (5.2). Alternative spellings are accepted and converted: hexadecimal integers become integers (octal literals are load errors, ADR-006); bare symbols used as values (unquoted names such as `active`), and single-quoted, backticked and fenced strings, become strings. Whatever is accepted is stored as an ordinary Cypher value. Gram constructs that cannot become a Cypher type (ranges, measurements, nested maps) are load errors.
 
 Export is the reverse: each stored Cypher value is written in the gram form that reads back as the same type. Where gram offers several spellings, export picks one canonical spelling. Conversion on load is therefore not reversible spelling-for-spelling: `0x1F` reads back as `31`.
 
 ### 5.2 Tagged strings and Cypher's other types
+
+_Narrowed by ADR-006: the first phase does not give tags a meaning. Every tag is dropped and reported, and values of other Cypher types cannot be exported until a tag vocabulary is decided (question 7.3). The text below is the direction, not the first phase._
 
 Cypher stores types such as temporal values and spatial points that gram has no literal for. Gram's tagged string is the mechanism for them: a tag names the Cypher type and the string holds its textual form in a standard convention, such as ISO-8601 for temporal values and WKT for spatial ones.
 
@@ -110,5 +112,8 @@ The mapping applies equally to node properties, relationship properties and the 
 7.10. How are property keys quoted and escaped? What happens to duplicate keys in one map, and how does export treat Cypher values for which no gram form exists (for example vectors or byte arrays), given that Cypher has no null property and gram has no null?
 
 ## 8. ADRs
+
+- ADR-006: Property Value Mapping (first phase; resolves questions 7.1, 7.2, 7.5, 7.6 and 7.10)
+- ADR-007: Parsing Through the tree-sitter-gram Syntax Tree
 
 _(populated automatically as `/adr-create` links ADRs to this RFC)_

@@ -19,7 +19,7 @@ Several forces shape where that metadata lives:
 - Metadata held only in the ontology document cannot be listed or queried with Cypher. Nodes can.
 - The ecosystem names files `graph-name.kind.gram`, so a file name can carry a graph's name.
 - Property keys starting with `@` are rejected on load (ADR-001), so a file cannot set `@id`. The loader writes it on the elements it stores and on a meta node.
-- The record's values are checked under the value mapping of RFC-002.
+- The record's values are checked under the value mapping of ADR-006.
 
 RFC-003 stages the work in three phases. The first phase stores no metadata (ADR-003). This ADR covers the second and third phases. Several of its rules depend on open questions in RFC-003: the record key that names a graph (7.12), whether the file name is a fallback (7.13), which graph names are reserved (7.14), and the risks of using the ontology document (7.18). It stays proposed until those are settled.
 
@@ -56,7 +56,7 @@ For each named graph the loader keeps:
 
 - its name;
 - the SHA-256 digest of the file it was loaded from, written `sha256:` followed by 64 lowercase hexadecimal digits;
-- the record's other properties, under the value mapping of RFC-002. `name` is not stored separately, and `kind` is dropped (ADR-003). Record keys starting with `@` are load errors (ADR-001).
+- the record's other properties, under the value mapping of ADR-006. `name` is not stored separately, and `kind` is dropped (ADR-003). Record keys starting with `@` are load errors (ADR-001).
 
 A file that has a graph name creates an entry even when it has no record, so that the graph is named.
 

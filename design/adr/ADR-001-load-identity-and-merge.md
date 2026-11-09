@@ -45,7 +45,7 @@ A node appearance that carries labels or a record (properties between braces, `{
 - **Two definitions of one identifier** are a load error that reports both positions and says to define the element once and refer to it elsewhere as `(a)`. This holds when the two definitions are identical.
 - The node's labels, in the order written, and its properties are exactly those of its definition. A reference adds nothing to it.
 - **An identifier that is only referenced** creates a node with no labels and no properties, unless the database already holds an element with that `@id` (2.7). Because creating one is often a typo (`(alcie)` for `(alice)`), the load lists such identifiers in a warning. `(a {})` is the explicit definition of a node with no content, and it is not warned about.
-- Duplicate keys within a single record, such as `{a: 1, a: 2}`, are handled by the value-mapping decision (RFC-002 question 7.10).
+- Duplicate keys within a single record, such as `{a: 1, a: 2}`, are a load error (ADR-006).
 
 A file therefore never contradicts itself about an element, and a load has no conflict option.
 

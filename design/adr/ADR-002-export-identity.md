@@ -75,7 +75,7 @@ Every element is given an identifier, a refinement of the RFC's "referenced more
 (n0)-[r0:KNOWS {since: 1843}]->(n1)
 ```
 
-Nodes are written with their full record. Relationships refer to their endpoints by identifier alone, in their stored direction. Paths are not produced. The spelling of property values, including quoting of strings, is decided by the value-mapping decision (RFC-002). The first phase writes no top-level record (ADR-003). Later phases write it from the graph's metadata (ADR-005).
+Nodes are written with their full record. Relationships refer to their endpoints by identifier alone, in their stored direction. Paths are not produced. The spelling of property values, including quoting of strings, is decided by the value mapping (ADR-006). The first phase writes no top-level record (ADR-003). Later phases write it from the graph's metadata (ADR-005).
 
 ### 2.6 Writing an identifier
 
@@ -125,7 +125,7 @@ A property key starting with `@` other than `@id` on any exported element is als
 - Exporting in `property` mode and reloading with default settings duplicates elements, since the identities do not line up.
 - Elements that carry the same identifier in two exports, as generated identifiers `n0` and `r0` always do, are one element when both files are loaded into the first phase's single identifier space (ADR-001).
 - Named graphs (RFC-003) extend this decision and do not replace it.
-- Follow-on decisions: the spelling of values on export (RFC-002), graph metadata and the top-level record (ADR-005), and the library settings and CLI flags for `identity`, `node-id-property` and `relationship-id-property`, specified with the CLI integration.
+- Follow-on decisions: the spelling of values on export (ADR-006), graph metadata and the top-level record (ADR-005), and the library settings and CLI flags for `identity`, `node-id-property` and `relationship-id-property`, specified with the CLI integration.
 
 ## 5. Related
 
