@@ -14,7 +14,7 @@ categories = ["command-line-utilities", "database", "parser-implementations"]
 # Not yet publishable: `relate` is a git dependency until Relate's public release.
 # To publish, follow RELEASING.md ("After Relate's public release").
 publish = false
-exclude = ["/external", "/specs", "/design", "/tests", "/scripts", "/benches", "/.github", "/.specify", "/.agents", "/.claude", "/CLAUDE.md", "/.gitmodules", "/RELEASING.md", "/CONTRIBUTING.md"]
+exclude = ["/external", "/specs", "/design", "/tests", "/scripts", "/benches", "/.github", "/site", "/.specify", "/.agents", "/.claude", "/CLAUDE.md", "/.gitmodules", "/RELEASING.md", "/CONTRIBUTING.md"]
 
 [lib]
 name = "relate_gram"
