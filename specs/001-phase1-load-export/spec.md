@@ -8,7 +8,7 @@
 
 **Input**: User description: "phase 1"
 
-This specification implements the first phase of RFC-003 (§5.9): one unconstrained graph space, with no named graphs, no ontology and no metadata nodes. It names the accepted ADRs that decide each behavior and does not restate them; where they differ, the ADR wins (Constitution I). The ADRs are ADR-001 (load identity and merge), ADR-002 (export identity), ADR-003 (file kind and the top-level record), ADR-004 (preserved identity), ADR-006 (property values) and ADR-007 (parsing).
+This specification implements the first phase of RFC-003 (§5.9): one unconstrained graph space, with no named graphs, no ontology and no metadata nodes. It names the accepted ADRs that decide each behavior and does not restate them; where they differ, the ADR wins (Constitution I). The ADRs are ADR-001 (load identity and merge), ADR-002 (export identity), ADR-003 (file kind and the top-level record), ADR-004 (preserved identity), ADR-006 (property values) ADR-007 (parsing) and ADR-008 (relationship types and arrow forms).
 
 ## Clarifications
 
@@ -126,7 +126,7 @@ A developer loads a file and exports the result, or exports a database and loads
 - **FR-001**: The library MUST load gram text into a Relate in-memory database and MUST export a Relate database as gram text, each as a single operation that either completes or changes nothing (ADR-001 §2.7; ADR-002 §2.7).
 - **FR-002**: The loader MUST read the gram text through the tree-sitter-gram syntax tree and MUST report every syntax error with a line, a column and a byte offset (ADR-007).
 - **FR-003**: The loader MUST accept nodes, relationships, paths and the top-level record, and MUST reject every other construct with an error that names the construct and its position (RFC-001 §5.1; ADR-007 §2.4).
-- **FR-004**: The loader MUST reject a relationship that has no type, and an undirected or bidirectional arrow, with an error that names it and its position and says what to write instead (a type; a right or left arrow).
+- **FR-004**: The loader MUST reject a relationship that has no type, and an undirected or bidirectional arrow, with an error that names it and its position and says what to write instead (a type; a right or left arrow), as ADR-008 §2.2 and §2.3 give, and MUST read a left arrow as running from the right node to the left node.
 - **FR-005**: The loader MUST map property values by ADR-006 §2.1 to §2.4, and MUST report every dropped tag (ADR-006 §2.3).
 - **FR-006**: The loader MUST resolve identifiers, definitions and references, and MUST store each identifier as `@id`, by ADR-001 §2.1 to §2.8, and MUST report the number of elements it created without an identifier (ADR-004).
 - **FR-007**: The loader MUST match the file's identified elements against the database by `@id`, or by a caller-named property, by ADR-001 §2.7 and §2.10.
