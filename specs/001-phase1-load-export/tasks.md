@@ -166,13 +166,13 @@ description: "Task list for Phase 1 Gram Load and Export"
 
 ### Tests for User Story 5 (write first; they must fail)
 
-- [ ] T057 [P] [US5] Write `tests/roundtrip/fixtures.rs`: for every file in `tests/fixtures/valid/`, load, export, load into a fresh database and compare with `dump_graph`, up to the spelling normalizations of ADR-006 §4
-- [ ] T058 [P] [US5] Write `tests/roundtrip/props.rs`: `proptest` generators for property values (all accepted kinds, awkward strings, edge floats and integers) and identifier text (quotable and unquotable), checking that export then load reproduces them
-- [ ] T059 [P] [US5] Write `tests/roundtrip/identity.rs`: a database exported with `node_id_property` and reloaded with the same setting matches the same elements; reloading with different settings duplicates (ADR-002 §2.1); a load followed by an export is stable across two fresh databases (ADR-002 §2.4)
+- [X] T057 [P] [US5] Write `tests/roundtrip/fixtures.rs`: for every file in `tests/fixtures/valid/`, load, export, load into a fresh database and compare with `dump_graph`, up to the spelling normalizations of ADR-006 §4
+- [X] T058 [P] [US5] Write `tests/roundtrip/props.rs`: `proptest` generators for property values (all accepted kinds, awkward strings, edge floats and integers) and identifier text (quotable and unquotable), checking that export then load reproduces them
+- [X] T059 [P] [US5] Write `tests/roundtrip/identity.rs`: a database exported with `node_id_property` and reloaded with the same setting matches the same elements; reloading with different settings duplicates (ADR-002 §2.1); a load followed by an export is stable across two fresh databases (ADR-002 §2.4)
 
 ### Implementation for User Story 5
 
-- [ ] T060 [US5] Fix every round-trip failure the tests expose in `src/values.rs`, `src/names.rs`, `src/export.rs` or `src/plan.rs`, citing the ADR rule each fix follows; add no behavior the ADRs do not state
+- [X] T060 [US5] Fix every round-trip failure the tests expose in `src/values.rs`, `src/names.rs`, `src/export.rs` or `src/plan.rs`, citing the ADR rule each fix follows; add no behavior the ADRs do not state
 
 **Checkpoint**: all five stories pass.
 

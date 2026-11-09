@@ -8,6 +8,8 @@ created: 2026-11-08
 
 # ADR-006: Property Value Mapping
 
+> Amended 2026-11-09: section 2.5 now says how a leading slash is written (SPIKE-003, found while implementing the exporter).
+
 ## 1. Context
 
 A gram property value can be a string in four quoting styles, a bare symbol, an integer in decimal, hexadecimal or octal spelling, a decimal, a boolean, a range such as `1..5`, a measurement such as `5kg`, a tagged string such as ``md`# Title` ``, an array of scalars or a nested map (tree-sitter-gram's `_value` rule). Relate, the embedded Cypher database this crate loads into, stores a smaller set, and its behavior at the edges is not always what a loader needs:
@@ -64,6 +66,8 @@ Every property value of an element is written as follows, and a value that has n
 | boolean | `true`, `false` |
 | string | double-quoted, with backslash, double quote, newline, carriage return, tab, backspace and form feed written as escapes |
 | list of integers, floats, booleans or strings | an array of the elements written as above; at least one element |
+
+A `/` in the leading run of blanks and slashes of a string or a quoted key is written `\/`, so a text that begins with `//` or `/**` is never written as such: in tree-sitter-gram 0.6.1 a quoted text that starts (after any blanks) with `//`, or with `/**` when a `*/` follows anywhere in the file, is read as a comment and does not parse (SPIKE-003). A slash after the first other character is written as is. The escape reads back as `/` (section 2.1).
 
 A property key is written as a bare symbol if it matches `[A-Za-z_][0-9A-Za-z_.@-]*`, and otherwise as a backtick-quoted name in which a backtick, a backslash, a newline, a carriage return and a tab are written as `` \` ``, `\\`, `\n`, `\r` and `\t` (the same as identifiers in ADR-002). A key starting with `@` is an export error (ADR-002).
 

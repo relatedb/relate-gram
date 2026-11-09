@@ -10,7 +10,7 @@ created: 2026-11-06
 
 > The amendments of 2026-11-08 (stored `@id` written as the identifier, shared settings with the load) took effect on 2026-11-08, when ADR-004 (which amends Constitution III) was accepted.
 >
-> Amended 2026-11-09: §2.5 now says how a label is written (with ADR-008).
+> Amended 2026-11-09: §2.5 now says how a label is written (with ADR-008), and §2.6 how a leading slash in a quoted name is written (ADR-006 §2.5).
 
 ## 1. Context
 
@@ -81,7 +81,7 @@ Nodes are written with their full record. A label is written as a bare symbol if
 
 ### 2.6 Writing an identifier
 
-An identifier's text is written as a bare integer if it matches `-?(0|[1-9][0-9]*)`, as a bare symbol if it matches `[A-Za-z_][0-9A-Za-z_.@-]*`, and otherwise as a backtick-quoted name. Inside a quoted name, a backtick is written `` \` ``, a backslash `\\`, a newline `\n`, a carriage return `\r` and a tab `\t`. Text that starts with `@` is quoted, since a plain symbol cannot start with it, and so is text equal to `true` or `false`. Other control characters are written raw.
+An identifier's text is written as a bare integer if it matches `-?(0|[1-9][0-9]*)`, as a bare symbol if it matches `[A-Za-z_][0-9A-Za-z_.@-]*`, and otherwise as a backtick-quoted name. Inside a quoted name, a backtick is written `` \` ``, a backslash `\\`, a newline `\n`, a carriage return `\r` and a tab `\t`. Text that starts with `@` is quoted, since a plain symbol cannot start with it, and so is text equal to `true` or `false`. Other control characters are written raw. A `/` in the leading run of blanks and slashes of a quoted name is written `\/`, for the reason given in ADR-006 §2.5.
 
 ### 2.7 Failure behavior
 

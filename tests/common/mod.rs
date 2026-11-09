@@ -56,8 +56,13 @@ pub fn fmt_value(v: &Value) -> String {
 }
 
 fn fmt_map(m: &BTreeMap<String, Value>) -> String {
+    fmt_map_with(m, true)
+}
+
+fn fmt_map_with(m: &BTreeMap<String, Value>, include_ids: bool) -> String {
     let inner: Vec<String> = m
         .iter()
+        .filter(|(k, _)| include_ids || k.as_str() != "@id")
         .map(|(k, v)| format!("{k:?}: {}", fmt_value(v)))
         .collect();
     format!("{{{}}}", inner.join(", "))
@@ -74,6 +79,16 @@ pub struct GraphDump {
 }
 
 pub fn dump_graph(conn: &mut Connection) -> GraphDump {
+    dump_graph_with(conn, true)
+}
+
+/// The graph without any `@id` property, for comparing graphs whose
+/// identifiers were generated differently.
+pub fn dump_graph_without_ids(conn: &mut Connection) -> GraphDump {
+    dump_graph_with(conn, false)
+}
+
+fn dump_graph_with(conn: &mut Connection, include_ids: bool) -> GraphDump {
     let node_rows = run(
         conn,
         "MATCH (n) RETURN id(n), labels(n), properties(n) ORDER BY id(n)",
@@ -97,7 +112,7 @@ pub fn dump_graph(conn: &mut Connection) -> GraphDump {
         };
         labels.sort();
         let props = match &row[2] {
-            Value::Map(m) => fmt_map(m),
+            Value::Map(m) => fmt_map_with(m, include_ids),
             o => panic!("properties() was {o:?}"),
         };
         let line = format!(":{} {}", labels.join(":"), props);
@@ -120,7 +135,7 @@ pub fn dump_graph(conn: &mut Connection) -> GraphDump {
             o => panic!("type {o:?}"),
         };
         let props = match &row[2] {
-            Value::Map(m) => fmt_map(m),
+            Value::Map(m) => fmt_map_with(m, include_ids),
             o => panic!("properties {o:?}"),
         };
         relationships.push(format!(

@@ -33,6 +33,7 @@ Two hours.
 - **Octal:** `010` is an `octal` node in the grammar. `gram-codec` reads it as the decimal 10. The corpus pins only the node kind (`042` is `(octal)`), not the value. `08` is an error.
 - **Decimals:** `1e5` is an error. A decimal with several hundred digits parses as infinity in `parse_gram` and as a valid `decimal` node in tree-sitter.
 - **Keys:** an empty quoted key is accepted by every path (the tree-sitter node is a `double_quoted_name` with empty content). A bare `true` is an ordinary key. `@id` as a key is a syntax error everywhere.
+- **Comments inside quoted text (found while implementing the exporter, 2026-11-09):** in `tree-sitter-gram` 0.6.1 a quoted string or name whose text starts, after any blanks, with `//` fails to parse (`(a {k: "//x"})`, `(a {k: " //x"})`, ``(a:`//CB`)``). A text that starts with `/**` fails too when a `*/` appears anywhere later in the file, because the documentation comment then matches more than the text does. The same text with a leading escape (`"\/\/x"`, `"\/**x"`) parses, and a `//` that is not at the start of the text (`"http://x"`, `"a//b"`) is fine. This looks like a grammar defect (the comment tokens compete at the start of a quoted text); it is worth reporting to tree-sitter-gram. Strings and names read from files that start with `//` cannot be loaded, and the exporter writes such a leading slash as `\/`.
 - **Availability:** `tree-sitter-gram` 0.6.1 and `relateby-gram` 0.7.2 are both on crates.io.
 
 ## 5. Conclusion

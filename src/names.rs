@@ -21,19 +21,44 @@ fn is_integer(text: &str) -> bool {
     }
 }
 
+/// Write `text` with the escapes of a quoted gram text.
+///
+/// A `/` in the leading run of blanks and slashes is escaped as `\/`. In
+/// tree-sitter-gram 0.6.1 a comment token (`//...` or `/**...*/`) can start
+/// where a quoted text starts, and when it matches more than the text does it
+/// wins, so a text that begins (after any blanks) with `//` or `/**` would not
+/// parse (SPIKE-003). A slash after the first other character is safe.
+fn escape_into(out: &mut String, text: &str, specials: &[(char, &str)]) {
+    let mut leading = true;
+    for c in text.chars() {
+        if leading && c == '/' {
+            out.push_str("\\/");
+            continue;
+        }
+        if !c.is_whitespace() {
+            leading = false;
+        }
+        match specials.iter().find(|(s, _)| *s == c) {
+            Some((_, escape)) => out.push_str(escape),
+            None => out.push(c),
+        }
+    }
+}
+
 fn backticked(text: &str) -> String {
     let mut out = String::with_capacity(text.len() + 2);
     out.push('`');
-    for c in text.chars() {
-        match c {
-            '`' => out.push_str("\\`"),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            c => out.push(c),
-        }
-    }
+    escape_into(
+        &mut out,
+        text,
+        &[
+            ('`', "\\`"),
+            ('\\', "\\\\"),
+            ('\n', "\\n"),
+            ('\r', "\\r"),
+            ('\t', "\\t"),
+        ],
+    );
     out.push('`');
     out
 }
@@ -62,18 +87,19 @@ pub fn name(text: &str) -> String {
 pub fn string_literal(text: &str) -> String {
     let mut out = String::with_capacity(text.len() + 2);
     out.push('"');
-    for c in text.chars() {
-        match c {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            '\u{8}' => out.push_str("\\b"),
-            '\u{c}' => out.push_str("\\f"),
-            c => out.push(c),
-        }
-    }
+    escape_into(
+        &mut out,
+        text,
+        &[
+            ('"', "\\\""),
+            ('\\', "\\\\"),
+            ('\n', "\\n"),
+            ('\r', "\\r"),
+            ('\t', "\\t"),
+            ('\u{8}', "\\b"),
+            ('\u{c}', "\\f"),
+        ],
+    );
     out.push('"');
     out
 }
@@ -155,6 +181,25 @@ mod tests {
             "\"a\\\"b\\\\c\\nd\\re\\tf\\bg\\fh\""
         );
         assert_eq!(string_literal("it's `x`"), "\"it's `x`\"");
+    }
+
+    #[test]
+    fn a_leading_slash_is_escaped_so_a_comment_cannot_start_the_text() {
+        // tree-sitter-gram 0.6.1 reads a quoted text that starts (after blanks)
+        // with `//` or `/**` as a comment
+        assert_eq!(string_literal("//x"), "\"\\/\\/x\"");
+        assert_eq!(string_literal(" //x"), "\" \\/\\/x\"");
+        assert_eq!(string_literal("///"), "\"\\/\\/\\/\"");
+        assert_eq!(string_literal("/**x"), "\"\\/**x\"");
+        assert_eq!(string_literal("/x"), "\"\\/x\"");
+        assert_eq!(string_literal("  /x"), "\"  \\/x\"");
+        assert_eq!(identifier("//a"), "`\\/\\/a`");
+        assert_eq!(name("/**a"), "`\\/**a`");
+        // a slash after the first other character is left alone
+        assert_eq!(string_literal("a/b"), "\"a/b\"");
+        assert_eq!(string_literal("http://x"), "\"http://x\"");
+        assert_eq!(name("a//b"), "`a//b`");
+        assert_eq!(string_literal("/ /x"), "\"\\/ \\/x\"");
     }
 
     #[test]
