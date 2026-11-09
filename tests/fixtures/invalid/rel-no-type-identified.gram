@@ -1,0 +1,2 @@
+// an identified definition with no type
+(a)-[r {since: 1}]->(b)

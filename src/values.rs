@@ -75,8 +75,30 @@ pub(crate) fn name_text(syn: &Syntax, node: Node<'_>) -> String {
     }
 }
 
+/// Which scalar kind a value is, for the homogeneous-array rule (ADR-006 section 2.2).
+fn kind_name(v: &PropValue) -> &'static str {
+    match v {
+        PropValue::Int(_) => "integer",
+        PropValue::Float(_) => "decimal",
+        PropValue::Bool(_) => "boolean",
+        PropValue::Str(_) => "string",
+        PropValue::List(_) => "list",
+    }
+}
+
+fn reject(
+    syn: &Syntax,
+    node: Node<'_>,
+    diag_code: &'static str,
+    message: String,
+    diags: &mut Vec<Diagnostic>,
+) -> Option<PropValue> {
+    diags.push(Diagnostic::error(diag_code, syn.span(node), message));
+    None
+}
+
 /// Convert one value node. Pushes a diagnostic and returns `None` for a value
-/// that cannot be stored.
+/// that cannot be stored (ADR-006 sections 2.1 to 2.3).
 pub(crate) fn convert_value(
     syn: &Syntax,
     node: Node<'_>,
@@ -87,30 +109,65 @@ pub(crate) fn convert_value(
     match node.kind() {
         "integer" => match text.parse::<i64>() {
             Ok(i) => Some(PropValue::Int(i)),
-            Err(_) => unsupported(syn, node, diags),
+            Err(_) => reject(
+                syn,
+                node,
+                code::VALUE_INTEGER_RANGE,
+                format!("the integer `{}` does not fit in 64 bits", abbreviate(text)),
+                diags,
+            ),
         },
         "hexadecimal" => match i64::from_str_radix(&text[2..], 16) {
             Ok(i) => Some(PropValue::Int(i)),
-            Err(_) => unsupported(syn, node, diags),
+            Err(_) => reject(
+                syn,
+                node,
+                code::VALUE_INTEGER_RANGE,
+                format!("the integer `{}` does not fit in 64 bits", abbreviate(text)),
+                diags,
+            ),
         },
-        "decimal" => match text.parse::<f64>() {
-            Ok(f) => Some(PropValue::Float(f)),
-            Err(_) => unsupported(syn, node, diags),
-        },
+        "decimal" => {
+            let f: f64 = text.parse().unwrap_or(f64::INFINITY);
+            let nonzero_digits = text.chars().any(|c| ('1'..='9').contains(&c));
+            if !f.is_finite() {
+                reject(
+                    syn,
+                    node,
+                    code::VALUE_DECIMAL,
+                    format!("the decimal `{}` is not finite as a 64-bit float", abbreviate(text)),
+                    diags,
+                )
+            } else if f == 0.0 && nonzero_digits {
+                reject(
+                    syn,
+                    node,
+                    code::VALUE_DECIMAL,
+                    format!("the decimal `{}` rounds to zero as a 64-bit float", abbreviate(text)),
+                    diags,
+                )
+            } else {
+                Some(PropValue::Float(f))
+            }
+        }
         "boolean_literal" => Some(PropValue::Bool(text == "true")),
         "symbol" => Some(PropValue::Str(text.to_string())),
         "string_literal" => Some(PropValue::Str(string_value(syn, node))),
         "tagged_string" => {
-            let tag = node
-                .child_by_field_name("tag")
-                .map(|t| syn.text(t))
-                .unwrap_or("");
-            let _ = tags; // the error policy arrives with the rejection rules
-            diags.push(Diagnostic::warning(
-                code::VALUE_TAG_DROPPED,
-                syn.span(node),
-                format!("the tag `{tag}` was dropped; the content was loaded as a string"),
-            ));
+            let tag = node.child_by_field_name("tag").map(|t| syn.text(t)).unwrap_or("");
+            let diag = match tags {
+                TagPolicy::Warn => Diagnostic::warning(
+                    code::VALUE_TAG_DROPPED,
+                    syn.span(node),
+                    format!("the tag `{tag}` was dropped; the content was loaded as a string"),
+                ),
+                TagPolicy::Error => Diagnostic::error(
+                    code::VALUE_TAG,
+                    syn.span(node),
+                    format!("the tag `{tag}` is not supported; remove it to load the content as a string"),
+                ),
+            };
+            diags.push(diag);
             let raw = content(syn, node);
             if text.starts_with("```") {
                 Some(PropValue::Str(raw.to_string()))
@@ -119,54 +176,141 @@ pub(crate) fn convert_value(
             }
         }
         "array" => {
-            let mut items = Vec::new();
+            let mut items: Vec<(PropValue, Node<'_>)> = Vec::new();
+            let mut ok = true;
             let mut cursor = node.walk();
             for child in node.named_children(&mut cursor) {
                 if child.kind() == "comment" || child.kind() == "doc_comment" {
                     continue;
                 }
-                items.push(convert_value(syn, child, tags, diags)?);
+                match convert_value(syn, child, tags, diags) {
+                    Some(v) => items.push((v, child)),
+                    None => ok = false,
+                }
             }
-            Some(PropValue::List(items))
+            if !ok {
+                return None;
+            }
+            if let Some((first, _)) = items.first() {
+                let want = kind_name(first);
+                if let Some((v, at)) = items.iter().find(|(v, _)| kind_name(v) != want) {
+                    return reject(
+                        syn,
+                        *at,
+                        code::VALUE_ARRAY_MIXED,
+                        format!(
+                            "an array holds one kind of value; found a {} after {} value(s)",
+                            kind_name(v),
+                            want
+                        ),
+                        diags,
+                    );
+                }
+            }
+            Some(PropValue::List(items.into_iter().map(|(v, _)| v).collect()))
         }
-        _ => unsupported(syn, node, diags),
+        "range" => reject(
+            syn,
+            node,
+            code::VALUE_RANGE,
+            format!("the range `{text}` has no Cypher type; write the bounds as separate properties"),
+            diags,
+        ),
+        "measurement" => reject(
+            syn,
+            node,
+            code::VALUE_MEASUREMENT,
+            format!("the measurement `{text}` has no Cypher type; write it as a number and a unit property"),
+            diags,
+        ),
+        "map" => reject(
+            syn,
+            node,
+            code::VALUE_MAP,
+            "a nested map has no Cypher type; write its entries as separate properties".to_string(),
+            diags,
+        ),
+        "octal" => reject(
+            syn,
+            node,
+            code::VALUE_OCTAL,
+            format!("the octal literal `{text}` is ambiguous; write the value in decimal or hexadecimal"),
+            diags,
+        ),
+        other => reject(
+            syn,
+            node,
+            code::CONSTRUCT_UNSUPPORTED,
+            format!("the value `{}` ({other}) is not supported", abbreviate(text)),
+            diags,
+        ),
     }
 }
 
-fn unsupported(syn: &Syntax, node: Node<'_>, diags: &mut Vec<Diagnostic>) -> Option<PropValue> {
-    diags.push(Diagnostic::error(
-        code::CONSTRUCT_UNSUPPORTED,
-        syn.span(node),
-        format!(
-            "the value `{}` ({}) is not supported",
-            syn.text(node),
-            node.kind()
-        ),
-    ));
-    None
+/// Shorten long literal text for messages.
+fn abbreviate(text: &str) -> String {
+    const MAX: usize = 24;
+    if text.chars().count() <= MAX {
+        text.to_string()
+    } else {
+        let head: String = text.chars().take(MAX).collect();
+        format!("{head}...")
+    }
 }
 
-/// Convert a record node to its ordered key and value pairs.
+/// Convert a record node to its ordered key and value pairs, checking each key
+/// (ADR-006 section 2.4, ADR-001 section 2.8). Returns the pairs that are valid;
+/// problems are pushed to `diags`.
 pub(crate) fn convert_record(
     syn: &Syntax,
     record: Node<'_>,
     tags: TagPolicy,
     diags: &mut Vec<Diagnostic>,
 ) -> Vec<(String, PropValue)> {
-    let mut out = Vec::new();
+    let mut out: Vec<(String, PropValue)> = Vec::new();
+    let mut seen: Vec<(String, crate::diagnostics::Span)> = Vec::new();
     let mut cursor = record.walk();
     for prop in record.named_children(&mut cursor) {
         if prop.kind() != "record_property" {
             continue;
         }
-        let (Some(key), Some(value)) = (
+        let (Some(key_node), Some(value)) = (
             prop.child_by_field_name("key"),
             prop.child_by_field_name("value"),
         ) else {
             continue;
         };
-        let key = name_text(syn, key);
-        if let Some(v) = convert_value(syn, value, tags, diags) {
+        let key = name_text(syn, key_node);
+        let key_span = syn.span(key_node);
+        let mut key_ok = true;
+        if key.is_empty() {
+            diags.push(Diagnostic::error(
+                code::KEY_EMPTY,
+                key_span,
+                "a property key cannot be empty",
+            ));
+            key_ok = false;
+        } else if key.starts_with('@') {
+            diags.push(Diagnostic::error(
+                code::KEY_RESERVED,
+                key_span,
+                format!("the key `{key}` is reserved: keys that start with `@` are written by the loader"),
+            ));
+            key_ok = false;
+        } else if let Some((_, first)) = seen.iter().find(|(k, _)| *k == key) {
+            diags.push(
+                Diagnostic::error(
+                    code::KEY_DUPLICATE,
+                    key_span,
+                    format!("the key `{key}` is repeated in one record"),
+                )
+                .with_related("first written here", *first),
+            );
+            key_ok = false;
+        }
+        seen.push((key.clone(), key_span));
+        let converted = convert_value(syn, value, tags, diags);
+        if let (true, Some(v)) = (key_ok, converted) {
             out.push((key, v));
         }
     }

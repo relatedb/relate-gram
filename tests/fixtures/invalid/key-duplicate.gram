@@ -1,0 +1,2 @@
+// a repeated key
+(a {k: 1, k: 2})

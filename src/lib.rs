@@ -45,15 +45,24 @@ pub struct LoadReport {
 pub struct LoadFailure {
     /// Up to `max_diagnostics`, in source order.
     pub diagnostics: Vec<Diagnostic>,
-    /// How many were found before the cap.
+    /// How many errors were found before the cap.
     pub total: usize,
 }
 
 impl LoadFailure {
-    fn new(mut diagnostics: Vec<Diagnostic>, max: usize) -> Self {
-        let total = diagnostics.len();
-        diagnostics.truncate(max);
-        LoadFailure { diagnostics, total }
+    /// Errors first (capped, with `total` their number), then warnings (capped),
+    /// each in source order.
+    fn new(diagnostics: Vec<Diagnostic>, max: usize) -> Self {
+        let (mut errors, mut warnings): (Vec<_>, Vec<_>) =
+            diagnostics.into_iter().partition(Diagnostic::is_error);
+        let total = errors.len();
+        errors.truncate(max);
+        warnings.truncate(max);
+        errors.extend(warnings);
+        LoadFailure {
+            diagnostics: errors,
+            total,
+        }
     }
 }
 
@@ -63,6 +72,15 @@ pub fn load(
     source: &[u8],
     settings: &LoadSettings,
 ) -> Result<LoadReport, LoadFailure> {
+    if conn.in_transaction() {
+        return Err(LoadFailure::new(
+            vec![Diagnostic::error_without_span(
+                code::LOAD_IN_TRANSACTION,
+                "the connection is already in a transaction; commit or roll it back first",
+            )],
+            settings.max_diagnostics,
+        ));
+    }
     let syn = syntax::parse(source, settings.max_diagnostics).map_err(|f| LoadFailure {
         diagnostics: f.diagnostics,
         total: f.total,

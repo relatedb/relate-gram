@@ -1,0 +1,2 @@
+// a double colon before a label
+(a::Label)

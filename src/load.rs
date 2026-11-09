@@ -125,9 +125,12 @@ fn write_in_transaction(conn: &mut Connection, plan: &LoadPlan) -> Result<Writte
     // Relationships: runs of consecutive relationships with the same type.
     let mut i = 0;
     while i < plan.rels.len() {
-        let ty = &plan.rels[i].rel_type;
+        let ty = plan.rels[i].rel_type.as_deref().unwrap_or_default();
         let mut j = i;
-        while j < plan.rels.len() && j - i < BATCH && &plan.rels[j].rel_type == ty {
+        while j < plan.rels.len()
+            && j - i < BATCH
+            && plan.rels[j].rel_type.as_deref().unwrap_or_default() == ty
+        {
             j += 1;
         }
         let name = cypher_name(ty).map_err(|_| {

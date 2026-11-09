@@ -1,0 +1,2 @@
+// a definition with a record and no type
+(a)-[{since: 1}]->(b)

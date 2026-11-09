@@ -1,0 +1,3 @@
+// a raw newline in a quoted string
+(a {s: "x
+y"})
