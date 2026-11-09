@@ -1,0 +1,4 @@
+// Version 1: every element is identified.
+(ada:Person {name: "Ada", born: 1815, note: "kept"})
+(grace:Person {name: "Grace"})
+(ada)-[k:KNOWS {since: 1840}]->(grace)

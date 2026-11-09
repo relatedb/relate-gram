@@ -1,0 +1,2 @@
+// an array needs at least one element
+(a {xs: []})

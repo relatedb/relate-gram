@@ -1,0 +1,28 @@
+[package]
+name = "relate-gram"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.90"
+description = "Load gram files into Relate and export Relate databases as gram"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "relate_gram"
+
+[dependencies]
+# research R1: the commit the spikes measured (relate 0.16.1). The parquet
+# snapshot codec is not used here.
+relate = { git = "https://github.com/neo4j-labs/cypherlite", rev = "84859b14", default-features = false }
+tree-sitter = "0.25"
+tree-sitter-gram = "=0.6.1"
+thiserror = "2"
+
+[dev-dependencies]
+proptest = "1"
+toml = "0.8"
+serde = { version = "1", features = ["derive"] }
+
+[[bench]]
+name = "load_export"
+harness = false

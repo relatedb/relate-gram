@@ -1,0 +1,2 @@
+// an octal literal
+(a {o: 010})

@@ -1,0 +1,2 @@
+// a double colon after a property key
+(a {k:: 1})

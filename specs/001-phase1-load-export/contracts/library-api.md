@@ -15,7 +15,7 @@ pub fn load(
 - `source` is the raw bytes of a gram file (ADR-007 §2.2: UTF-8, optional byte order mark).
 - Precondition: `conn` is not in a transaction. Otherwise the result is `LoadFailure` with the code `load.in-transaction`, and the database is untouched.
 - On `Ok`, the graph is written and committed, and the report lists warnings and counts.
-- On `Err`, the database is unchanged (FR-001) and `LoadFailure` holds every diagnostic found, up to `max_diagnostics`, with the total, in source order. Errors from Relate itself are returned as a diagnostic with code `load.database-error` that has no source span.
+- On `Err`, the database is unchanged (FR-001). `LoadFailure` holds the errors found in source order, up to `max_diagnostics`, with `total` the number of errors found, followed by any warnings (also capped). Errors from Relate itself are returned as a diagnostic with code `load.database-error` that has no source span.
 - A load that succeeds twice on the same file leaves the database as it was after the first (ADR-001 §2.7; SC-003).
 
 ## Export

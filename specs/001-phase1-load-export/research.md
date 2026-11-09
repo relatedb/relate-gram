@@ -7,13 +7,13 @@ Decisions the plan needs that the ADRs leave to implementation. None of them reo
 - **Decision**: a git dependency on `https://github.com/neo4j-labs/cypherlite` pinned by `rev` to the commit the spikes ran against (`84859b14`, `relate` 0.16.1), using the `relate` package from that workspace. Local development against a checkout uses a `[patch]` override that is not committed.
 - **Rationale**: the `relate` on crates.io is version 0.1.0, not the 0.16.1 that SPIKE-001 and SPIKE-002 measured. Pinning a commit makes the measured behavior the tested behavior.
 - **Alternatives**: a path dependency (breaks clean checkouts and CI); waiting for a crates.io release (blocks the project).
-- **Features**: `relate` enables a parquet snapshot codec by default, which this crate does not use. Try `default-features = false` first and keep it if the crate builds and the spike probes still pass; record the outcome here.
+- **Features**: `relate` enables a parquet snapshot codec by default, which this crate does not use. Try `default-features = false` first and keep it if the crate builds and the spike probes still pass; record the outcome here. **Outcome (T001)**: `default-features = false` builds; `relate` is used without the parquet codec.
 - **Consequence**: building needs network access to the git remote, and bumping the pin is a deliberate change that reruns the spike-derived tests.
 
 ## R2. Toolchain
 
-- **Decision**: pin Rust 1.88.0 in `rust-toolchain.toml`, with `rustfmt` and `clippy` components.
-- **Rationale**: Relate's `rust-version` is 1.88 and 1.88.0 is installed; the newer stable adds nothing needed.
+- **Decision**: pin Rust 1.96.0 in `rust-toolchain.toml`, with `rustfmt` and `clippy` components, and set the crate's `rust-version` to 1.90.
+- **Rationale**: Relate's own `rust-version` is 1.88, but its transitive dependencies `tree-sitter-language` 0.1.9 and `ordered-float` 5.5 require 1.90, and 1.88.0 fails to resolve them (found while implementing T001). 1.96.0 is the stable release the project was built with. The first plan pinned 1.88.0.
 
 ## R3. Parsing layer
 
@@ -37,7 +37,8 @@ Decisions the plan needs that the ADRs leave to implementation. None of them reo
   - create relationships: `UNWIND $rows AS r MATCH (a) WHERE id(a) = r.s MATCH (b) WHERE id(b) = r.e CREATE (a)-[x:`T`]->(b) SET x = r.props`;
   - update a matched element: `UNWIND $rows AS r MATCH (n) WHERE id(n) = r.id SET n += r.props`, with label additions grouped by the labels to add.
   Property maps are parameters (`SET n = $props` works for any key, including `@id`: SPIKE-001 §4.1). Newly created nodes need their internal ids for the relationship batches, so node batches return `id(n)` in row order and the loader maps plan elements to ids.
-- **Measure**: a file that alternates label sets or types on every element forces one statement per element. The benchmark (SC-006) includes that worst case. If it misses the target, the fallback is to create all nodes unlabelled in one statement and add labels per group, which keeps creation order; the plan then records that as a change to this decision.
+- **Measured (T061, release build, in-memory database)**: 10,000 elements (5,000 nodes and 5,000 relationships) load in 0.15 s and export in 0.04 s; the worst case, with label sets and types alternating on every element, loads in 0.5 to 0.7 s. 50,000 elements load in 0.7 s (2.6 s alternating) and export in about 0.2 s. The fallback below is not needed.
+- **Measure (planned)**: a file that alternates label sets or types on every element forces one statement per element. The benchmark (SC-006) includes that worst case. If it misses the target, the fallback is to create all nodes unlabelled in one statement and add labels per group, which keeps creation order; the plan then records that as a change to this decision.
 - **Alternatives**: grouping all elements of a shape together regardless of order (cheaper, but ids stop following appearance order, contradicting ADR-001 §2.9); per-element statements (simple, slow).
 
 ## R6. Names in query text
@@ -62,7 +63,7 @@ Decisions the plan needs that the ADRs leave to implementation. None of them reo
 
 ## R10. Tests
 
-- **Decision**: contract tests drive the public API against fresh in-memory databases; position tests carry a fixture per diagnostic code with the expected line, column and offset; the corpus runner reads the submodule's `test/corpus/*.txt` files in `tree-sitter test` format (a small reader in the test crate) and, for each input the subset accepts, compares the load plan to the tree; round-trip tests use fixtures plus `proptest` generators for property values and identifiers; `insta` snapshots pin export text.
+- **Decision**: contract tests drive the public API against fresh in-memory databases; position tests carry a fixture per diagnostic code with the expected line, column and offset; the corpus runner reads the submodule's `test/corpus/*.txt` files in `tree-sitter test` format (a small reader in the test crate) and, for each input the subset accepts, compares the load plan to the tree; round-trip tests use fixtures plus `proptest` generators for property values and identifiers; exact export text is asserted inline.
 - **Alternatives**: depending on pattern-rs's corpus reader (ADR-007 removes that dependency).
 
 ## R11. Not in this plan

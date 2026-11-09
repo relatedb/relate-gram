@@ -1,0 +1,3 @@
+// a repeated relationship with other endpoints
+(a)-[r:R]->(b)
+(a)-[r]->(c)

@@ -1,0 +1,2 @@
+// integers mixed with decimals
+(a {xs: [1, 2.5]})

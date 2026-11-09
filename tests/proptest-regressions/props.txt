@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 5ce656e2f229f3d4f19f675a5b31616ec2d12c56d2d80de104013e9caf23464d # shrinks to id = "\u{1}", labels = {"//"}, props = {}
+cc fe52552149b0003909435803812c4de4753077c22016e93b1bf4ca9777bcb6bd # shrinks to id = "¡", labels = {"/**"}, props = {"*/": Int(0)}
