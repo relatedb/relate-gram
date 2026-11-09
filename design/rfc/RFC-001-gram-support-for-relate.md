@@ -165,7 +165,7 @@ Language bindings and client structures come last.
 
 7.7. How are property values mapped between gram and Cypher, and how might later metadata extend that mapping? (Taken up in RFC-002.)
 
-7.8. _Resolved by ADR-008 (proposed)._ Gram has `-->`, `<--`, `--` and bidirectional arrows, other arrow families, and relationships without a type. Cypher relationships are directed and typed. Arrow families other than the thin arrow are rejected, since pattern-rs reserves them for schema intent (5.1). Still open: how undirected and bidirectional thin forms are handled, and whether an untyped relationship is an error.
+7.8. _Resolved by ADR-008._ Gram has `-->`, `<--`, `--` and bidirectional arrows, other arrow families, and relationships without a type. Cypher relationships are directed and typed. Arrow families other than the thin arrow are rejected, since pattern-rs reserves them for schema intent (5.1). Still open: how undirected and bidirectional thin forms are handled, and whether an untyped relationship is an error.
 
 7.9. Is loading into a non-empty or persistent database in scope, or only into a fresh in-memory one? If it is in scope, what does a load merge with, and how is a loaded in-memory database persisted afterward?
 

@@ -1,7 +1,7 @@
 ---
 id: ADR-008
 title: Relationship Types and Arrow Forms
-status: proposed
+status: accepted
 rfcs: [RFC-001]
 created: 2026-11-09
 ---
