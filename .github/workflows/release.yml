@@ -1,0 +1,103 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build the binaries and attach them to the run; create no release"
+        type: boolean
+        default: true
+permissions:
+  contents: write
+env:
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+  # Until Relate's repository is public, building needs read access to it (see ci.yml).
+  RELATE_READ_TOKEN: ${{ secrets.RELATE_READ_TOKEN }}
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          version=$(grep -m1 '^version = ' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "The tag ${GITHUB_REF_NAME} does not match Cargo.toml version ${version}" >&2
+            exit 1
+          fi
+          if [ "${GITHUB_REF_TYPE}" = "tag" ] && ! grep -q "^## \[${version}\]" CHANGELOG.md; then
+            echo "CHANGELOG.md has no section for ${version}" >&2
+            exit 1
+          fi
+
+  build:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-14, target: aarch64-apple-darwin, name: macos-arm64, smoke: true }
+          - { os: macos-14, target: x86_64-apple-darwin, name: macos-x64, smoke: false }
+          - { os: ubuntu-22.04, target: x86_64-unknown-linux-gnu, name: linux-x64, smoke: true }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Let cargo fetch the Relate repository
+        if: env.RELATE_READ_TOKEN != ''
+        run: git config --global url."https://x-access-token:${RELATE_READ_TOKEN}@github.com/relatedb/relate".insteadOf "https://github.com/relatedb/relate"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.96.0
+          targets: ${{ matrix.target }}
+      - name: Build
+        run: cargo build --release --locked --bin relate-gram --target ${{ matrix.target }}
+      - name: Smoke test
+        if: matrix.smoke
+        run: |
+          bin=target/${{ matrix.target }}/release/relate-gram
+          "$bin" --version
+          printf '(a:N)-[:T]->(b:N)\n' | "$bin" check -
+          printf '(a:N)-->(b:N)\n' | "$bin" fix - --rel-type T
+      - name: Package
+        run: |
+          version="${{ needs.version.outputs.version }}"
+          dir="relate-gram-${version}-${{ matrix.name }}"
+          mkdir "$dir"
+          cp "target/${{ matrix.target }}/release/relate-gram" LICENSE README.md CHANGELOG.md "$dir/"
+          cp -R docs "$dir/docs"
+          tar -czf "${dir}.tar.gz" "$dir"
+          shasum -a 256 "${dir}.tar.gz" > "${dir}.tar.gz.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: relate-gram-${{ matrix.name }}
+          path: |
+            relate-gram-*.tar.gz
+            relate-gram-*.tar.gz.sha256
+
+  release:
+    needs: [version, build]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ needs.version.outputs.version }}"
+          cat dist/*.sha256 > dist/SHA256SUMS
+          awk -v v="$version" '
+            $0 ~ "^## \\[" v "\\]" { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          gh release create "${GITHUB_REF_NAME}" dist/*.tar.gz dist/SHA256SUMS \
+            --title "relate-gram ${version}" --notes-file notes.md
