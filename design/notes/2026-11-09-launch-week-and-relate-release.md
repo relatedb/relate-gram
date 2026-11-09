@@ -8,7 +8,7 @@ stops depending on a pinned git commit. It binds no decision; if a step needs on
 
 Status on the day after the note was written: items 2 to 5 are done (the `relate-gram` command, rendered
 diagnostics, `docs/supported-gram.md`, `docs/quickstart.md`). Item 1 is blocked: GitHub CI cannot clone
-`neo4j-labs/cypherlite`, which is internal until Relate is public. The workflow now uses a read-only token
+`relatedb/relate` (formerly `neo4j-labs/cypherlite`), which is internal until Relate is public. The workflow now uses a read-only token
 in the repository secret `RELATE_READ_TOKEN` if one exists, and needs nothing once Relate is public.
 
 Phase 1 (specification `specs/001-phase1-load-export/`) is the product; the week goes into making it
@@ -33,7 +33,7 @@ WebAssembly are untested; loading is tested to 50,000 elements.
 
 ## After Relate's public release: leaving the pinned commit
 
-Today `Cargo.toml` depends on `relate` by git, pinned to commit `84859b14` (Relate 0.16.1), because the
+Today `Cargo.toml` depends on `relate` by git from `relatedb/relate`, pinned to commit `d8b2b620` (Relate 0.1.0 as that repository numbers it; the design was first measured at `84859b14` of the former `neo4j-labs/cypherlite`, 0.16.1, which does not exist in the new repository), because the
 `relate` on crates.io was a different, older crate (research R1). Everything in the design was measured
 against that commit (SPIKE-001, SPIKE-002). When Relate publishes its release, move to it:
 

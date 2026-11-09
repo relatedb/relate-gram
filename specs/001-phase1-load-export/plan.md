@@ -12,7 +12,7 @@ A Rust library crate, `relate-gram`, that loads gram text into a Relate database
 
 **Language/Version**: Rust, edition 2021, toolchain pinned to 1.96.0 in `rust-toolchain.toml`; `rust-version` 1.90 (research R2)
 
-**Primary Dependencies**: `relate` 0.16.1 (git dependency on `neo4j-labs/cypherlite`, pinned to a commit); `tree-sitter` 0.25; `tree-sitter-gram` 0.6.1; `thiserror`. Dev: `proptest` (round-trip properties), `toml` and `serde` (the corpus expectations)
+**Primary Dependencies**: `relate` (git dependency on `relatedb/relate`, pinned to a commit); `tree-sitter` 0.25; `tree-sitter-gram` 0.6.1; `thiserror`. Dev: `proptest` (round-trip properties), `toml` and `serde` (the corpus expectations)
 
 **Storage**: none of its own; writes to and reads from a caller-supplied Relate database (in-memory in this phase)
 

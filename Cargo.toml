@@ -14,7 +14,7 @@ name = "relate_gram"
 # research R1: the commit the spikes measured (relate 0.16.1). The parquet
 # snapshot codec is not used here. To move to the public release, follow
 # design/notes/2026-11-09-launch-week-and-relate-release.md.
-relate = { git = "https://github.com/neo4j-labs/cypherlite", rev = "84859b14", default-features = false }
+relate = { git = "https://github.com/relatedb/relate", rev = "d8b2b620bf5b9222770c9dfcb131a2a44add7c3f", default-features = false }
 tree-sitter = "0.25"
 tree-sitter-gram = "=0.6.2"
 thiserror = "2"
