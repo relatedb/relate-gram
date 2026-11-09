@@ -108,3 +108,18 @@ fn a_fenced_tag_is_also_reported() {
     assert_eq!(node_prop(&mut c, "t", "s"), s("body\n"));
     assert!(r.diagnostics.iter().any(|d| d.code == "value.tag-dropped"));
 }
+
+#[test]
+fn quoted_text_that_starts_with_slashes_loads() {
+    // tree-sitter-gram 0.6.1 read such a text as a comment; 0.6.2 fixed it
+    let (_db, mut c) = fresh_db();
+    load_fixture(&mut c, "valid", "slashes").unwrap();
+    assert_eq!(node_prop(&mut c, "s", "url"), s("//cdn.example.com/x"));
+    assert_eq!(node_prop(&mut c, "s", "blank"), s(" //x"));
+    assert_eq!(node_prop(&mut c, "s", "sq"), s("//y"));
+    assert_eq!(node_prop(&mut c, "s", "bt"), s("//z"));
+    assert_eq!(node_prop(&mut c, "s", "doc"), s("/**x"));
+    assert_eq!(node_prop(&mut c, "s", "//key"), Value::Int(1));
+    let labels = run(&mut c, "MATCH (n {`@id`: '//id'}) RETURN labels(n)");
+    assert_eq!(fmt_value(&labels[0][0]), "[\"//Label\"]");
+}

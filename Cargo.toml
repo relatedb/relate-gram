@@ -15,7 +15,7 @@ name = "relate_gram"
 # snapshot codec is not used here.
 relate = { git = "https://github.com/neo4j-labs/cypherlite", rev = "84859b14", default-features = false }
 tree-sitter = "0.25"
-tree-sitter-gram = "=0.6.1"
+tree-sitter-gram = "=0.6.2"
 thiserror = "2"
 
 [dev-dependencies]
