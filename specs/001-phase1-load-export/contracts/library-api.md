@@ -35,6 +35,16 @@ pub fn render(d: &Diagnostic, source: &[u8], name: &str) -> String;   // module 
 
 Renders a diagnostic as plain text: the severity, code and message, the location `name:line:column`, the source line, and a marker under the text at fault, with each related span shown the same way. The text ends with a newline (ADR-009).
 
+## Fix
+
+```rust
+pub fn fix(source: &[u8], settings: &LoadSettings, options: &FixOptions) -> Result<FixOutcome, FixFailure>;
+pub struct FixOptions { pub rel_type: Option<String>, pub direction: Option<Direction>, pub octal: Option<OctalAs> }
+pub struct FixOutcome { pub text: Vec<u8>, pub applied: Vec<Fix>, pub remaining: Vec<Diagnostic>, pub rounds: usize }
+```
+
+Corrects the errors that have a mechanical fix (ADR-010, module `fix`) and returns the new text, the fixes applied, and the diagnostics of the new text. It fails if the result would have more errors than the input. Fixing the output again changes nothing.
+
 ## Export
 
 ```rust

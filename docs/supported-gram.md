@@ -54,6 +54,42 @@ These are the codes `check`, `load` and `normalize` report. A code never changes
 with the warnings, is in
 [`specs/001-phase1-load-export/contracts/diagnostics.md`](../specs/001-phase1-load-export/contracts/diagnostics.md).
 
+## Fixing a file automatically
+
+`relate-gram fix` applies the corrections above to the file's text, so you do not have to edit hundreds
+of lines by hand. It never changes your file: by default it writes `people.fixed.gram` next to it, and it
+will not replace an existing file of that name. Everything outside the corrected text, including
+comments and line endings, stays exactly as it was.
+
+```bash
+relate-gram fix people.gram --rel-type KNOWS --direction right
+# people.gram: applied 5 fix(es) in 2 round(s):
+#   2 x rel.no-type: insert the relationship type KNOWS
+#   ...
+# wrote people.fixed.gram
+relate-gram check people.fixed.gram        # compare the two files in your editor or with diff
+```
+
+| Error | What `fix` does | Needs |
+|---|---|---|
+| `rel.no-type` | Inserts the type: `-->` becomes `-[:KNOWS]->` | `--rel-type NAME` |
+| `rel.undirected` | Adds an arrowhead: `--` becomes `-->` (right) or `<--` (left) | `--direction right\|left` |
+| `rel.bidirectional` | Removes one head: `<-->` becomes `-->` or `<--` | `--direction right\|left` |
+| `rel.arrow-family` | Writes a thin arrow: `==>` becomes `-->` | nothing |
+| `construct.double-colon` | Writes `:` for `::` | nothing |
+| `value.octal` | Writes the value in decimal: `010` becomes `10` or `8` | `--octal decimal\|octal` |
+| `value.array-mixed` | Writes the integers of a number array as decimals: `[1, 2.5]` becomes `[1.0, 2.5]` | nothing |
+| `value.tag` | Removes the tag (with `--tags error`) | nothing |
+
+A correction that needs a choice is applied only when you give it, and then to every occurrence in the
+file; relationships that need different types need hand edits. When a fix reveals another (a direction,
+then a type), `fix` repeats until nothing more applies. Errors it cannot fix, such as syntax errors,
+annotations and ranges, are listed against the new file with their new line numbers; if you re-run `fix`
+with more options after seeing them, add `--force` to replace the earlier output.
+
+Other ways to write the result: `-o FILE` (or `-o -` for standard output), and `--in-place`, which
+replaces your file after copying it to `FILE.orig`.
+
 ## Why so strict
 
 A loaded database that quietly differs from its file cannot be trusted. Each rule above exists because
@@ -61,6 +97,5 @@ the alternative is to invent something the file does not say: a default relation
 for an undirected arrow, a number from an octal literal. The reasons are in the ADRs, in
 [`design/adr/`](../design/adr/) (ADR-001, 006, 007 and 008).
 
-If a rejection is in your way, the error message is the shortest path to a file that loads. A command
-that repairs files automatically is planned
-([notes](../design/notes/2026-11-09-fixing-rejected-files.md)).
+If a rejection is in your way, the error message is the shortest path to a file that loads. `relate-gram fix`
+can apply many of the corrections for you (see above).

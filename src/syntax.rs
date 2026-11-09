@@ -15,6 +15,8 @@ pub struct Syntax {
     text: String,
     tree: Tree,
     index: LineIndex,
+    /// The length of a skipped byte order mark: spans and edit ranges count it.
+    base: usize,
 }
 
 /// The diagnostics from a failed parse: up to the cap, with the total found.
@@ -40,6 +42,18 @@ impl Syntax {
 
     pub fn span_of_range(&self, start: usize, end: usize) -> Span {
         self.index.span(start, end)
+    }
+
+    /// The length of the byte order mark that was skipped before parsing, or 0.
+    pub fn base(&self) -> usize {
+        self.base
+    }
+
+    /// The smallest node that covers `span`.
+    pub fn node_at(&self, span: &Span) -> Option<Node<'_>> {
+        let start = span.start.checked_sub(self.base)?;
+        let end = span.end.checked_sub(self.base)?;
+        self.tree.root_node().descendant_for_byte_range(start, end)
     }
 
     /// The whole text after any byte order mark.
@@ -91,7 +105,12 @@ pub fn parse(input: &[u8], max_diagnostics: usize) -> Result<Syntax, SyntaxFailu
             total,
         });
     }
-    Ok(Syntax { text, tree, index })
+    Ok(Syntax {
+        text,
+        tree,
+        index,
+        base,
+    })
 }
 
 fn collect_errors(node: Node<'_>, index: &LineIndex, out: &mut Vec<Diagnostic>) {

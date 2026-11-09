@@ -7,6 +7,7 @@
 
 pub mod diagnostics;
 pub mod export;
+pub mod fix;
 pub(crate) mod load;
 pub mod names;
 pub mod plan;
