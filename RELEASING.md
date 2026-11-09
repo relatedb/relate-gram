@@ -1,5 +1,13 @@
 # Releasing relate-gram
 
+## Launch day (Wednesday 2026-11-11)
+
+1. Relate's repository goes public first. `relatedb/relate-gram` goes public right after (Settings, General,
+   Danger Zone, Change visibility), so that release downloads and `cargo install --git` work for everyone.
+2. Release 0.1.0 as below. The version and changelog are already set.
+3. Once the `relate` crate is published to crates.io (the owner of the name is donating it to the
+   project), follow "After Relate's public release".
+
 ## A release (binaries on GitHub)
 
 1. Make sure `main` is green: CI passes, and `cargo test --release --test perf -- --ignored` if anything
@@ -37,5 +45,6 @@ published `relate` crate, then to publish relate-gram itself:
 5. Set the repository variable `CRATES_IO_PUBLISH` to `true`. From then on, publishing a GitHub release
    also publishes the crate. Until the variable is set, the workflow only runs by hand.
 
-If the crate name `relate-gram` or the `relate` dependency name needs to change, do it before the first
-publish: a published name cannot be reused.
+The `relate` crate name on crates.io is being donated to the project by its current owner, so the
+dependency name stays `relate`. If the name `relate-gram` needs to change, do it before the first publish:
+a published name cannot be reused.

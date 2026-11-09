@@ -5,6 +5,7 @@ edition = "2021"
 rust-version = "1.90"
 description = "Load gram files into Relate, export Relate databases as gram, and fix files the strict loader rejects"
 license = "Apache-2.0"
+authors = ["The Relate Authors"]
 repository = "https://github.com/relatedb/relate-gram"
 homepage = "https://github.com/relatedb/relate-gram"
 readme = "README.md"

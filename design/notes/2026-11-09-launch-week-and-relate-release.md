@@ -36,7 +36,8 @@ WebAssembly are untested; loading is tested to 50,000 elements.
 ## After Relate's public release: leaving the pinned commit
 
 Today `Cargo.toml` depends on `relate` by git from `relatedb/relate`, pinned to commit `d8b2b620` (Relate 0.1.0 as that repository numbers it; the design was first measured at `84859b14` of the former `neo4j-labs/cypherlite`, 0.16.1, which does not exist in the new repository), because the
-`relate` on crates.io was a different, older crate (research R1). Everything in the design was measured
+`relate` on crates.io is a different, older crate (research R1), whose owner is donating the name to the
+project, so the released Relate will take it over and the dependency name stays `relate`. Everything in the design was measured
 against that commit (SPIKE-001, SPIKE-002). When Relate publishes its release, move to it:
 
 1. **Confirm the release is the same API.** The library uses only `Database`, `Connection` (`query`,
