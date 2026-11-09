@@ -135,7 +135,7 @@ A developer loads a file and exports the result, or exports a database and loads
 - **FR-010**: The exporter MUST choose identifiers by ADR-002 §2.1 to §2.3, in the order and layout of ADR-002 §2.4 and §2.5, and MUST write values by ADR-006 §2.5.
 - **FR-011**: The exporter MUST fail before producing any output when an identity source is missing or not unique, or a value has no gram form, and MUST list every offending element (ADR-002 §2.2, §2.7; ADR-006 §2.6).
 - **FR-012**: Two exports of one unchanged database MUST be identical, and a load followed by an export MUST be stable, as ADR-002 §2.4 requires.
-- **FR-013**: The library MUST take its settings (identity properties for load and export, the export identity mode, and the tag policy) as ordinary inputs and MUST NOT depend on the `relate` command-line tool.
+- **FR-013**: The library MUST take its settings (identity properties for load and export, the export identity mode, the tag policy, the diagnostic cap and the file name used for the kind check) as ordinary inputs and MUST NOT depend on the `relate` command-line tool.
 - **FR-014**: The library MUST depend only on Relate's public library interface (Constitution V).
 - **FR-015**: Every error that concerns the source text MUST carry the position of the offending text, and a test MUST assert that position (Constitution VI).
 
@@ -161,7 +161,7 @@ A developer loads a file and exports the result, or exports a database and loads
 
 ## Assumptions
 
-- Only gram kind `property-graph` is supported (ADR-003); files may be named `graph-name.kind.gram`, and the name has no effect in this phase.
+- Only gram kind `property-graph` is supported (ADR-003); files may be named `graph-name.kind.gram`, and the name affects only the kind check (a name whose kind is not `property-graph` is rejected).
 - The target is a Relate in-memory database that the loader writes to through Relate's public library interface; loading into a persistent store, or concurrent writers, are not tested here (SPIKE-001 left both open).
 - This phase has no named graphs, no ontology and no metadata nodes (RFC-003 §5.9), so a load into a non-empty database merges by `@id` without regard to graphs.
 - The command-line integration (verbs, flags, defaults) is out of scope and is decided separately; the settings are library inputs until then (ADR-006 and ADR-001 name the settings).
