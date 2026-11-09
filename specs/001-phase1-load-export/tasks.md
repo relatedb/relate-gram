@@ -143,16 +143,16 @@ description: "Task list for Phase 1 Gram Load and Export"
 
 ### Tests for User Story 4 (write first; they must fail)
 
-- [ ] T050 [P] [US4] Write `tests/contract/export_basic.rs` (ADR-002 §2.4, §2.5): the layout (nodes, blank line, relationships, right arrows, labels and keys sorted), nodes and relationships in `id()` order, two exports of an unchanged database byte-equal (SC-004), the empty database, labels, relationship types and keys that need quoting (a space, a backtick, a leading `@`) written as ADR-002 §2.6 and ADR-008 §2.4 give and read back by the loader, and `insta` snapshots
-- [ ] T051 [P] [US4] Write `tests/contract/export_identity.rs` (ADR-002 §2.1 to §2.3, §2.7): `auto`, `generate` and `property` modes, `@id` used when present, generated `n0` and `r0` skipping collisions, identifier quoting, and failures listed together before output for a missing, unusable or duplicate identity value, an `@id` that is not a string, a property setting in `generate` mode, and `property` mode with no property
-- [ ] T052 [P] [US4] Write `tests/contract/export_values.rs` (ADR-006 §2.5, §2.6): spellings for integers, floats (`0.1`, `1.0`, `-0.0`, `1e300`, `1e-300`, `f64::MAX`, `f64::MIN_POSITIVE`), strings with every escape, lists, key quoting; and the unexportable cases listed together: `NaN`, an infinity (passed as parameters), an empty list, a NUL string, an empty key, a mixed list that Relate stores, a date, a point, a nested map, a `@x` key
+- [X] T050 [P] [US4] Write `tests/contract/export_basic.rs` (ADR-002 §2.4, §2.5): the layout (nodes, blank line, relationships, right arrows, labels and keys sorted), nodes and relationships in `id()` order, two exports of an unchanged database byte-equal (SC-004), the empty database, labels, relationship types and keys that need quoting (a space, a backtick, a leading `@`) written as ADR-002 §2.6 and ADR-008 §2.4 give and read back by the loader, and `insta` snapshots
+- [X] T051 [P] [US4] Write `tests/contract/export_identity.rs` (ADR-002 §2.1 to §2.3, §2.7): `auto`, `generate` and `property` modes, `@id` used when present, generated `n0` and `r0` skipping collisions, identifier quoting, and failures listed together before output for a missing, unusable or duplicate identity value, an `@id` that is not a string, a property setting in `generate` mode, and `property` mode with no property
+- [X] T052 [P] [US4] Write `tests/contract/export_values.rs` (ADR-006 §2.5, §2.6): spellings for integers, floats (`0.1`, `1.0`, `-0.0`, `1e300`, `1e-300`, `f64::MAX`, `f64::MIN_POSITIVE`), strings with every escape, lists, key quoting; and the unexportable cases listed together: `NaN`, an infinity (passed as parameters), an empty list, a NUL string, an empty key, a mixed list that Relate stores, a date, a point, a nested map, a `@x` key
 
 ### Implementation for User Story 4
 
-- [ ] T053 [US4] Implement the export side of `src/values.rs`: `relate::Value` to gram spelling or an `export.value` diagnostic naming the case; floats through Rust `Display` with `.0` appended when there is no dot (research R8)
-- [ ] T054 [US4] Implement graph reading in `src/export.rs` (research R7): one transaction, nodes and relationships ordered by `id()`, properties and labels read as `Value`
-- [ ] T055 [US4] Implement identifier selection in `src/export.rs` (ADR-002 §2.1 to §2.3): modes, `@id`, configured property checks with all offenders collected, generated counters that skip collisions; return `export.*` diagnostics before writing
-- [ ] T056 [US4] Implement the layout writer in `src/export.rs` (ADR-002 §2.5, ADR-008 §2.4) and the public `export` in `src/lib.rs`, including the `export.in-transaction` precondition
+- [X] T053 [US4] Implement the export side of `src/values.rs`: `relate::Value` to gram spelling or an `export.value` diagnostic naming the case; floats through Rust `Display` with `.0` appended when there is no dot (research R8)
+- [X] T054 [US4] Implement graph reading in `src/export.rs` (research R7): one transaction, nodes and relationships ordered by `id()`, properties and labels read as `Value`
+- [X] T055 [US4] Implement identifier selection in `src/export.rs` (ADR-002 §2.1 to §2.3): modes, `@id`, configured property checks with all offenders collected, generated counters that skip collisions; return `export.*` diagnostics before writing
+- [X] T056 [US4] Implement the layout writer in `src/export.rs` (ADR-002 §2.5, ADR-008 §2.4) and the public `export` in `src/lib.rs`, including the `export.in-transaction` precondition
 
 **Checkpoint**: Stories 1 to 4 pass; both directions work.
 

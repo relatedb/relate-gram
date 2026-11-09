@@ -176,3 +176,37 @@ pub fn node_prop(conn: &mut Connection, id: &str, key: &str) -> Value {
     assert_eq!(rows.len(), 1, "one node with @id {id}");
     rows[0][0].clone()
 }
+
+/// Export with default settings.
+pub fn export_str(conn: &mut Connection) -> Result<String, relate_gram::ExportFailure> {
+    relate_gram::export(conn, &relate_gram::settings::ExportSettings::default())
+}
+
+/// Export with the given settings.
+pub fn export_with(
+    conn: &mut Connection,
+    settings: &relate_gram::settings::ExportSettings,
+) -> Result<String, relate_gram::ExportFailure> {
+    relate_gram::export(conn, settings)
+}
+
+/// Create one node with the given properties, passed as a parameter map so any
+/// key and value (including non-finite floats) can be used.
+pub fn create_node(conn: &mut Connection, labels: &str, props: Vec<(&str, Value)>) {
+    let mut map = BTreeMap::new();
+    for (k, v) in props {
+        map.insert(k.to_string(), v);
+    }
+    let mut params = BTreeMap::new();
+    params.insert("props".to_string(), Value::Map(std::sync::Arc::new(map)));
+    conn.query_with_params(&format!("CREATE (n{labels}) SET n = $props"), params)
+        .unwrap_or_else(|e| panic!("create_node failed: {e}"));
+}
+
+pub fn str_value(text: &str) -> Value {
+    Value::String(std::sync::Arc::from(text))
+}
+
+pub fn codes_of(f: &relate_gram::ExportFailure) -> Vec<&'static str> {
+    f.diagnostics.iter().map(|d| d.code).collect()
+}

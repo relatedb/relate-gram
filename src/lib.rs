@@ -15,6 +15,7 @@ pub mod syntax;
 pub mod values;
 
 use diagnostics::{code, Diagnostic};
+pub use export::{export, ExportFailure};
 use relate::Connection;
 use settings::LoadSettings;
 
