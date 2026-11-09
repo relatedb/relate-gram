@@ -23,8 +23,8 @@ ADR-0429/0431 upstream). It may be brought in-house later.
 - Second phase: one Relate database holds several graphs, distinguished by named graphs, with membership recorded per element (RFC-003). Elements keep their `@id`, which
   round-trips to gram by becoming the element identifier. Also: managed multi-graph load, and merging
   graphs within one named graph.
-- Parser: `gram-codec` (pattern-rs), updated as needed to match current tree-sitter-gram (e.g. scalar arrays inside a
-  shallow map); tree-sitter-gram's corpus is the conformance reference.
+- Parser: `tree-sitter` with `tree-sitter-gram` 0.6.1, read directly, not through `gram-codec` (ADR-007, which also
+  ignores all comments in data files); tree-sitter-gram's corpus is the conformance reference.
 
 - **Export IDs:** modes `auto` (default), `generate`, `property`. `auto` uses `@id` if present, else a configured
   id-property if present and unique, else a sequential ID (`n0…` for nodes, `r0…` for relationships, deterministic
@@ -36,7 +36,7 @@ Still open: design constraints for the TypeScript and Python bindings.
 ## Reference repos (local, read-mostly)
 
 - `/Users/abk/Developer/neo4j-labs/cypherlite`: Relate. Its `AGENTS.md` and `extensions/` show the extension contract.
-- `/Users/abk/Developer/relateby/pattern-rs`: `gram-codec` and related crates.
+- `/Users/abk/Developer/relateby/pattern-rs`: `gram-codec` and related crates (not a dependency; see ADR-007).
 - `/Users/abk/Developer/gram-data/tree-sitter-gram`: the grammar and its test corpus.
 
 ## Design process: RFC → ADR → implementation (with spikes)

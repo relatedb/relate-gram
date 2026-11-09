@@ -1,7 +1,7 @@
 ---
 id: ADR-007
 title: Parsing Through the tree-sitter-gram Syntax Tree
-status: proposed
+status: accepted
 rfcs: [RFC-001, RFC-002]
 created: 2026-11-09
 ---
