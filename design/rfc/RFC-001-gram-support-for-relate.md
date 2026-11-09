@@ -3,7 +3,7 @@ id: RFC-001
 title: Gram Graph Support for Relate
 status: review
 created: 2026-11-06
-adrs: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-007, ADR-008]
+adrs: [ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-007, ADR-008, ADR-009]
 ---
 
 # RFC-001: Gram Graph Support for Relate
@@ -188,3 +188,4 @@ Language bindings and client structures come last.
 - [ADR-005](../adr/ADR-005-graph-metadata.md): Graph Metadata and Meta Nodes
 - [ADR-007](../adr/ADR-007-parser-path.md): Parsing Through the tree-sitter-gram Syntax Tree
 - [ADR-008](../adr/ADR-008-relationship-forms.md): Relationship Types and Arrow Forms
+- [ADR-009](../adr/ADR-009-command-line.md): The relate-gram Command

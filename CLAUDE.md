@@ -54,6 +54,12 @@ from `.claude/skills/`.
   The constitution is `.specify/memory/constitution.md`; every plan checks itself against it.
 - Write design documents for a newcomer: name project artifacts on first use.
 
+## Command
+
+`relate-gram check|load|export|normalize` (ADR-009, `src/main.rs`; tested by `tests/cli.rs`). User docs are in
+`docs/`: `quickstart.md` and `supported-gram.md`. When a rejection rule or a diagnostic code changes, update the
+table in `docs/supported-gram.md`.
+
 ## Build and test
 
 - `git submodule update --init external/tree-sitter-gram` fetches the grammar corpus (needed by `tests/corpus.rs`).

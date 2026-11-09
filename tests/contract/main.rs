@@ -1,6 +1,7 @@
 #[path = "../common/mod.rs"]
 mod common;
 
+mod check;
 mod export_basic;
 mod export_identity;
 mod export_values;

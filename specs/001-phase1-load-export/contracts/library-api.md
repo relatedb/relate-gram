@@ -18,6 +18,23 @@ pub fn load(
 - On `Err`, the database is unchanged (FR-001). `LoadFailure` holds the errors found in source order, up to `max_diagnostics`, with `total` the number of errors found, followed by any warnings (also capped). Errors from Relate itself are returned as a diagnostic with code `load.database-error` that has no source span.
 - A load that succeeds twice on the same file leaves the database as it was after the first (ADR-001 §2.7; SC-003).
 
+## Check
+
+```rust
+pub fn check(source: &[u8], settings: &LoadSettings) -> CheckReport;
+pub struct CheckReport { pub diagnostics: Vec<Diagnostic> }   // has_errors()
+```
+
+Parses and plans `source` as a load would, without a database. It returns the errors and warnings a load would report, in source order, except those that depend on stored elements (`match.*`) and the `load.anonymous` count (ADR-009).
+
+## Render
+
+```rust
+pub fn render(d: &Diagnostic, source: &[u8], name: &str) -> String;   // module `render`
+```
+
+Renders a diagnostic as plain text: the severity, code and message, the location `name:line:column`, the source line, and a marker under the text at fault, with each related span shown the same way. The text ends with a newline (ADR-009).
+
 ## Export
 
 ```rust

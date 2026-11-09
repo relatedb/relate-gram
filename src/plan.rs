@@ -25,6 +25,20 @@ pub struct PlannedNode {
     def_ident: Option<Span>,
 }
 
+impl PlannedNode {
+    /// The warning for a node that is only referenced and never defined (ADR-001 section 2.3).
+    pub fn reference_only_warning(&self) -> Option<Diagnostic> {
+        match (&self.key, self.defined) {
+            (Some(key), false) => Some(Diagnostic::warning(
+                code::ID_REFERENCE_ONLY,
+                self.span,
+                format!("`{key}` is referenced but never defined; an empty node was created"),
+            )),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct PlannedRel {
     pub key: Option<String>,
