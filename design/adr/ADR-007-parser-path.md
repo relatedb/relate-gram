@@ -41,7 +41,7 @@ After parsing, if the root node's `has_error` is true, the loader collects every
 
 The loader takes these from the tree, each with the position of its node:
 
-- elements: node patterns, relationship patterns (arrows of any direction in the grammar's forms) and paths, each with its identifier, labels and record;
+- elements: node patterns, relationship patterns (the arrow forms ADR-008 accepts) and paths, each with its identifier, labels and record;
 - record properties: the key node (symbol, backtick-quoted or double-quoted name) and the value node, in source order, which keeps repeated keys visible (ADR-006 §2.4);
 - values: by node kind, as ADR-006 §2.1 to §2.3 define them, including the `tag` and `content` fields of a tagged string, wherever the string is written, inline or fenced;
 - the top-level record (ADR-003).

@@ -14,8 +14,8 @@ This specification implements the first phase of RFC-003 (§5.9): one unconstrai
 
 ### Session 2026-11-09
 
-- Q: When a file writes a relationship with no type, what should the load do? → A: Load error that names the relationship and its position and says to add a type. (Resolves RFC-001 question 7.8 in part; the decision needs an ADR before the plan, and the ADR wins on conflict.)
-- Q: How should the load treat undirected (`-[:T]-`) and bidirectional (`<-[:T]->`) thin arrows? → A: Load error naming the construct and its position and saying to write a right or left arrow. (Same ADR as above.)
+- Q: When a file writes a relationship with no type, what should the load do? → A: Load error that names the relationship and its position and says to add a type. (ADR-008.)
+- Q: How should the load treat undirected (`-[:T]-`) and bidirectional (`<-[:T]->`) thin arrows? → A: Load error naming the construct and its position and saying to write a right or left arrow. (ADR-008.)
 
 ## User Scenarios & Testing *(mandatory)*
 
