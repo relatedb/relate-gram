@@ -3,9 +3,17 @@ name = "relate-gram"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.90"
-description = "Load gram files into Relate and export Relate databases as gram"
+description = "Load gram files into Relate, export Relate databases as gram, and fix files the strict loader rejects"
 license = "Apache-2.0"
+repository = "https://github.com/relatedb/relate-gram"
+homepage = "https://github.com/relatedb/relate-gram"
+readme = "README.md"
+keywords = ["gram", "graph", "cypher", "relate", "import"]
+categories = ["command-line-utilities", "database", "parser-implementations"]
+# Not yet publishable: `relate` is a git dependency until Relate's public release.
+# To publish, follow RELEASING.md ("After Relate's public release").
 publish = false
+exclude = ["/external", "/specs", "/design", "/tests", "/scripts", "/benches", "/.github", "/.specify", "/.agents", "/.claude", "/CLAUDE.md", "/.gitmodules", "/RELEASING.md", "/CONTRIBUTING.md"]
 
 [lib]
 name = "relate_gram"

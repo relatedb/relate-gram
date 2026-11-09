@@ -1,0 +1,38 @@
+name: publish
+# Publishes the crate to crates.io. Not usable until Relate is published (RELEASING.md,
+# "After Relate's public release"): it runs by hand, or on a published release once the repository
+# variable CRATES_IO_PUBLISH is "true".
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run `cargo publish --dry-run` only"
+        type: boolean
+        default: true
+env:
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+  RELATE_READ_TOKEN: ${{ secrets.RELATE_READ_TOKEN }}
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || vars.CRATES_IO_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Let cargo fetch the Relate repository
+        if: env.RELATE_READ_TOKEN != ''
+        run: git config --global url."https://x-access-token:${RELATE_READ_TOKEN}@github.com/relatedb/relate".insteadOf "https://github.com/relatedb/relate"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.96.0
+      - run: cargo test --locked
+      - run: cargo package --locked --list
+      - run: cargo publish --locked --dry-run
+      - name: Publish
+        if: github.event_name == 'release' || inputs.dry_run == false
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish --locked

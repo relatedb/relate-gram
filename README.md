@@ -7,6 +7,16 @@ Gram is a plain-text notation for graphs. `relate-gram` supports a strict subset
 map directly to Cypher's property graph model (nodes, relationships, paths and the top-level record).
 Anything else is rejected with an error that says what it is and where it is.
 
+## Install
+
+- **A release binary** (macOS Apple silicon and Intel, Linux x86-64): download the archive from the
+  [Releases page](https://github.com/relatedb/relate-gram/releases), check it against `SHA256SUMS`, and put
+  `relate-gram` on your `PATH`.
+- **From source**: `cargo install --git https://github.com/relatedb/relate-gram` (Rust 1.90 or later; until Relate
+  is public this needs access to `relatedb/relate`).
+- **As a library**: `relate-gram = { git = "https://github.com/relatedb/relate-gram", tag = "v0.1.0" }`. It
+  is not on crates.io yet, because it depends on Relate by git until Relate's public release.
+
 ## Quick start
 
 ```bash
@@ -69,6 +79,21 @@ Nodes with labels and properties; relationships with exactly one type and a dire
 integers, decimals, booleans and arrays of one of these. Comments are ignored. Annotations, subject
 patterns, ranges, measurements, nested maps, mixed arrays, octal literals, untyped, undirected and
 bidirectional relationships are errors.
+
+## Status and limits
+
+Version 0.1 is the first release: phase 1 of the plan, one graph space with no named graphs.
+[`CHANGELOG.md`](CHANGELOG.md) lists what it contains. Known limits:
+
+- Concurrent writers, WebAssembly and Windows are not tested; loading is tested up to 50,000 elements.
+- An element written without an identifier is created again on every load. Give elements identifiers to
+  have a reload update them.
+- The strict subset rejects ranges, measurements, nested maps, annotations, subject patterns, and
+  untyped, undirected and bidirectional relationships. `relate-gram fix` corrects the mechanical ones.
+- Tags on strings (such as a date) are dropped and reported; typed tags are planned.
+- Named graphs and graph metadata are planned (see `design/rfc/RFC-003-named-graphs-and-reloading.md`).
+
+Report a problem with the [bug report template](https://github.com/relatedb/relate-gram/issues/new/choose).
 
 ## Design
 
