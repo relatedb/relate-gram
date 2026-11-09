@@ -8,6 +8,7 @@ Decisions the plan needs that the ADRs leave to implementation. None of them reo
 - **Rationale**: the `relate` on crates.io is version 0.1.0, not the 0.16.1 that SPIKE-001 and SPIKE-002 measured. Pinning a commit makes the measured behavior the tested behavior.
 - **Alternatives**: a path dependency (breaks clean checkouts and CI); waiting for a crates.io release (blocks the project).
 - **Features**: `relate` enables a parquet snapshot codec by default, which this crate does not use. Try `default-features = false` first and keep it if the crate builds and the spike probes still pass; record the outcome here. **Outcome (T001)**: `default-features = false` builds; `relate` is used without the parquet codec.
+- **After the release**: moving to the public Relate release is planned in `design/notes/2026-11-09-launch-week-and-relate-release.md`.
 - **Consequence**: building needs network access to the git remote, and bumping the pin is a deliberate change that reruns the spike-derived tests.
 
 ## R2. Toolchain

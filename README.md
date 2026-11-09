@@ -68,4 +68,5 @@ cargo bench --bench load_export
 ```
 
 Rust 1.96.0 is pinned in `rust-toolchain.toml`. `relate` is a git dependency on the commit the design
-spikes measured.
+spikes measured; the plan for moving to Relate's public release is in
+[`design/notes/2026-11-09-launch-week-and-relate-release.md`](design/notes/2026-11-09-launch-week-and-relate-release.md).
