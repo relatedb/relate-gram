@@ -166,6 +166,7 @@ A developer loads a file and exports the result, or exports a database and loads
 - This phase has no named graphs, no ontology and no metadata nodes (RFC-003 §5.9), so a load into a non-empty database merges by `@id` without regard to graphs.
 - The command-line integration (verbs, flags, defaults) is out of scope and is decided separately; the settings are library inputs until then (ADR-006 and ADR-001 name the settings).
 - Language bindings for TypeScript and Python are out of scope (RFC-001 §4.6).
+- A fixer that repairs or proposes repairs for rejected files is follow-on work (`design/notes/2026-11-09-fixing-rejected-files.md`). It is not part of this feature, but each located error should carry a stable code and the range of the offending text so that it can be built later.
 - Dates, points and other non-basic Cypher values cannot be exported until a tag vocabulary is decided (ADR-006 §2.6).
 - The performance figure in SC-006 is a first target; SPIKE-001 measured loads only up to about 50,000 nodes, so the figure may be revised when a plan measures it.
 - The spec depends on the `relate` crate (0.16.1 at the time of the spikes) and on `tree-sitter-gram` 0.6.1.
