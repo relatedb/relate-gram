@@ -3,7 +3,7 @@ id: RFC-004
 title: Fixing Rejected Gram Files
 status: review
 created: 2026-11-09
-adrs: []
+adrs: [ADR-010]
 ---
 
 # RFC-004: Fixing Rejected Gram Files
@@ -101,4 +101,4 @@ Related: RFC-001 defines the strict subset whose rejections this RFC addresses, 
 
 ## 8. ADRs
 
-_(populated automatically as `/adr-create` links ADRs to this RFC)_
+- ADR-010: The Fix Model and the fix Command
