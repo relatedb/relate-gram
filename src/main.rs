@@ -45,6 +45,8 @@ FIX OPTIONS
     --in-place                      Replace FILE, after copying it to FILE.orig
     --no-backup                     With --in-place, do not copy the original
     --force                         Replace an existing output file or backup
+    --no-annotate                   Do not write `// relate-gram: error[...]` comments above the
+                                    lines whose errors cannot be fixed (earlier ones are removed)
     Without --in-place the original is never changed, and an existing FILE.fixed.gram is never
     replaced. A fix that needs a choice is applied only when its option is given.
 
@@ -105,6 +107,8 @@ fn parse(args: Vec<String>) -> Result<Option<(Command, Options)>, Usage> {
         Some(other) => return usage(format!("unknown command `{other}`")),
     };
     let mut o = Options::default();
+    // `fix` marks the errors it cannot fix with comments unless told not to.
+    o.fix.annotate = true;
     while let Some(arg) = it.next() {
         match arg.as_str() {
             "-h" | "--help" => return Ok(None),
@@ -162,6 +166,7 @@ fn parse(args: Vec<String>) -> Result<Option<(Command, Options)>, Usage> {
             "--in-place" => o.in_place = true,
             "--no-backup" => o.no_backup = true,
             "--force" => o.force = true,
+            "--no-annotate" => o.fix.annotate = false,
             "--max-errors" => {
                 let v = value(&mut it, &arg)?;
                 o.load.max_diagnostics = match v.parse::<usize>() {
@@ -389,11 +394,13 @@ fn run_fix(o: Options) -> Result<ExitCode, String> {
         ))
     };
 
-    if outcome.applied.is_empty() {
+    // The output is written only if it differs from the input: a fix applied, or
+    // markers added or removed.
+    if outcome.text == bytes {
         show(&outcome.remaining, &bytes, &name, o.quiet);
         if outcome.has_errors() {
             hint(&outcome.remaining, &o);
-            eprintln!("{name}: no fix applies; nothing was written");
+            eprintln!("{name}: no fix applies and no annotation to change; nothing was written");
             return Ok(ExitCode::from(1));
         }
         eprintln!("{name}: no errors; nothing to fix");
@@ -439,13 +446,29 @@ fn run_fix(o: Options) -> Result<ExitCode, String> {
             None => by_code.push((f.code, 1, f.description.clone())),
         }
     }
-    eprintln!(
-        "{name}: applied {} fix(es) in {} round(s):",
-        outcome.applied.len(),
-        outcome.rounds
-    );
-    for (code, n, what) in &by_code {
-        eprintln!("  {n} x {code}: {what}");
+    if outcome.applied.is_empty() {
+        eprintln!("{name}: no fix applies");
+    } else {
+        eprintln!(
+            "{name}: applied {} fix(es) in {} round(s):",
+            outcome.applied.len(),
+            outcome.rounds
+        );
+        for (code, n, what) in &by_code {
+            eprintln!("  {n} x {code}: {what}");
+        }
+    }
+    if outcome.annotations_added > 0 {
+        eprintln!(
+            "marked {} error(s) with `// relate-gram:` comments (remove them with --no-annotate)",
+            outcome.annotations_added
+        );
+    }
+    if outcome.annotations_removed > 0 {
+        eprintln!(
+            "removed {} earlier annotation(s)",
+            outcome.annotations_removed
+        );
     }
     eprintln!("wrote {shown_as}");
     let label = if output_path.is_some() {

@@ -52,7 +52,13 @@ After the last round the text is checked again. If it has more errors than the i
 - **`--in-place`:** replace the input. The original is first copied to `FILE.orig`, which is never overwritten without `--force`, and `--no-backup` skips the copy.
 - **`--force`:** allow overwriting an existing output or backup.
 
-Nothing is written when there is nothing to fix. A file with no errors prints that and exits 0. A file whose errors have no applicable fix prints which options would apply, writes nothing, and exits 1. When fixes were applied, the file is written and the summary goes to standard error: the count of each corrected code, the output path, and any errors that remain. Exit status is 0 if no error remains and 1 if one does. A write is atomic: the text goes to a temporary file that is renamed into place, and a replacement keeps the original file's permissions. If `FILE` is a symbolic link, the file it points to is replaced, with the backup made next to that file.
+The output is written only when it differs from the input: a fix was applied, or annotations were added or removed (section 2.7). A file with no errors that has no annotations prints that nothing needs fixing and exits 0. When nothing differs and errors remain, the command prints which options would apply, writes nothing, and exits 1. Otherwise the file is written and the summary goes to standard error: the count of each corrected code, the annotations added or removed, the output path, and any errors that remain. Exit status is 0 if no error remains and 1 if one does. A write is atomic: the text goes to a temporary file that is renamed into place, and a replacement keeps the original file's permissions. If `FILE` is a symbolic link, the file it points to is replaced, with the backup made next to that file.
+
+### 2.7 Annotations
+
+For each error that remains after the last round, the command writes a line comment on the line above the error's line, in the form `// relate-gram: error[CODE]: MESSAGE`, with the indentation of that line and the file's line ending. Several errors on one line get a line each. A line that would start inside a string that spans lines is not split: the comment goes above the line where the string starts. Warnings are not annotated. After the comments are written the file is checked again, and they are kept only if the errors are unchanged.
+
+A comment line whose text begins `// relate-gram:` (after any blanks) belongs to this tool. Every run removes the ones in its input first, so running again replaces the notes instead of stacking them, and notes for errors that are now fixed disappear. `--no-annotate` writes no notes and still removes earlier ones. The comments are ignored by the loader (ADR-007 section 2.5), so a file means the same with or without them. The notes are on by default in the command; the library function writes them only when its `annotate` option is set.
 
 ### 2.6 The library
 
@@ -72,12 +78,16 @@ The fixing is a public library function, `fix(source, settings, options)`, retur
 
 3.6. **Print the changes (`--diff`) instead of writing them.** Not included: a diff of a large file cannot be reviewed in a terminal (RFC-004 section 6.2), and the default output file can be compared with the original in any diff tool. It can be added without changing these decisions.
 
-3.7. **Leave `::` unfixed because it can mark a type slot in other gram files.** Rejected: in a file that is being loaded as data it is an error with an obvious correction, and the summary reports the change. RFC-004 question 7.3 asks whether it should need the user's agreement.
+3.7. **Annotate only when asked (`--annotate`).** Rejected: a note at each unfixed error is what makes the output file a work list, and a comment cannot change what the file means. The default output is a separate file, and `--no-annotate` turns the notes off.
+
+3.8. **Leave `::` unfixed because it can mark a type slot in other gram files.** Rejected: in a file that is being loaded as data it is an error with an obvious correction, and the summary reports the change. RFC-004 question 7.3 asks whether it should need the user's agreement.
 
 ## 4. Consequences
 
 - The fix rules and the error rules must change together. A new rejection should say whether it has a fix; `CLAUDE.md` records this.
-- Remaining errors are positioned in the fixed text, not in the original, so their line numbers can differ from an earlier `check` of the original.
+- Remaining errors are positioned in the fixed text, not in the original, so their line numbers can differ from an earlier `check` of the original. The notes add lines, which shifts the lines below them.
+- The tool removes its own `// relate-gram:` comments on every run, so a file that holds one by hand loses it.
+- Writing the output only when it differs means a first run with no fix still writes a file (the notes), and a re-run with more options then needs `--force` to replace it.
 - The default output, `x.fixed.gram`, matches a `*.gram` glob, so a later `check *.gram` includes it. This is intended: the fixed file should pass.
 - `--octal`, `--rel-type` and `--direction` each apply to every occurrence in the file. A file that needs different types for different relationships needs hand edits for those; the fixer does not choose per relationship.
 - Merging an identical duplicate definition into a reference, and renaming a reserved `@` key, are not fixed in this release (RFC-004 question 7.1).

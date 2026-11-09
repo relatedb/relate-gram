@@ -420,34 +420,90 @@ fn fix_with_nothing_to_fix_writes_nothing() {
 }
 
 #[test]
-fn fix_without_the_needed_option_says_which_one_and_writes_nothing() {
+fn fix_without_the_needed_option_marks_the_errors_and_says_which_option_helps() {
     let dir = scratch("fix-hint");
     let input = gram_in(&dir, "people.gram", UNTYPED);
     let o = run(&["fix", input.to_str().unwrap()]);
     assert_eq!(o.status.code(), Some(1));
     let err = text(&o.stderr);
     assert!(err.contains("error[rel.no-type]"), "{err}");
-    assert!(err.contains("--rel-type"), "{err}");
+    assert!(
+        err.contains("hint: 2 error(s) of rel.no-type can be fixed with --rel-type NAME"),
+        "{err}"
+    );
+    assert!(err.contains("marked 2 error(s)"), "{err}");
+    // no fix applied, but the markers make the output differ from the input, so it is written
+    let out = std::fs::read_to_string(dir.join("people.fixed.gram")).unwrap();
+    assert_eq!(
+        out.matches("// relate-gram: error[rel.no-type]").count(),
+        2,
+        "{out}"
+    );
+    assert_eq!(std::fs::read_to_string(&input).unwrap(), UNTYPED);
+
+    // the next step: fix the original again with the option, replacing the output
+    let o = run(&["fix", input.to_str().unwrap(), "--rel-type", "K", "--force"]);
+    assert!(o.status.success(), "{}", text(&o.stderr));
+    let out = std::fs::read_to_string(dir.join("people.fixed.gram")).unwrap();
+    assert!(!out.contains("relate-gram:"), "{out}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fix_no_annotate_writes_no_markers_and_nothing_when_nothing_changes() {
+    let dir = scratch("fix-noannot");
+    let input = gram_in(&dir, "people.gram", UNTYPED);
+    let o = run(&["fix", input.to_str().unwrap(), "--no-annotate"]);
+    assert_eq!(o.status.code(), Some(1));
+    assert!(
+        text(&o.stderr).contains("nothing was written"),
+        "{}",
+        text(&o.stderr)
+    );
     assert!(!dir.join("people.fixed.gram").exists());
     let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]
-fn fix_writes_what_it_could_and_exits_one_when_errors_remain() {
-    let dir = scratch("fix-partial");
+fn fix_no_annotate_removes_old_markers() {
+    let dir = scratch("fix-strip");
+    let input = gram_in(
+        &dir,
+        "old.gram",
+        "// relate-gram: error[value.range]: old note\n(a:N)-[:T]->(b:N)\n",
+    );
+    let o = run(&["fix", input.to_str().unwrap(), "--no-annotate"]);
+    assert!(o.status.success(), "{}", text(&o.stderr));
+    assert_eq!(
+        std::fs::read_to_string(dir.join("old.fixed.gram")).unwrap(),
+        "(a:N)-[:T]->(b:N)\n"
+    );
+    assert!(
+        text(&o.stderr).contains("removed 1 earlier annotation"),
+        "{}",
+        text(&o.stderr)
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fix_annotates_the_errors_that_remain_in_the_output_file() {
+    let dir = scratch("fix-annot-partial");
     let input = gram_in(&dir, "mixed.gram", "(a:N)-->(b:N)\n(c {r: 1..2})\n");
     let o = run(&["fix", input.to_str().unwrap(), "--rel-type", "K"]);
     assert_eq!(o.status.code(), Some(1));
-    let out = dir.join("mixed.fixed.gram");
-    assert_eq!(
-        std::fs::read_to_string(&out).unwrap(),
-        "(a:N)-[:K]->(b:N)\n(c {r: 1..2})\n"
-    );
-    let err = text(&o.stderr);
-    assert!(err.contains("error[value.range]"), "{err}");
+    let out = std::fs::read_to_string(dir.join("mixed.fixed.gram")).unwrap();
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(lines[0], "(a:N)-[:K]->(b:N)");
     assert!(
-        err.contains("mixed.fixed.gram:2:"),
-        "remaining errors name the fixed file: {err}"
+        lines[1].starts_with("// relate-gram: error[value.range]"),
+        "{out}"
+    );
+    assert_eq!(lines[2], "(c {r: 1..2})");
+    assert!(
+        text(&o.stderr).contains("mixed.fixed.gram:3:"),
+        "{}",
+        text(&o.stderr)
     );
     let _ = std::fs::remove_dir_all(&dir);
 }

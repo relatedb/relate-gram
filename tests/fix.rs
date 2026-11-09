@@ -261,6 +261,7 @@ fn a_file_with_every_kind_of_error_loads_after_fixing() {
         rel_type: Some("KNOWS".into()),
         direction: Some(Direction::Right),
         octal: Some(OctalAs::Decimal),
+        ..FixOptions::default()
     };
     let out = run(src, &LoadSettings::default(), &o);
     assert!(errors(&out).is_empty(), "{:?}", out.remaining);
@@ -306,4 +307,158 @@ fn remaining_errors_are_positioned_in_the_fixed_text() {
     let text = String::from_utf8(out.text.clone()).unwrap();
     let span = rest[0].span.unwrap();
     assert_eq!(&text[span.start..span.end], "1..2");
+}
+
+// --- annotations (ADR-010 section 2.7) ---------------------------------------
+
+fn annotating(o: FixOptions) -> FixOptions {
+    FixOptions {
+        annotate: true,
+        ..o
+    }
+}
+
+#[test]
+fn an_error_that_cannot_be_fixed_gets_a_comment_above_its_line() {
+    let src = "(a:N)-->(b:N)\n(c {r: 1..2})\n";
+    let out = run(src, &LoadSettings::default(), &annotating(typed("K")));
+    let text = String::from_utf8(out.text.clone()).unwrap();
+    let lines: Vec<&str> = text.lines().collect();
+    assert_eq!(lines[0], "(a:N)-[:K]->(b:N)");
+    assert!(
+        lines[1]
+            .starts_with("// relate-gram: error[value.range]: the range `1..2` has no Cypher type"),
+        "{}",
+        lines[1]
+    );
+    assert_eq!(lines[2], "(c {r: 1..2})");
+    assert_eq!(out.annotations_added, 1);
+    // remaining errors are positioned in the annotated text
+    let rest: Vec<_> = out.remaining.iter().filter(|d| d.is_error()).collect();
+    assert_eq!(rest.len(), 1);
+    assert_eq!(rest[0].span.unwrap().line, 3);
+}
+
+#[test]
+fn annotations_are_replaced_not_stacked_when_the_fixer_runs_again() {
+    let src = "(c {r: 1..2})\n";
+    let first = run(src, &LoadSettings::default(), &annotating(opts()));
+    assert_eq!(first.annotations_added, 1);
+    let second = run(
+        std::str::from_utf8(&first.text).unwrap(),
+        &LoadSettings::default(),
+        &annotating(opts()),
+    );
+    assert_eq!(second.text, first.text);
+    assert_eq!(second.annotations_removed, 1);
+    assert_eq!(second.annotations_added, 1);
+}
+
+#[test]
+fn annotations_of_errors_that_are_now_fixed_are_removed() {
+    let first = run(
+        "(a:N)-->(b:N)\n",
+        &LoadSettings::default(),
+        &annotating(opts()),
+    );
+    let text = String::from_utf8(first.text.clone()).unwrap();
+    assert!(
+        text.starts_with("// relate-gram: error[rel.no-type]"),
+        "{text}"
+    );
+    // now fix it: the marker goes, and so does the error
+    let second = run(&text, &LoadSettings::default(), &annotating(typed("K")));
+    assert_eq!(
+        String::from_utf8(second.text).unwrap(),
+        "(a:N)-[:K]->(b:N)\n"
+    );
+    assert_eq!(second.annotations_removed, 1);
+    assert_eq!(second.annotations_added, 0);
+}
+
+#[test]
+fn without_annotate_old_markers_are_still_removed_and_none_added() {
+    let text = "// relate-gram: error[value.range]: old\n(c {r: 1..2})\n";
+    let out = run(text, &LoadSettings::default(), &opts());
+    assert_eq!(String::from_utf8(out.text).unwrap(), "(c {r: 1..2})\n");
+    assert_eq!(out.annotations_removed, 1);
+    assert_eq!(out.annotations_added, 0);
+}
+
+#[test]
+fn a_marker_copies_the_indentation_and_the_line_ending() {
+    let src = "(a {\r\n  k: 1,\r\n  r: 1..2\r\n})\r\n";
+    let out = run(src, &LoadSettings::default(), &annotating(opts()));
+    let text = String::from_utf8(out.text).unwrap();
+    let marker = text.split("\r\n").nth(2).unwrap();
+    assert!(
+        marker.starts_with("  // relate-gram: error[value.range]"),
+        "{marker:?}"
+    );
+    assert!(text.contains("\r\n  r: 1..2\r\n"));
+    assert!(
+        !text.replace("\r\n", "").contains('\n'),
+        "only CRLF line endings"
+    );
+}
+
+#[test]
+fn several_errors_on_one_line_each_get_a_marker() {
+    let src = "(a {x: 1..2, y: 3..4})\n";
+    let out = run(src, &LoadSettings::default(), &annotating(opts()));
+    let text = String::from_utf8(out.text).unwrap();
+    assert_eq!(text.matches("// relate-gram:").count(), 2);
+    assert!(text.ends_with("(a {x: 1..2, y: 3..4})\n"));
+    assert_eq!(out.annotations_added, 2);
+}
+
+#[test]
+fn a_marker_never_goes_inside_a_multi_line_string() {
+    // the error is the octal literal on the line after a fenced string starts
+    let src = "(a {s: ```\ntext\n```, o: 010})\n";
+    let out = run(src, &LoadSettings::default(), &annotating(opts()));
+    let text = String::from_utf8(out.text).unwrap();
+    assert!(
+        text.contains("```\ntext\n```"),
+        "the fenced string is intact: {text}"
+    );
+    // and the file still has the one error
+    assert!(relate_gram::check(text.as_bytes(), &LoadSettings::default()).has_errors());
+}
+
+#[test]
+fn markers_keep_a_byte_order_mark_first() {
+    let src = "\u{feff}(c {r: 1..2})\n";
+    let out = run(src, &LoadSettings::default(), &annotating(opts()));
+    assert!(
+        out.text.starts_with("\u{feff}// relate-gram:".as_bytes()),
+        "{:?}",
+        &out.text[..20]
+    );
+}
+
+#[test]
+fn markers_are_comments_so_a_file_loads_the_same_with_or_without_them() {
+    let src = "(a:N)-->(b:N)\n(c {r: 1..2})\n";
+    let with = run(src, &LoadSettings::default(), &annotating(opts()));
+    let a = relate_gram::check(src.as_bytes(), &LoadSettings::default());
+    let b = relate_gram::check(&with.text, &LoadSettings::default());
+    let codes =
+        |r: &relate_gram::CheckReport| r.diagnostics.iter().map(|d| d.code).collect::<Vec<_>>();
+    assert_eq!(codes(&a), codes(&b));
+}
+
+#[test]
+fn a_clean_file_gets_no_markers() {
+    let src = "(a:N)-[:T]->(b:N)\n";
+    let out = run(src, &LoadSettings::default(), &annotating(opts()));
+    assert_eq!(out.text, src.as_bytes());
+    assert_eq!(out.annotations_added, 0);
+}
+
+#[test]
+fn warnings_are_not_annotated() {
+    let src = "(a)-[:R]->(b)\n";
+    let out = run(src, &LoadSettings::default(), &annotating(opts()));
+    assert_eq!(out.text, src.as_bytes());
 }

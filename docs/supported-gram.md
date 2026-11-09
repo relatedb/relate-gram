@@ -84,8 +84,17 @@ relate-gram check people.fixed.gram        # compare the two files in your edito
 A correction that needs a choice is applied only when you give it, and then to every occurrence in the
 file; relationships that need different types need hand edits. When a fix reveals another (a direction,
 then a type), `fix` repeats until nothing more applies. Errors it cannot fix, such as syntax errors,
-annotations and ranges, are listed against the new file with their new line numbers; if you re-run `fix`
-with more options after seeing them, add `--force` to replace the earlier output.
+annotations and ranges, are listed against the new file with their new line numbers, and each gets a comment
+above its line in the new file:
+
+```gram
+// relate-gram: error[value.range]: the range `1..2` has no Cypher type; write the bounds as separate properties
+(c {r: 1..2})
+```
+
+The comment is harmless (the loader ignores comments), the next run of `fix` replaces it, and
+`--no-annotate` leaves it out. If you re-run `fix` with more options after seeing the errors, add `--force`
+to replace the earlier output.
 
 Other ways to write the result: `-o FILE` (or `-o -` for standard output), and `--in-place`, which
 replaces your file after copying it to `FILE.orig`.

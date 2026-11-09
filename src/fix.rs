@@ -37,6 +37,9 @@ pub struct FixOptions {
     pub rel_type: Option<String>,
     pub direction: Option<Direction>,
     pub octal: Option<OctalAs>,
+    /// Write a `// relate-gram:` comment above each line that still has an error
+    /// (ADR-010 section 2.7). Earlier markers are always removed first.
+    pub annotate: bool,
 }
 
 /// Replace the bytes `start..end` of the input with `replacement`.
@@ -66,6 +69,10 @@ pub struct FixOutcome {
     pub remaining: Vec<Diagnostic>,
     /// How many rounds applied something.
     pub rounds: usize,
+    /// How many earlier `// relate-gram:` markers were removed from the input.
+    pub annotations_removed: usize,
+    /// How many markers were written above lines that still have errors.
+    pub annotations_added: usize,
 }
 
 impl FixOutcome {
@@ -126,8 +133,9 @@ pub fn fix(
     settings: &LoadSettings,
     options: &FixOptions,
 ) -> Result<FixOutcome, FixFailure> {
-    let before = errors_of(&crate::check(source, settings).diagnostics);
-    let mut text = source.to_vec();
+    let (stripped, annotations_removed) = strip_annotations(source);
+    let before = errors_of(&crate::check(&stripped, settings).diagnostics);
+    let mut text = stripped;
     let mut applied: Vec<Fix> = Vec::new();
     let mut rounds = 0;
     for _ in 0..MAX_ROUNDS {
@@ -170,17 +178,146 @@ pub fn fix(
         applied.extend(done);
         rounds += 1;
     }
-    let remaining = crate::check(&text, settings).diagnostics;
+    let mut remaining = crate::check(&text, settings).diagnostics;
     let after = errors_of(&remaining);
     if after > before {
         return Err(FixFailure { before, after });
+    }
+    let mut annotations_added = 0;
+    if options.annotate {
+        if let Some((annotated, n)) = annotate(&text, &remaining, settings) {
+            // Markers are comments, so the errors are the same ones; keep them only if so.
+            let again = crate::check(&annotated, settings).diagnostics;
+            if errors_of(&again) == after {
+                text = annotated;
+                remaining = again;
+                annotations_added = n;
+            }
+        }
     }
     Ok(FixOutcome {
         text,
         applied,
         remaining,
         rounds,
+        annotations_removed,
+        annotations_added,
     })
+}
+
+/// The prefix of a line comment that this tool writes and removes (ADR-010 section 2.7).
+pub const MARKER: &str = "// relate-gram:";
+
+/// Remove every line that is a `// relate-gram:` marker. Returns the text and how many lines were removed.
+pub fn strip_annotations(text: &[u8]) -> (Vec<u8>, usize) {
+    let bom: &[u8] = &[0xEF, 0xBB, 0xBF];
+    let mut out = Vec::with_capacity(text.len());
+    let mut removed = 0;
+    for (i, line) in text.split_inclusive(|b| *b == b'\n').enumerate() {
+        let body = if i == 0 {
+            line.strip_prefix(bom).unwrap_or(line)
+        } else {
+            line
+        };
+        let trimmed = body
+            .iter()
+            .position(|b| !matches!(b, b' ' | b'\t'))
+            .map(|p| &body[p..]);
+        if trimmed.is_some_and(|t| t.starts_with(MARKER.as_bytes())) {
+            if i == 0 && line.starts_with(bom) {
+                out.extend_from_slice(bom);
+            }
+            removed += 1;
+        } else {
+            out.extend_from_slice(line);
+        }
+    }
+    (out, removed)
+}
+
+/// Insert a marker line above the line of each error. A line inside a multi-line
+/// string is never split: the marker goes above the line where the string starts.
+fn annotate(
+    text: &[u8],
+    diags: &[Diagnostic],
+    settings: &LoadSettings,
+) -> Option<(Vec<u8>, usize)> {
+    let errors: Vec<&Diagnostic> = diags
+        .iter()
+        .filter(|d| d.is_error() && d.span.is_some())
+        .collect();
+    if errors.is_empty() {
+        return None;
+    }
+    let syn = syntax::parse(text, settings.max_diagnostics).ok();
+    let bom_len = if text.starts_with(&[0xEF, 0xBB, 0xBF]) {
+        3
+    } else {
+        0
+    };
+    let eol = if text.windows(2).any(|w| w == b"\r\n") {
+        "\r\n"
+    } else {
+        "\n"
+    };
+    // The byte ranges of strings that span lines: a marker line must not start inside one.
+    let mut strings: Vec<(usize, usize)> = Vec::new();
+    if let Some(syn) = &syn {
+        fn walk(n: Node<'_>, base: usize, out: &mut Vec<(usize, usize)>) {
+            if matches!(n.kind(), "string_literal" | "tagged_string")
+                && n.start_position().row != n.end_position().row
+            {
+                out.push((n.start_byte() + base, n.end_byte() + base));
+            }
+            let mut c = n.walk();
+            for child in n.children(&mut c) {
+                walk(child, base, out);
+            }
+        }
+        walk(syn.root(), syn.base(), &mut strings);
+    }
+    let line_start_of = |at: usize| {
+        text[..at]
+            .iter()
+            .rposition(|b| *b == b'\n')
+            .map_or(0, |p| p + 1)
+    };
+    let mut inserts: Vec<(usize, usize, String)> = Vec::new();
+    for (order, d) in errors.iter().enumerate() {
+        let span = d.span?;
+        let mut line_start = line_start_of(span.start.min(text.len()));
+        // Move up while the line starts inside a multi-line string.
+        while let Some((start, _)) = strings
+            .iter()
+            .find(|(start, end)| *start < line_start && line_start < *end)
+        {
+            line_start = line_start_of(*start);
+        }
+        if line_start < bom_len {
+            line_start = bom_len;
+        }
+        let indent: String = text[line_start..]
+            .iter()
+            .take_while(|b| matches!(b, b' ' | b'\t'))
+            .map(|b| *b as char)
+            .collect();
+        let message = d.message.replace(['\r', '\n'], " ");
+        inserts.push((
+            line_start,
+            order,
+            format!("{indent}{MARKER} error[{}]: {message}{eol}", d.code),
+        ));
+    }
+    inserts.sort_by_key(|(at, order, _)| (*at, *order));
+    let mut out = Vec::with_capacity(text.len() + inserts.len() * 80);
+    let mut pos = 0;
+    for (at, _, line) in &inserts {
+        out.extend_from_slice(&text[pos..*at]);
+        out.extend_from_slice(line.as_bytes());
+        pos = *at;
+    }
+    out.extend_from_slice(&text[pos..]);
+    Some((out, inserts.len()))
 }
 
 /// The arrow node that contains `node`, if any.

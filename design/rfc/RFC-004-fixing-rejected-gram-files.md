@@ -33,11 +33,13 @@ The cost lands at the first contact: a new user's first file is more likely to f
 
 3.4. Where a correction needs a decision (which type a relationship has, which way an undirected arrow points), use only a decision the user states; never guess.
 
-3.5. Change nothing outside the text being corrected: comments, layout, line endings and a byte order mark stay as they were.
+3.5. Change nothing outside the text being corrected, apart from the notes of goal 3.8: comments, layout, line endings and a byte order mark stay as they were.
 
 3.6. Check the result before writing it, and never produce a file with more errors than the input.
 
 3.7. Be repeatable: fixing a fixed file changes nothing.
+
+3.8. Leave a note in the file at each error that cannot be fixed, as a comment (which the loader ignores), so the fixed file carries its own list of what is left. The notes are the tool's own, are replaced when it runs again, and can be removed.
 
 ## 4. Non-Goals
 
@@ -71,7 +73,11 @@ A correction can reveal another: after an undirected arrow gets a direction, the
 
 By default the fixed text goes to a new file next to the input, or to standard output when the input is standard input or the user asks. Overwriting the input is a separate, explicit option, and it keeps a copy of the original. A fixer that writes nothing when there is nothing to fix, or when it would make things worse, never leaves the user with a file they did not ask for.
 
-### 5.5 Surface
+### 5.5 Notes on what is left
+
+For each error that remains, the fixed file gets a line comment above the line, naming the error and what to do. Because a comment does not change what the file means, and because the tool recognizes its own comments by a fixed prefix, it can replace them on the next run and remove them on request.
+
+### 5.6 Surface
 
 A `fix` command of the `relate-gram` tool and a function in the library, so that other tools can use the same corrections.
 
