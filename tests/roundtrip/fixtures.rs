@@ -3,7 +3,14 @@ use super::common::*;
 use relate::Value;
 use relate_gram::settings::{ExportSettings, IdentityMode, LoadSettings};
 
-const FIXTURES: &[&str] = &["people", "values", "identity", "empty", "record-only"];
+const FIXTURES: &[&str] = &[
+    "people",
+    "values",
+    "identity",
+    "slashes",
+    "empty",
+    "record-only",
+];
 
 fn ids(conn: &mut relate::Connection) -> Vec<String> {
     let mut v: Vec<String> = run(conn, "MATCH (n) WHERE n.`@id` IS NOT NULL RETURN n.`@id`")

@@ -196,6 +196,56 @@ expect = "reject"
 codes = ["parse.error", "parse.missing"]
 
 [[case]]
+file = "comments.txt"
+name = "Double-quoted text starting with // is not a comment"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Quoted text starting with blanks then // is not a comment"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Backticked identifier starting with // is not a comment"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Quoted key starting with // is not a comment"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Quoted text starting with /** is not a doc comment when */ appears later"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Single-quoted text starting with // is not a comment"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Single-quoted text starting with /** is not a doc comment when */ appears later"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Fenced text starting with // is not a comment"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Fenced text starting with /** is not a doc comment when */ appears later"
+expect = "accept"
+
+[[case]]
+file = "comments.txt"
+name = "Tagged fenced text starting with // is not a comment"
+expect = "accept"
+
+[[case]]
 file = "doc_comments.txt"
 name = "Doc comment before node with property docs"
 expect = "accept"

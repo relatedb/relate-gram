@@ -8,7 +8,7 @@ created: 2026-11-08
 
 # ADR-006: Property Value Mapping
 
-> Amended 2026-11-09: section 2.5 now says how a leading slash is written (SPIKE-003, found while implementing the exporter).
+> Amended 2026-11-09: section 2.5 now says how a leading slash is written (SPIKE-003, found while implementing the exporter). tree-sitter-gram 0.6.2 fixed the parse error; the escape stays so that exports also parse with 0.6.1.
 
 ## 1. Context
 

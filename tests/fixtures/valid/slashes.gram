@@ -1,0 +1,6 @@
+// Quoted text that starts with slashes (tree-sitter-gram 0.6.2 fixes the 0.6.1 parse error).
+(s {
+  url: "//cdn.example.com/x", blank: " //x", sq: '//y', bt: `//z`, doc: "/**x", end: "*/",
+  "//key": 1
+})
+(`//id`:`//Label`)
