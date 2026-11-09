@@ -37,7 +37,8 @@ Decisions the plan needs that the ADRs leave to implementation. None of them reo
   - create relationships: `UNWIND $rows AS r MATCH (a) WHERE id(a) = r.s MATCH (b) WHERE id(b) = r.e CREATE (a)-[x:`T`]->(b) SET x = r.props`;
   - update a matched element: `UNWIND $rows AS r MATCH (n) WHERE id(n) = r.id SET n += r.props`, with label additions grouped by the labels to add.
   Property maps are parameters (`SET n = $props` works for any key, including `@id`: SPIKE-001 §4.1). Newly created nodes need their internal ids for the relationship batches, so node batches return `id(n)` in row order and the loader maps plan elements to ids.
-- **Measure**: a file that alternates label sets or types on every element forces one statement per element. The benchmark (SC-006) includes that worst case. If it misses the target, the fallback is to create all nodes unlabelled in one statement and add labels per group, which keeps creation order; the plan then records that as a change to this decision.
+- **Measured (T061, release build, in-memory database)**: 10,000 elements (5,000 nodes and 5,000 relationships) load in 0.15 s and export in 0.04 s; the worst case, with label sets and types alternating on every element, loads in 0.5 to 0.7 s. 50,000 elements load in 0.7 s (2.6 s alternating) and export in about 0.2 s. The fallback below is not needed.
+- **Measure (planned)**: a file that alternates label sets or types on every element forces one statement per element. The benchmark (SC-006) includes that worst case. If it misses the target, the fallback is to create all nodes unlabelled in one statement and add labels per group, which keeps creation order; the plan then records that as a change to this decision.
 - **Alternatives**: grouping all elements of a shape together regardless of order (cheaper, but ids stop following appearance order, contradicting ADR-001 §2.9); per-element statements (simple, slow).
 
 ## R6. Names in query text
@@ -62,7 +63,7 @@ Decisions the plan needs that the ADRs leave to implementation. None of them reo
 
 ## R10. Tests
 
-- **Decision**: contract tests drive the public API against fresh in-memory databases; position tests carry a fixture per diagnostic code with the expected line, column and offset; the corpus runner reads the submodule's `test/corpus/*.txt` files in `tree-sitter test` format (a small reader in the test crate) and, for each input the subset accepts, compares the load plan to the tree; round-trip tests use fixtures plus `proptest` generators for property values and identifiers; `insta` snapshots pin export text.
+- **Decision**: contract tests drive the public API against fresh in-memory databases; position tests carry a fixture per diagnostic code with the expected line, column and offset; the corpus runner reads the submodule's `test/corpus/*.txt` files in `tree-sitter test` format (a small reader in the test crate) and, for each input the subset accepts, compares the load plan to the tree; round-trip tests use fixtures plus `proptest` generators for property values and identifiers; exact export text is asserted inline.
 - **Alternatives**: depending on pattern-rs's corpus reader (ADR-007 removes that dependency).
 
 ## R11. Not in this plan

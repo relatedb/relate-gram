@@ -18,7 +18,7 @@ Expected: the example opens an in-memory database, loads the file, runs a Cypher
 ## 2. Rejection with positions (Story 2)
 
 ```bash
-cargo run --example load_and_query -- tests/fixtures/invalid/untyped-relationship.gram
+cargo run --example load_and_query -- tests/fixtures/invalid/rel-no-type.gram
 ```
 
 Expected: the load fails with `rel.no-type`, naming the line and column of the arrow, and the example reports that the database is unchanged. Every code in [contracts/diagnostics.md](contracts/diagnostics.md) has a fixture under `tests/fixtures/invalid/`, checked by `tests/positions`.

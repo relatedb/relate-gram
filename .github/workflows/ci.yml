@@ -20,6 +20,7 @@ jobs:
         with:
           toolchain: 1.96.0
           components: rustfmt, clippy
+      - run: scripts/check-public-api.sh
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test

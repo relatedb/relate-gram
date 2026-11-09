@@ -53,3 +53,13 @@ from `.claude/skills/`.
   implement accepted ADRs and name them rather than restating them; the ADR wins on conflict. Commits and PRs cite the ADR.
   The constitution is `.specify/memory/constitution.md`; every plan checks itself against it.
 - Write design documents for a newcomer: name project artifacts on first use.
+
+## Build and test
+
+- `git submodule update --init external/tree-sitter-gram` fetches the grammar corpus (needed by `tests/corpus.rs`).
+- `cargo test` runs the unit, contract, position, round-trip and corpus tests. A test target in a folder needs
+  `main.rs` (`tests/contract/`, `tests/positions/`, `tests/roundtrip/`); add a `mod` line when adding a test file.
+- `cargo test --release --test perf -- --ignored --nocapture` checks SC-006; `cargo bench --bench load_export` prints timings.
+- `scripts/check-public-api.sh` checks that only Relate's public items are used (Constitution V).
+- `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings` must pass before merge.
+- Work from `specs/001-phase1-load-export/tasks.md`; tick tasks off as they are done, and cite the ADR in commit messages.

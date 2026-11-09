@@ -1,0 +1,71 @@
+# relate-gram
+
+Load [gram](https://github.com/gram-data/gram-spec) files into a [Relate](https://relatedb.ai/)
+database, and export a Relate database as gram.
+
+Gram is a plain-text notation for graphs. `relate-gram` supports a strict subset: the constructs that
+map directly to Cypher's property graph model (nodes, relationships, paths and the top-level record).
+Anything else is rejected with an error that says what it is and where it is.
+
+```rust
+use relate::Database;
+use relate_gram::settings::{ExportSettings, LoadSettings};
+
+let db = Database::open(":memory:")?;
+let mut conn = db.connect()?;
+
+let source = br#"
+  (ada:Person {name: "Ada"})
+  (grace:Person {name: "Grace"})
+  (ada)-[:KNOWS {since: 1843}]->(grace)
+"#;
+let report = relate_gram::load(&mut conn, source, &LoadSettings::default())?;
+println!("{} nodes created", report.counts.nodes_created);
+
+let text = relate_gram::export(&mut conn, &ExportSettings::default())?;
+```
+
+Try it: `cargo run --example load_and_query -- tests/fixtures/valid/people.gram`.
+
+## Behavior
+
+- **Load** (`relate_gram::load`): one transaction, so a load either completes or changes nothing.
+  Identifiers in the file resolve references within it and are stored on each element as the
+  reserved property `@id`; loading an edited file into the same database matches elements by
+  `@id` and updates them instead of creating them again. `LoadSettings` can name a property to use
+  as identity instead, choose whether a tag on a tagged string is a warning or an error, cap the
+  errors listed, and give the file name for the file-kind check.
+- **Export** (`relate_gram::export`): nodes, a blank line, relationships, in a deterministic order, so
+  two exports of one database are identical. `ExportSettings` selects how element identifiers are
+  chosen (`auto`, `generate` or `property`). A value that has no gram form (a date, a point, an
+  empty list, a non-finite float) is an error that lists every offender before any text is written.
+- **Errors and warnings** are `Diagnostic` values with a stable `code`, a severity, the span of the
+  source text (line, column and byte offset) and a message. The codes are listed in
+  [`specs/001-phase1-load-export/contracts/diagnostics.md`](specs/001-phase1-load-export/contracts/diagnostics.md).
+
+## What is accepted
+
+Nodes with labels and properties; relationships with exactly one type and a direction (`-[:T]->` or
+`<-[:T]-`); paths; the top-level record (checked, not stored). Property values are strings,
+integers, decimals, booleans and arrays of one of these. Comments are ignored. Annotations, subject
+patterns, ranges, measurements, nested maps, mixed arrays, octal literals, untyped, undirected and
+bidirectional relationships are errors.
+
+## Design
+
+The behavior is decided by the ADRs in [`design/adr/`](design/adr/) (start with the
+[RFCs](design/rfc/) for the reasons). The specification, plan and tasks are in
+[`specs/001-phase1-load-export/`](specs/001-phase1-load-export/). The project constitution is in
+[`.specify/memory/constitution.md`](.specify/memory/constitution.md).
+
+## Building and testing
+
+```bash
+git submodule update --init external/tree-sitter-gram   # the corpus
+cargo test                                              # contract, position, round-trip, corpus tests
+cargo test --release --test perf -- --ignored           # the 10,000-element performance check
+cargo bench --bench load_export
+```
+
+Rust 1.96.0 is pinned in `rust-toolchain.toml`. `relate` is a git dependency on the commit the design
+spikes measured.

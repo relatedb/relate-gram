@@ -180,13 +180,13 @@ description: "Task list for Phase 1 Gram Load and Export"
 
 ## Phase 8: Polish and Cross-Cutting Concerns
 
-- [ ] T061 [P] Write `benches/load_export.rs` and an `#[ignore]`d test `tests/perf.rs` that asserts SC-006 (run with `cargo test --test perf -- --ignored`): 10,000 elements load and export in under 10 seconds, including a case that alternates label sets and types on every element; record the numbers in `research.md` R5, and if the worst case misses the target implement the fallback R5 names and update R5
-- [ ] T062 [P] Write `README.md`: purpose, the two entry points, settings, the diagnostic codes, the supported subset, and a pointer to the ADRs
-- [ ] T063 [P] Update `CLAUDE.md` with the build, test and corpus commands
-- [ ] T064 [P] Add `scripts/check-public-api.sh`, run in CI, that fails if `src/` imports anything from `relate` other than the public items research R1 lists (`Database`, `Connection`, `Value`, `QueryResult`, `Error`, `Result`), and that `Cargo.toml` has no dependency on the `relate` command-line crate (FR-013, FR-014)
-- [ ] T065 Run every step of `quickstart.md` and fix any difference between it and the behavior; SC-007 (a new developer loads a sample in ten minutes) is checked by hand from the README and recorded in the pull request
-- [ ] T066 Run `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings` and fix findings
-- [ ] T067 Confirm every user-story acceptance scenario in `spec.md` and every diagnostic code in `contracts/diagnostics.md` is covered by a test (a script or test listing each code against the tests that assert it), and list any gap in the pull request description
+- [X] T061 [P] Write `benches/load_export.rs` and an `#[ignore]`d test `tests/perf.rs` that asserts SC-006 (run with `cargo test --test perf -- --ignored`): 10,000 elements load and export in under 10 seconds, including a case that alternates label sets and types on every element; record the numbers in `research.md` R5, and if the worst case misses the target implement the fallback R5 names and update R5
+- [X] T062 [P] Write `README.md`: purpose, the two entry points, settings, the diagnostic codes, the supported subset, and a pointer to the ADRs
+- [X] T063 [P] Update `CLAUDE.md` with the build, test and corpus commands
+- [X] T064 [P] Add `scripts/check-public-api.sh`, run in CI, that fails if `src/` imports anything from `relate` other than the public items research R1 lists (`Database`, `Connection`, `Value`, `QueryResult`, `Error`, `Result`), and that `Cargo.toml` has no dependency on the `relate` command-line crate (FR-013, FR-014)
+- [X] T065 Run every step of `quickstart.md` and fix any difference between it and the behavior; SC-007 (a new developer loads a sample in ten minutes) is checked by hand from the README and recorded in the pull request
+- [X] T066 Run `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings` and fix findings
+- [X] T067 Confirm every user-story acceptance scenario in `spec.md` and every diagnostic code in `contracts/diagnostics.md` is covered by a test (a script or test listing each code against the tests that assert it), and list any gap in the pull request description
 
 ---
 
