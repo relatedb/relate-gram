@@ -1,0 +1,10 @@
+[package]
+name = "probe3"
+version = "0.0.0"
+edition = "2021"
+[dependencies]
+relateby-gram = { path = "/Users/abk/Developer/relateby/pattern-rs/crates/gram-codec", features = ["cst"] }
+relateby-pattern = { path = "/Users/abk/Developer/relateby/pattern-rs/crates/pattern-core" }
+tree-sitter = "0.25"
+tree-sitter-gram = { path = "/Users/abk/Developer/relateby/pattern-rs/external/tree-sitter-gram" }
+[workspace]

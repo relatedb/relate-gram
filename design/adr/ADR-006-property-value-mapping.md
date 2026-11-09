@@ -20,7 +20,7 @@ A gram property value can be a string in four quoting styles, a bare symbol, an 
 
 (All observed in SPIKE-002.) Gram's array rule is `[` followed by one or more scalars, so an empty list has no gram form, and gram's decimal is digits, a dot and digits, with no exponent. The loader must decide for each gram value what it becomes or why it is an error; the exporter must decide how each Cypher value is written, or why it cannot be. Both must follow the constitution: a value that cannot be mapped is a located error, and nothing is dropped silently except a documented, reported tag.
 
-The parent RFC (RFC-002) proposes a strict first phase with typed tags and a later metadata phase. This ADR fixes the strict mapping for the first phase of RFC-003. It narrows the RFC in one respect: tags that name Cypher types, which the RFC places in the strict phase and which would let a date or point be written and read back, wait for a tag vocabulary that is not yet decided (RFC-002 question 7.3). Until then those values load as plain strings with a reported tag and cannot be exported. RFC-002 §5.2 and Goal 3.2 are to be edited to match.
+The parent RFC (RFC-002) proposes a strict first phase with typed tags and a later metadata phase. This ADR fixes the strict mapping for the first phase of RFC-003. It narrows the RFC in one respect: tags that name Cypher types, which the RFC places in the strict phase and which would let a date or point be written and read back, wait for a tag vocabulary that is not yet decided (RFC-002 question 7.3). Until then those values load as plain strings with a reported tag and cannot be exported. RFC-002 §5.2 and Goal 3.2 carry a note to that effect.
 
 ## 2. Decision
 
@@ -29,7 +29,7 @@ The parent RFC (RFC-002) proposes a strict first phase with typed tags and a lat
 | Gram value | Cypher value |
 |---|---|
 | decimal integer (`42`, `-7`) | integer |
-| hexadecimal (`0x1F`) or octal (`017`) integer | integer, converted (`0x1F` is 31, `017` is 15) |
+| hexadecimal integer (`0x1F`) | integer, converted (`0x1F` is 31) |
 | decimal (`3.14`) | float |
 | `true`, `false` | boolean |
 | string in any of the four quoting styles | string, with the grammar's escapes resolved |
@@ -37,9 +37,9 @@ The parent RFC (RFC-002) proposes a strict first phase with typed tags and a lat
 | tagged string | the content as a string; the tag is dropped and reported (2.3) |
 | array whose elements are all of one kind (2.2) | list |
 
-An integer outside the signed 64-bit range is a load error that reports its position, and so is a decimal whose value is not finite as a 64-bit float. A decimal with nonzero digits that rounds to `0.0` loads as `0.0`. The content of a string is the text of the grammar's `string_content` node, with escapes resolved and nothing trimmed, so a fenced string keeps its newlines. A string that contains U+0000 is a load error, since the exporter cannot write it. Other control characters are kept as written. In quoted strings, a backslash followed by `b`, `f`, `n`, `r`, `t`, `/` or a backslash is an escape, as is a backslash followed by the style's own quote character (`'`, `"` or a backtick); a fenced string has no escapes. Any other backslash sequence is a parse error from the parser. A number with a leading zero and only octal digits (`010`) is octal, as in the grammar, so it is 8.
+An integer outside the signed 64-bit range is a load error that reports its position, and so is a decimal whose value is not finite as a 64-bit float, or whose nonzero digits round to `0.0`. The content of a string is the text of the grammar's `string_content` node, with escapes resolved and nothing trimmed, so a fenced string keeps its newlines. A raw newline in a single-line quoted string is a parse error (ADR-007 §2.2); a fenced string may contain newlines, and its content starts after the line break that follows the opening fence. U+0000 cannot appear in a gram source file, and no escape produces it. Other raw control characters (tab, carriage return, DEL) are kept as written. In quoted strings, a backslash followed by `b`, `f`, `n`, `r`, `t`, `/` or a backslash is an escape, as is a backslash followed by the style's own quote character (`'`, `"` or a backtick); a fenced string has no escapes. Any other backslash sequence is a parse error (ADR-007 §2.2). A hexadecimal literal has no sign, so `-0x1F` is a parse error, and a leading `+` is not accepted. A number with a leading zero and only octal digits (`010`, `00`) is an octal literal in the grammar; whether it means 8 or 10 is not settled by the grammar, and `gram-codec` reads it as 10, so it is a load error that asks for the value in decimal or hexadecimal. Other leading-zero forms (`08`, `-010`) are parse errors.
 
-Each of these is a load error that reports its position and names the construct: a range, a measurement and a nested map as a value. The grammar's array rule admits only scalars, so the parser rejects a map or array inside an array. Gram has no null, so there is no null value to map.
+Each of these is a load error that reports its position and names the construct: a range, a measurement, a nested map as a value, and an octal literal. The grammar's array rule admits only scalars, so the parser rejects a map or array inside an array. Gram has no null, so there is no null value to map.
 
 ### 2.2 Arrays
 
@@ -100,7 +100,7 @@ The same mapping applies to node properties, relationship properties and the top
 
 3.7. **Add a setting that silences dropped-tag reports.** Rejected: the constitution requires each dropped tag to be reported.
 
-3.8. **Treat octal literals as decimal (`010` is ten).** Rejected: it contradicts the grammar and the reference parser, so a file would load differently here than elsewhere.
+3.8. **Read `010` as octal (8) or as decimal (10).** Rejected: the grammar names the token an octal literal without fixing its value, and the one parser that reads it gives 10, so either reading would disagree with another tool. An error costs the user a rewrite in decimal.
 
 3.9. **Export floats in scientific notation.** Rejected: the grammar's decimal has no exponent, so the file would not parse.
 
@@ -112,12 +112,12 @@ The same mapping applies to node properties, relationship properties and the top
 - A database containing a date, point, vector, empty list, non-finite float or NUL-containing string cannot be exported until typed tags (RFC-002 question 7.3) exist. The error lists every offender so the user can see how much of the graph is affected.
 - Relate would accept an empty key; the loader does not.
 - Duplicate keys in one record are an error even when the values agree, matching the single-definition rule for elements (ADR-001).
-- Open and deferred: tag vocabulary and parse-failure behavior (RFC-002 questions 7.3 and 7.4), property metadata (7.7 to 7.9), and whether a gram dialect should gain an empty-array form. The conformance of string escapes, raw control characters, fenced-string content, empty keys and `true` or `false` as a bare key with tree-sitter-gram's corpus is checked in tests, as Constitution IV requires; if the parser rejects raw control characters, the export rule in 2.6 changes to match.
+- Open and deferred: tag vocabulary and parse-failure behavior (RFC-002 questions 7.3 and 7.4), property metadata (7.7 to 7.9), and whether a gram dialect should gain an empty-array form. Escapes, fenced-string content, raw control characters, empty keys and `true` or `false` as a bare key were checked against tree-sitter-gram 0.6.1 in SPIKE-003, and are tested against its corpus as Constitution IV requires. ADR-007 decides that the loader reads the syntax tree, which is where these rules are applied.
 - The `tags` setting, like the identity settings of ADR-001 and ADR-002, is specified with the CLI integration.
-- A decimal with nonzero digits that rounds to `0.0` is stored as `0.0` without a report.
 - `CLAUDE.md` is updated: the first phase accepts tagged strings as plain strings with a reported tag.
 
 ## 5. Related
 
 - RFCs: RFC-002. Resolves its questions 7.1, 7.5, 7.6 and 7.10, and 7.2 for the types of the first phase; leaves 7.3, 7.4 and 7.7 to 7.9 open.
-- SPIKE-002 records the Relate behavior this decision rests on.
+- SPIKE-002 records the Relate behavior this decision rests on; SPIKE-003 records the parser behavior.
+- ADR-007 decides how the loader reads the parsed nodes.
