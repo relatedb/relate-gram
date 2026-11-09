@@ -4,7 +4,7 @@
 
 `relate-gram` is a standalone, out-of-tree Rust crate that adds a strict subset of the
 [gram](https://github.com/gram-data/gram-spec) notation to [Relate](https://relatedb.ai/) (the embedded Cypher graph
-database in `neo4j-labs/cypherlite`): load a gram file into an in-memory Relate database, and export one back out.
+database in `relatedb/relate`, formerly `neo4j-labs/cypherlite`): load a gram file into an in-memory Relate database, and export one back out.
 It links the public `relate` crate as a library and integrates minimally with the `relate` CLI (`relate run`,
 ADR-0429/0431 upstream). It may be brought in-house later.
 
@@ -35,7 +35,7 @@ Still open: design constraints for the TypeScript and Python bindings.
 
 ## Reference repos (local, read-mostly)
 
-- `/Users/abk/Developer/neo4j-labs/cypherlite`: Relate. Its `AGENTS.md` and `extensions/` show the extension contract.
+- `/Users/abk/Developer/neo4j-labs/cypherlite`: a local checkout of Relate (the upstream is now `relatedb/relate`). Its `AGENTS.md` and `extensions/` show the extension contract.
 - `/Users/abk/Developer/relateby/pattern-rs`: `gram-codec` and related crates (not a dependency; see ADR-007).
 - `/Users/abk/Developer/gram-data/tree-sitter-gram`: the grammar and its test corpus.
 

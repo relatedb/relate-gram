@@ -658,12 +658,13 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "relate"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 dependencies = [
  "indexmap",
  "relate-catalog",
  "relate-core",
+ "relate-engine-api",
  "relate-error",
  "relate-executor",
  "relate-front",
@@ -675,6 +676,7 @@ dependencies = [
  "relate-planner",
  "relate-splitter",
  "relate-storage",
+ "relate-write-local",
  "serde",
  "serde_json",
  "web-time",
@@ -682,8 +684,8 @@ dependencies = [
 
 [[package]]
 name = "relate-catalog"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 dependencies = [
  "relate-core",
  "relate-model",
@@ -692,8 +694,8 @@ dependencies = [
 
 [[package]]
 name = "relate-core"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -706,9 +708,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "relate-engine-api"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
+dependencies = [
+ "relate-catalog",
+ "relate-core",
+ "relate-error",
+ "relate-model",
+ "relate-names",
+ "relate-parser",
+ "relate-planner",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "relate-error"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 dependencies = [
  "relate-core",
  "relate-parser",
@@ -716,8 +734,8 @@ dependencies = [
 
 [[package]]
 name = "relate-executor"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 dependencies = [
  "chrono",
  "dashmap",
@@ -726,6 +744,7 @@ dependencies = [
  "regex",
  "relate-catalog",
  "relate-core",
+ "relate-engine-api",
  "relate-error",
  "relate-front",
  "relate-ir",
@@ -743,8 +762,8 @@ dependencies = [
 
 [[package]]
 name = "relate-front"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 dependencies = [
  "relate-core",
  "relate-error",
@@ -752,6 +771,7 @@ dependencies = [
  "relate-model",
  "relate-names",
  "relate-parser",
+ "web-time",
 ]
 
 [[package]]
@@ -769,8 +789,8 @@ dependencies = [
 
 [[package]]
 name = "relate-ir"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 dependencies = [
  "relate-core",
  "relate-names",
@@ -779,8 +799,8 @@ dependencies = [
 
 [[package]]
 name = "relate-markdown"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 dependencies = [
  "relate-core",
  "saphyr-parser",
@@ -789,8 +809,8 @@ dependencies = [
 
 [[package]]
 name = "relate-model"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 dependencies = [
  "chrono",
  "indexmap",
@@ -800,13 +820,13 @@ dependencies = [
 
 [[package]]
 name = "relate-names"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 
 [[package]]
 name = "relate-ontology"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 dependencies = [
  "indexmap",
  "relate-core",
@@ -821,8 +841,8 @@ dependencies = [
 
 [[package]]
 name = "relate-parser"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 dependencies = [
  "relate-model",
  "relate-names",
@@ -830,8 +850,8 @@ dependencies = [
 
 [[package]]
 name = "relate-planner"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 dependencies = [
  "relate-catalog",
  "relate-core",
@@ -844,13 +864,13 @@ dependencies = [
 
 [[package]]
 name = "relate-splitter"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 
 [[package]]
 name = "relate-storage"
-version = "0.16.1"
-source = "git+https://github.com/neo4j-labs/cypherlite?rev=84859b14#84859b146c53b4941a920212d7a90e58550f5dd7"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
 dependencies = [
  "crc32fast",
  "fs4",
@@ -859,13 +879,23 @@ dependencies = [
  "libc",
  "relate-catalog",
  "relate-core",
- "relate-executor",
+ "relate-engine-api",
  "relate-markdown",
  "relate-model",
  "relate-ontology",
  "serde",
  "serde_json",
  "web-time",
+]
+
+[[package]]
+name = "relate-write-local"
+version = "0.1.0"
+source = "git+https://github.com/relatedb/relate?rev=d8b2b620bf5b9222770c9dfcb131a2a44add7c3f#d8b2b620bf5b9222770c9dfcb131a2a44add7c3f"
+dependencies = [
+ "relate-core",
+ "relate-engine-api",
+ "relate-storage",
 ]
 
 [[package]]
