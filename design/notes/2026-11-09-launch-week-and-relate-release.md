@@ -6,10 +6,12 @@ stops depending on a pinned git commit. It binds no decision; if a step needs on
 
 ## Launch week
 
-Status on the day after the note was written: items 2 to 5 are done (the `relate-gram` command, rendered
-diagnostics, `docs/supported-gram.md`, `docs/quickstart.md`). Item 1 is blocked: GitHub CI cannot clone
-`relatedb/relate` (formerly `neo4j-labs/cypherlite`), which is internal until Relate is public. The workflow now uses a read-only token
-in the repository secret `RELATE_READ_TOKEN` if one exists, and needs nothing once Relate is public.
+Status on 2026-11-09: all five items are done (CI, the `relate-gram` command, rendered diagnostics,
+`docs/supported-gram.md`, `docs/quickstart.md`). CI passes on a clean checkout (formatting, clippy and the
+whole test suite). While `relatedb/relate` is internal, the build clones it with the organization secret
+`RELATE_READ_TOKEN` (read access to that repository, shared with this one); the workflow step that uses it is
+skipped when the secret is absent, and nothing is needed once Relate is public, at which point the secret
+can be removed. The `perf` job runs only when triggered by hand.
 
 Phase 1 (specification `specs/001-phase1-load-export/`) is the product; the week goes into making it
 usable by someone who does not write Rust. In order:
@@ -63,8 +65,9 @@ against that commit (SPIKE-001, SPIKE-002). When Relate publishes its release, m
 7. **Update the documents that mention the pin**: the README's build note, `CLAUDE.md`, research R1
    and R2 in `specs/001-phase1-load-export/`, and the comment in `Cargo.toml`. Mark R1's "git
    dependency" decision as superseded.
-8. **Drop what the pin needed**: the network and git access caveat in CI, and any `[patch]` override a
-   developer used for a local Relate checkout.
+8. **Drop what the pin needed**: the "Let cargo fetch the Relate repository" step in `.github/workflows/ci.yml`
+   and the `RELATE_READ_TOKEN` secret (CI needs no credential once the dependency comes from crates.io),
+   and any `[patch]` override a developer used for a local Relate checkout.
 
 If the release's API differs from the pinned commit, fix that first with a failing test, as with any
 change, and record the difference in a spike note so the ADRs that cite the old behavior stay honest.
