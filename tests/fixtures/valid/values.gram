@@ -1,0 +1,14 @@
+// One node holding every accepted value kind (ADR-006).
+(v {
+  dq: "double", sq: 'single', bt: `back`, sym: active,
+  esc: "a\nb\t\"q\"\\", sqe: 'it\'s', bte: `a\`b`,
+  fence: ```
+line one
+line two
+```,
+  int: 42, neg: -7, max: 9223372036854775807, min: -9223372036854775808, hex: 0x1F,
+  dec: 2.75, negdec: -0.5, t: true, f: false,
+  ints: [1, 2, 3], strs: ["a", 'b', c], bools: [true, false], decs: [1.5, 2.5],
+  empty: "", "key with spaces": 1, `back key`: 2,
+  tagged: md`# Title`
+})

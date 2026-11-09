@@ -134,3 +134,45 @@ pub fn dump_graph(conn: &mut Connection) -> GraphDump {
         relationships,
     }
 }
+
+/// Read a fixture from `tests/fixtures/<dir>/<name>.gram`.
+pub fn fixture(dir: &str, name: &str) -> Vec<u8> {
+    let path = format!(
+        "{}/tests/fixtures/{dir}/{name}.gram",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    std::fs::read(&path).unwrap_or_else(|e| panic!("read {path}: {e}"))
+}
+
+/// Load `source` with default settings.
+pub fn load_str(
+    conn: &mut Connection,
+    source: &str,
+) -> Result<relate_gram::LoadReport, relate_gram::LoadFailure> {
+    relate_gram::load(
+        conn,
+        source.as_bytes(),
+        &relate_gram::settings::LoadSettings::default(),
+    )
+}
+
+/// Load a fixture with default settings.
+pub fn load_fixture(
+    conn: &mut Connection,
+    dir: &str,
+    name: &str,
+) -> Result<relate_gram::LoadReport, relate_gram::LoadFailure> {
+    relate_gram::load(
+        conn,
+        &fixture(dir, name),
+        &relate_gram::settings::LoadSettings::default(),
+    )
+}
+
+/// The value of property `key` of the node whose `@id` is `id`.
+pub fn node_prop(conn: &mut Connection, id: &str, key: &str) -> Value {
+    let q = format!("MATCH (n {{`@id`: '{id}'}}) RETURN n.`{key}`");
+    let rows = run(conn, &q);
+    assert_eq!(rows.len(), 1, "one node with @id {id}");
+    rows[0][0].clone()
+}

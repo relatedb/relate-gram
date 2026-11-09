@@ -1,0 +1,10 @@
+// Identifier forms, references and anonymous elements (ADR-001).
+(42:Num)
+(`42`)
+(`my id`:Label)
+(a)
+(x:X)-[r:REL {w: 1}]->(y)
+(x)-[r]->(y)
+(:Anon)
+()
+(z)<-[left:L]-(x)
