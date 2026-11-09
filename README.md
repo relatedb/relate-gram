@@ -17,6 +17,7 @@ target/release/relate-gram check people.gram                 # find every proble
 target/release/relate-gram load people.gram --db ./people    # load it into a Relate database
 relate query --database ./people "MATCH (n) RETURN n"        # query it with Relate
 target/release/relate-gram export --db ./people              # write it back out
+target/release/relate-gram fix people.gram --rel-type KNOWS  # correct what can be corrected, into people.fixed.gram
 ```
 
 The [five-minute quickstart](docs/quickstart.md) walks through this, and

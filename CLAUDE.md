@@ -56,7 +56,7 @@ from `.claude/skills/`.
 
 ## Command
 
-`relate-gram check|load|export|normalize` (ADR-009, `src/main.rs`; tested by `tests/cli.rs`). User docs are in
+`relate-gram check|load|export|normalize|fix` (ADR-009 and ADR-010, `src/main.rs`; tested by `tests/cli.rs`). The fixer is `src/fix.rs`, tested by `tests/fix.rs`: when a rejection rule or error code is added or changed, decide whether it has a fix (ADR-010 section 4). User docs are in
 `docs/`: `quickstart.md` and `supported-gram.md`. When a rejection rule or a diagnostic code changes, update the
 table in `docs/supported-gram.md`.
 

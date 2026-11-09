@@ -8,6 +8,8 @@ created: 2026-11-09
 
 # ADR-009: The relate-gram Command
 
+> Extended 2026-11-09 by ADR-010, which adds the `fix` command.
+
 ## 1. Context
 
 The library can load and export, but a person who wants to try gram with Relate has to write Rust. The parent RFC wants load and export available through the `relate` command-line tool (goal 3.9), and leaves how open (question 7.11). Relate's tool hosts extensions (`relate run <name>`), but that mechanism and its contract are not yet used by any project outside Relate, and Relate launches this week. A person also needs to find out what is wrong with a file without a database: every error the loader reports carries a line, a column and a message, which are only useful if they are shown next to the source text.

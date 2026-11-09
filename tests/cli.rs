@@ -235,3 +235,304 @@ fn export_options_choose_identifiers() {
     assert!(text(&o.stderr).contains("export.config"));
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+// --- fix ---------------------------------------------------------------
+
+fn gram_in(dir: &std::path::Path, name: &str, text: &str) -> PathBuf {
+    std::fs::create_dir_all(dir).unwrap();
+    let p = dir.join(name);
+    std::fs::write(&p, text).unwrap();
+    p
+}
+
+const UNTYPED: &str = "// two people\n(a:N)-->(b:N)\n(a)-->(c:N)\n";
+
+#[test]
+fn fix_writes_a_new_file_and_leaves_the_original_alone() {
+    let dir = scratch("fix-new");
+    let input = gram_in(&dir, "people.gram", UNTYPED);
+    let o = run(&["fix", input.to_str().unwrap(), "--rel-type", "KNOWS"]);
+    assert!(o.status.success(), "{}", text(&o.stderr));
+    let out = dir.join("people.fixed.gram");
+    assert_eq!(
+        std::fs::read_to_string(&out).unwrap(),
+        "// two people\n(a:N)-[:KNOWS]->(b:N)\n(a)-[:KNOWS]->(c:N)\n"
+    );
+    assert_eq!(std::fs::read_to_string(&input).unwrap(), UNTYPED);
+    let err = text(&o.stderr);
+    assert!(err.contains("applied 2 fix(es)"), "{err}");
+    assert!(err.contains("2 x rel.no-type"), "{err}");
+    assert!(err.contains("people.fixed.gram"), "{err}");
+    // the fixed file passes check
+    assert!(run(&["check", out.to_str().unwrap()]).status.success());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fix_never_replaces_an_existing_output() {
+    let dir = scratch("fix-exists");
+    let input = gram_in(&dir, "people.gram", UNTYPED);
+    let existing = gram_in(&dir, "people.fixed.gram", "(keep)\n");
+    let o = run(&["fix", input.to_str().unwrap(), "--rel-type", "KNOWS"]);
+    assert_eq!(o.status.code(), Some(2));
+    assert!(
+        text(&o.stderr).contains("already exists"),
+        "{}",
+        text(&o.stderr)
+    );
+    assert_eq!(std::fs::read_to_string(&existing).unwrap(), "(keep)\n");
+    // --force replaces it
+    let o = run(&[
+        "fix",
+        input.to_str().unwrap(),
+        "--rel-type",
+        "KNOWS",
+        "--force",
+    ]);
+    assert!(o.status.success(), "{}", text(&o.stderr));
+    assert!(std::fs::read_to_string(&existing)
+        .unwrap()
+        .contains("KNOWS"));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fix_names_the_output_for_a_file_that_does_not_end_in_gram() {
+    let dir = scratch("fix-name");
+    let input = gram_in(&dir, "people.txt", UNTYPED);
+    let o = run(&["fix", input.to_str().unwrap(), "--rel-type", "K"]);
+    assert!(o.status.success(), "{}", text(&o.stderr));
+    assert!(dir.join("people.txt.fixed").exists());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fix_can_write_to_a_named_file_or_standard_output() {
+    let dir = scratch("fix-o");
+    let input = gram_in(&dir, "people.gram", UNTYPED);
+    let named = dir.join("named.gram");
+    let o = run(&[
+        "fix",
+        input.to_str().unwrap(),
+        "--rel-type",
+        "K",
+        "-o",
+        named.to_str().unwrap(),
+    ]);
+    assert!(o.status.success());
+    assert!(std::fs::read_to_string(&named).unwrap().contains("[:K]"));
+    assert!(!dir.join("people.fixed.gram").exists());
+    let o = run(&["fix", input.to_str().unwrap(), "--rel-type", "K", "-o", "-"]);
+    assert!(o.status.success());
+    assert!(text(&o.stdout).contains("(a:N)-[:K]->(b:N)"));
+    assert!(!dir.join("people.fixed.gram").exists());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fix_reads_standard_input_and_writes_standard_output() {
+    let mut child = bin()
+        .args(["fix", "-", "--rel-type", "K"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(b"(a:N)-->(b:N)\n")
+        .unwrap();
+    let o = child.wait_with_output().unwrap();
+    assert!(o.status.success(), "{}", text(&o.stderr));
+    assert_eq!(text(&o.stdout), "(a:N)-[:K]->(b:N)\n");
+}
+
+#[test]
+fn fix_in_place_keeps_a_backup() {
+    let dir = scratch("fix-inplace");
+    let input = gram_in(&dir, "people.gram", UNTYPED);
+    let o = run(&[
+        "fix",
+        input.to_str().unwrap(),
+        "--rel-type",
+        "K",
+        "--in-place",
+    ]);
+    assert!(o.status.success(), "{}", text(&o.stderr));
+    assert!(std::fs::read_to_string(&input).unwrap().contains("[:K]"));
+    assert_eq!(
+        std::fs::read_to_string(dir.join("people.gram.orig")).unwrap(),
+        UNTYPED
+    );
+    assert!(!dir.join("people.fixed.gram").exists());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fix_in_place_does_not_overwrite_a_backup_and_can_skip_it() {
+    let dir = scratch("fix-backup");
+    let input = gram_in(&dir, "people.gram", UNTYPED);
+    gram_in(&dir, "people.gram.orig", "(older)\n");
+    let o = run(&[
+        "fix",
+        input.to_str().unwrap(),
+        "--rel-type",
+        "K",
+        "--in-place",
+    ]);
+    assert_eq!(o.status.code(), Some(2));
+    assert_eq!(
+        std::fs::read_to_string(&input).unwrap(),
+        UNTYPED,
+        "the input is untouched"
+    );
+    let o = run(&[
+        "fix",
+        input.to_str().unwrap(),
+        "--rel-type",
+        "K",
+        "--in-place",
+        "--no-backup",
+    ]);
+    assert!(o.status.success(), "{}", text(&o.stderr));
+    assert_eq!(
+        std::fs::read_to_string(dir.join("people.gram.orig")).unwrap(),
+        "(older)\n"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fix_with_nothing_to_fix_writes_nothing() {
+    let dir = scratch("fix-none");
+    let input = gram_in(&dir, "ok.gram", "(a:N)-[:T]->(b:N)\n");
+    let o = run(&["fix", input.to_str().unwrap()]);
+    assert!(o.status.success());
+    assert!(
+        text(&o.stderr).contains("nothing to fix"),
+        "{}",
+        text(&o.stderr)
+    );
+    assert!(!dir.join("ok.fixed.gram").exists());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fix_without_the_needed_option_marks_the_errors_and_says_which_option_helps() {
+    let dir = scratch("fix-hint");
+    let input = gram_in(&dir, "people.gram", UNTYPED);
+    let o = run(&["fix", input.to_str().unwrap()]);
+    assert_eq!(o.status.code(), Some(1));
+    let err = text(&o.stderr);
+    assert!(err.contains("error[rel.no-type]"), "{err}");
+    assert!(
+        err.contains("hint: 2 error(s) of rel.no-type can be fixed with --rel-type NAME"),
+        "{err}"
+    );
+    assert!(err.contains("marked 2 error(s)"), "{err}");
+    // no fix applied, but the markers make the output differ from the input, so it is written
+    let out = std::fs::read_to_string(dir.join("people.fixed.gram")).unwrap();
+    assert_eq!(
+        out.matches("// relate-gram: error[rel.no-type]").count(),
+        2,
+        "{out}"
+    );
+    assert_eq!(std::fs::read_to_string(&input).unwrap(), UNTYPED);
+
+    // the next step: fix the original again with the option, replacing the output
+    let o = run(&["fix", input.to_str().unwrap(), "--rel-type", "K", "--force"]);
+    assert!(o.status.success(), "{}", text(&o.stderr));
+    let out = std::fs::read_to_string(dir.join("people.fixed.gram")).unwrap();
+    assert!(!out.contains("relate-gram:"), "{out}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fix_no_annotate_writes_no_markers_and_nothing_when_nothing_changes() {
+    let dir = scratch("fix-noannot");
+    let input = gram_in(&dir, "people.gram", UNTYPED);
+    let o = run(&["fix", input.to_str().unwrap(), "--no-annotate"]);
+    assert_eq!(o.status.code(), Some(1));
+    assert!(
+        text(&o.stderr).contains("nothing was written"),
+        "{}",
+        text(&o.stderr)
+    );
+    assert!(!dir.join("people.fixed.gram").exists());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fix_no_annotate_removes_old_markers() {
+    let dir = scratch("fix-strip");
+    let input = gram_in(
+        &dir,
+        "old.gram",
+        "// relate-gram: error[value.range]: old note\n(a:N)-[:T]->(b:N)\n",
+    );
+    let o = run(&["fix", input.to_str().unwrap(), "--no-annotate"]);
+    assert!(o.status.success(), "{}", text(&o.stderr));
+    assert_eq!(
+        std::fs::read_to_string(dir.join("old.fixed.gram")).unwrap(),
+        "(a:N)-[:T]->(b:N)\n"
+    );
+    assert!(
+        text(&o.stderr).contains("removed 1 earlier annotation"),
+        "{}",
+        text(&o.stderr)
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fix_annotates_the_errors_that_remain_in_the_output_file() {
+    let dir = scratch("fix-annot-partial");
+    let input = gram_in(&dir, "mixed.gram", "(a:N)-->(b:N)\n(c {r: 1..2})\n");
+    let o = run(&["fix", input.to_str().unwrap(), "--rel-type", "K"]);
+    assert_eq!(o.status.code(), Some(1));
+    let out = std::fs::read_to_string(dir.join("mixed.fixed.gram")).unwrap();
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(lines[0], "(a:N)-[:K]->(b:N)");
+    assert!(
+        lines[1].starts_with("// relate-gram: error[value.range]"),
+        "{out}"
+    );
+    assert_eq!(lines[2], "(c {r: 1..2})");
+    assert!(
+        text(&o.stderr).contains("mixed.fixed.gram:3:"),
+        "{}",
+        text(&o.stderr)
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn fix_usage_mistakes() {
+    for args in [
+        vec!["fix"],
+        vec!["fix", "a.gram", "b.gram"],
+        vec!["fix", "a.gram", "--direction", "up"],
+        vec!["fix", "a.gram", "--octal", "hex"],
+        vec!["fix", "a.gram", "--rel-type"],
+        vec!["fix", "a.gram", "--in-place", "-o", "x.gram"],
+        vec!["fix", "-", "--in-place"],
+    ] {
+        let o = run(&args);
+        assert_eq!(o.status.code(), Some(2), "{args:?}: {}", text(&o.stderr));
+    }
+}
+
+#[test]
+fn fix_tags_error_removes_tags() {
+    let dir = scratch("fix-tags");
+    let input = gram_in(&dir, "t.gram", "(a {s: md`x`})\n");
+    let o = run(&["fix", input.to_str().unwrap(), "--tags", "error"]);
+    assert!(o.status.success(), "{}", text(&o.stderr));
+    assert_eq!(
+        std::fs::read_to_string(dir.join("t.fixed.gram")).unwrap(),
+        "(a {s: `x`})\n"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
