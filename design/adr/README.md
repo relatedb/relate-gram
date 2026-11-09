@@ -67,4 +67,4 @@ Use `/adr-review` before moving a draft to `accepted`.
 | [ADR-007](ADR-007-parser-path.md) | Parsing Through the tree-sitter-gram Syntax Tree | accepted | RFC-001, RFC-002 |
 | [ADR-008](ADR-008-relationship-forms.md) | Relationship Types and Arrow Forms | accepted | RFC-001 |
 | [ADR-009](ADR-009-command-line.md) | The relate-gram Command | proposed | RFC-001 |
-| [ADR-010](ADR-010-fixing-rejected-files.md) | The Fix Model and the fix Command | proposed | RFC-004 |
+| [ADR-010](ADR-010-fixing-rejected-files.md) | The Fix Model and the fix Command | accepted | RFC-004 |
