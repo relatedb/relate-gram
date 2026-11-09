@@ -1,7 +1,7 @@
 ---
 id: ADR-006
 title: Property Value Mapping
-status: proposed
+status: accepted
 rfcs: [RFC-002]
 created: 2026-11-08
 ---

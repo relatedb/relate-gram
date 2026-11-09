@@ -16,7 +16,8 @@ The loader MUST accept only gram constructs that map directly to Cypher's proper
 Every other construct MUST be a load error that reports its position in the source file. Nothing
 is dropped or approximated silently. The documented exceptions are an unrecognized tag on a
 tagged string, whose tag is dropped, and the properties of a file's top-level record while nothing
-stores them; the loader MUST report each.
+stores them; the loader MUST report each. Comments are not graph data; a loader ignores them, and
+that is not a drop.
 
 Rationale: a loaded database that differs from its source without notice cannot be trusted.
 
@@ -59,8 +60,8 @@ Rationale: the behavior is defined by contracts and error reporting, which tests
 
 ## Rust Constraints
 
-- The crate MUST depend on `relate` and `gram-codec` (from pattern-rs) for the engine and the
-  parser; any other parser requires an ADR.
+- The crate MUST depend on `relate` for the engine and on `tree-sitter` and `tree-sitter-gram` for
+  parsing (ADR-007); any other parser requires an ADR.
 - The Rust toolchain MUST be pinned in the repository and bumped deliberately.
 - `unsafe` code MUST NOT be added without an ADR.
 - Formatting and lint checks (`cargo fmt`, `cargo clippy`) MUST pass before merge.
@@ -82,4 +83,4 @@ or materially expanding guidance, PATCH for clarifications. Every plan and pull 
 verify compliance with the principles above, and any deviation MUST be justified in writing.
 Runtime guidance for agents lives in `CLAUDE.md`.
 
-**Version**: 2.0.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-08
+**Version**: 2.1.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-09
