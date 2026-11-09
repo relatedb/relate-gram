@@ -54,4 +54,4 @@ Expected: every corpus input the subset accepts loads into the graph the corpus 
 cargo bench --bench load_export
 ```
 
-Expected: 10,000 elements load and export in under 10 seconds, including the worst case of alternating label sets.
+Expected: 10,000 elements load and export in under 10 seconds, including the worst case of alternating label sets. The same target is asserted by an ignored test: `cargo test --test perf -- --ignored`.

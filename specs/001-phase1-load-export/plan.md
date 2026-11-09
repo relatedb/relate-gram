@@ -78,10 +78,12 @@ src/
 ├── load.rs                   # scan, match, batch writes, transaction
 └── export.rs                 # read in id order, identifiers, layout
 tests/
-├── contract/                 # load and export contracts, one file per user story
-├── positions/                # one case per diagnostic code, asserting line, column, offset
-├── roundtrip/                # fixtures and proptest properties
-├── corpus.rs                 # tree-sitter-gram corpus runner
+├── contract/                 # main.rs plus one file per user story (a folder target needs main.rs)
+├── positions/                # main.rs; one case per fixture-testable diagnostic code, asserting line, column, offset
+├── roundtrip/                # main.rs; fixtures and proptest properties
+├── corpus.rs                 # tree-sitter-gram corpus runner, with support/ reader and corpus_expectations.toml
+├── perf.rs                   # ignored test asserting SC-006
+├── syntax.rs                 # syntax-layer tests
 └── fixtures/                 # valid/ and invalid/ gram files
 benches/load_export.rs        # SC-006
 examples/load_and_query.rs    # quickstart

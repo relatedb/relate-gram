@@ -7,6 +7,7 @@ Decisions the plan needs that the ADRs leave to implementation. None of them reo
 - **Decision**: a git dependency on `https://github.com/neo4j-labs/cypherlite` pinned by `rev` to the commit the spikes ran against (`84859b14`, `relate` 0.16.1), using the `relate` package from that workspace. Local development against a checkout uses a `[patch]` override that is not committed.
 - **Rationale**: the `relate` on crates.io is version 0.1.0, not the 0.16.1 that SPIKE-001 and SPIKE-002 measured. Pinning a commit makes the measured behavior the tested behavior.
 - **Alternatives**: a path dependency (breaks clean checkouts and CI); waiting for a crates.io release (blocks the project).
+- **Features**: `relate` enables a parquet snapshot codec by default, which this crate does not use. Try `default-features = false` first and keep it if the crate builds and the spike probes still pass; record the outcome here.
 - **Consequence**: building needs network access to the git remote, and bumping the pin is a deliberate change that reruns the spike-derived tests.
 
 ## R2. Toolchain
