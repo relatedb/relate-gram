@@ -34,9 +34,10 @@ Every error and warning has a stable `code` (listed here), a severity, a source 
 | `value.octal` | error | an octal literal | ADR-006 §2.1 |
 | `value.integer-range` | error | an integer outside 64 bits | ADR-006 §2.1 |
 | `value.decimal` | error | a decimal that is not finite or rounds to zero | ADR-006 §2.1 |
-| `value.array-mixed` | error | an array of mixed kinds; the span is the first element that differs | ADR-006 §2.2 |
-| `value.tag-dropped` | warning | a tag dropped under `TagPolicy::Warn`; one per tagged string | ADR-006 §2.3 |
-| `value.tag` | error | a tagged string under `TagPolicy::Error` | ADR-006 §2.3 |
+| `value.array-mixed` | error | an array of mixed kinds, including a recognized tag mixed with plain strings or with another recognized tag; the span is the first element that differs | ADR-006 §2.2, ADR-011 §2.4 |
+| `value.tag-dropped` | warning | an unrecognized tag dropped under `TagPolicy::Warn`; one per tagged string | ADR-006 §2.3 |
+| `value.tag` | error | a tagged string with an unrecognized tag under `TagPolicy::Error` | ADR-006 §2.3 |
+| `value.tag-content` | error | the content of a recognized tag (`date`, `time`, `localtime`, `datetime`, `localdatetime`, `duration`, `point`, `uuid`) breaks its form or a range, or the database rejects it when the load builds the value; the span is the tagged string, and the message names the tag and the fault | ADR-011 §2.2, §2.3 |
 | `key.duplicate` | error | a repeated key; `related` holds the first | ADR-006 §2.4 |
 | `key.empty` | error | an empty key | ADR-006 §2.4 |
 | `key.reserved` | error | a key that starts with `@` | ADR-001 §2.8 |
@@ -68,7 +69,7 @@ Every error and warning has a stable `code` (listed here), a severity, a source 
 | `export.id-missing` | error | an element lacks the configured identity property | ADR-002 §2.2 |
 | `export.id-unusable` | error | the identity value is not a string or integer, or is empty | ADR-002 §2.2 |
 | `export.id-duplicate` | error | two elements share an identifier text | ADR-002 §2.2 |
-| `export.value` | error | a value with no gram form; the message names which case | ADR-006 §2.6 |
+| `export.value` | error | a value with no gram form (a vector, a list that mixes kinds, a non-finite float, a string containing U+0000, an empty key); the message names which case | ADR-006 §2.6, ADR-011 §2.6 |
 | `export.key-reserved` | error | a property key that starts with `@` other than `@id` | ADR-002 §2.7 |
 | `export.in-transaction` | error | the connection is already in a transaction | contract |
 

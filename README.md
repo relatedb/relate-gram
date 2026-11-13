@@ -88,7 +88,8 @@ Version 0.1 is the first release: phase 1 of the plan, one graph space with no n
   have a reload update them.
 - The strict subset rejects ranges, measurements, nested maps, annotations, subject patterns, and
   untyped, undirected and bidirectional relationships. `relate-gram fix` corrects the mechanical ones.
-- Tags on strings (such as a date) are dropped and reported; typed tags are planned.
+- A tag on a string gives a typed value only for the eight names in [what is supported](docs/supported-gram.md#typed-values) (`date`, `time`, `localtime`, `datetime`, `localdatetime`, `duration`, `point`, `uuid`); any other tag is dropped and reported.
+- Vectors cannot be written in gram: exporting a database that holds one fails and names it.
 - Named graphs and graph metadata are planned (see `design/rfc/RFC-003-named-graphs-and-reloading.md`).
 
 Report a problem with the [bug report template](https://github.com/relatedb/relate-gram/issues/new/choose).

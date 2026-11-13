@@ -168,10 +168,10 @@ The fixtures and most tests of this story (T014, T015, T016) are written in Phas
 **Independent Test**: each emitted code appears in the docs table and the contract; `fix` annotates a bad typed value.
 
 - [X] T041 [P] [US6] Write a test in `tests/fix.rs` that `fix` leaves a file with a bad typed tag unchanged and annotates the error with `// relate-gram: error[value.tag-content]: ...`, and that a second run does not duplicate the annotation (ADR-010 section 4)
-- [ ] T042 [P] [US6] Update `docs/supported-gram.md`: add the eight recognized tags with their forms, the rewrite for each rejected form, `value.tag-content` and the extended `value.array-mixed` rows; state the three ISO 8601 extensions (a negative year, a bracketed zone name, a sign on each duration number)
-- [ ] T043 [P] [US6] Merge `specs/002-typed-tags/contracts/diagnostics.md` into `specs/001-phase1-load-export/contracts/diagnostics.md` (add `value.tag-content`; mark `export.value` offenders changed), note the new `PropValue::Typed` variant in `specs/001-phase1-load-export/contracts/library-api.md` (research R6), then replace the 002 contract with a one-line pointer to the 001 contract
-- [ ] T044 [P] [US6] Update `README.md` ("What is accepted", the list of values with no gram form, "Known limits") and add to `CHANGELOG.md` under Unreleased: the eight tags, the new code, `PropValue::Typed`, and the migration note that a file whose string used one of these tags now loads typed values or fails (SC-006), with the rewrite to restore the old behavior
-- [ ] T045 [US6] Update `CLAUDE.md` Scope bullet on tags to say recognized tags give typed values (ADR-011) and unrecognized ones are dropped
+- [X] T042 [P] [US6] Update `docs/supported-gram.md`: add the eight recognized tags with their forms, the rewrite for each rejected form, `value.tag-content` and the extended `value.array-mixed` rows; state the three ISO 8601 extensions (a negative year, a bracketed zone name, a sign on each duration number)
+- [X] T043 [P] [US6] Merge `specs/002-typed-tags/contracts/diagnostics.md` into `specs/001-phase1-load-export/contracts/diagnostics.md` (add `value.tag-content`; mark `export.value` offenders changed), note the new `PropValue::Typed` variant in `specs/001-phase1-load-export/contracts/library-api.md` (research R6), then replace the 002 contract with a one-line pointer to the 001 contract
+- [X] T044 [P] [US6] Update `README.md` ("What is accepted", the list of values with no gram form, "Known limits") and add to `CHANGELOG.md` under Unreleased: the eight tags, the new code, `PropValue::Typed`, and the migration note that a file whose string used one of these tags now loads typed values or fails (SC-006), with the rewrite to restore the old behavior
+- [X] T045 [US6] Update `CLAUDE.md` Scope bullet on tags to say recognized tags give typed values (ADR-011) and unrecognized ones are dropped
 
 **Checkpoint**: documentation matches behavior.
 

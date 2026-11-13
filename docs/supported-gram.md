@@ -3,8 +3,8 @@
 `relate-gram` loads a strict subset of [gram](https://github.com/gram-data/gram-spec): the part that
 maps directly to Cypher's property graph model. A file that uses anything else is rejected with an
 error that names the construct, shows where it is, and says what to write instead. Nothing is
-approximated or dropped silently; the two reported exceptions are a tag on a tagged string and the
-top-level record's properties, which are listed as warnings.
+approximated or dropped silently; the two reported exceptions are an unrecognized tag on a tagged string
+and the top-level record's properties, which are listed as warnings.
 
 Run `relate-gram check FILE` to find every problem in a file at once.
 
@@ -19,9 +19,38 @@ Run `relate-gram check FILE` to find every problem in a file at once.
 - **Property values**: strings (double-quoted, single-quoted, backticked or fenced), integers (decimal
   or `0x` hexadecimal, 64 bits), decimals, `true` and `false`, bare words (`active` is the string
   `"active"`), and arrays of one kind (`[1, 2, 3]`).
+- **Typed values**: a tagged string whose tag is one of eight names becomes a value of that Relate type
+  (see the table below), and an array of strings with one such tag becomes a list of that type.
 - **The top-level record** `{kind: "property-graph", name: "roster"}`: checked, and its properties are
   reported as not stored.
 - **Comments**, `//` and `/** ... */`: ignored.
+
+### Typed values
+
+| Tag | Relate type | Write | Example |
+|---|---|---|---|
+| `date` | DATE | `YYYY-MM-DD` (a year of four or more digits, optionally negative) | ``date`2024-01-15` `` |
+| `time` | ZONED TIME | `hh:mm:ss`, a fraction of 1 to 9 digits if you like, then `Z` or `+hh:mm` | ``time`10:30:00+01:00` `` |
+| `localtime` | LOCAL TIME | `hh:mm:ss` with the optional fraction, no offset | ``localtime`10:30:00` `` |
+| `datetime` | ZONED DATETIME | a date, `T`, a time with its offset, and optionally a zone name in square brackets | ``datetime`2024-01-15T10:30:00+01:00[Europe/Paris]` `` |
+| `localdatetime` | LOCAL DATETIME | a date, `T`, a local time | ``localdatetime`2024-01-15T10:30:00` `` |
+| `duration` | DURATION | an ISO 8601 duration with an upper-case `P`; a number may have a leading `-`; only seconds may have a fraction | ``duration`P1Y2M3DT4H5M6.789S` `` |
+| `point` | POINT | extended well-known text with an SRID: 4326 or 7203 with `POINT(x y)`, 4979 or 9157 with `POINT Z(x y z)`; geographic points are longitude then latitude | ``point`SRID=4326;POINT(-74.0 40.7)` `` |
+| `uuid` | UUID | 32 hexadecimal digits in 8-4-4-4-12 groups | ``uuid`123e4567-e89b-12d3-a456-426614174000` `` |
+
+Tags are lower case and matched exactly; any other tag (`md`, `Date`, `vector`) is dropped and reported as
+before. A recognized tag with content that does not follow its form is an error, never a plain string.
+
+The forms are ISO 8601 extended format, narrowed (seconds are required; second 60 and `24:00:00` are not
+accepted), with three extensions that Relate itself reads and prints: a negative year, a zone name in
+brackets after a datetime's offset (RFC 9557 notation), and a sign on each number of a duration, because a
+duration keeps months, days and nanoseconds apart and their signs can differ. A leading `-` before the `P` of
+a duration, weeks, and a fraction on anything but seconds are not accepted. `check` verifies the form
+and the ranges of every typed value without a database; whether a zone name exists, and whether the offset
+is that zone's, is only known when the file is loaded.
+
+Vectors cannot be written in gram, in any form: exporting a database with a vector property fails and
+names it.
 
 ## Rejected, and what to write instead
 
@@ -41,6 +70,8 @@ Run `relate-gram check FILE` to find every problem in a file at once.
 | `{o: 010}` | `value.octal` | Write the value in decimal (`8`) or hexadecimal (`0x8`) |
 | `{n: 9223372036854775808}` | `value.integer-range` | Integers must fit in 64 bits; use a string for larger numbers |
 | `{xs: [1, "a"]}`, `{xs: [1, 2.5]}` | `value.array-mixed` | An array holds one kind of value; write every element as that kind (`[1.0, 2.5]`) |
+| ``{xs: [date`2024-01-01`, "x"]}`` | `value.array-mixed` | An array of typed values uses one tag throughout |
+| ``{when: date`2024-13-45`}``, ``{t: time`10:30`}`` | `value.tag-content` | Write the content in the form the tag takes (see Typed values above); the message says what is wrong |
 | `{k: 1, k: 2}` | `key.duplicate` | Write the key once |
 | `{"": 1}` | `key.empty` | Give the property a name |
 | `{"@k": 1}` | `key.reserved` | Keys that start with `@` are written by the loader; rename it |
@@ -80,6 +111,7 @@ relate-gram check people.fixed.gram        # compare the two files in your edito
 | `value.octal` | Writes the value in decimal: `010` becomes `10` or `8` | `--octal decimal\|octal` |
 | `value.array-mixed` | Writes the integers of a number array as decimals: `[1, 2.5]` becomes `[1.0, 2.5]` | nothing |
 | `value.tag` | Removes the tag (with `--tags error`) | nothing |
+| `value.tag-content` | Nothing: the intended value is unknown, so the error is annotated | nothing |
 
 A correction that needs a choice is applied only when you give it, and then to every occurrence in the
 file; relationships that need different types need hand edits. When a fix reveals another (a direction,
