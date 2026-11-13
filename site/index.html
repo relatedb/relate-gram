@@ -34,8 +34,8 @@ relate-gram export --db ./people              # write it back out as gram
 relate-gram fix people.gram --rel-type KNOWS  # correct what can be corrected</code></pre>
 
   <h2>Install</h2>
-  <p>Download a binary for macOS (Apple silicon or Intel) or Linux (x86-64) from the <a href="https://github.com/relatedb/relate-gram/releases">Releases page</a> and check it against <code>SHA256SUMS</code>. Or build from source:</p>
-<pre><code>cargo install --git https://github.com/relatedb/relate-gram</code></pre>
+  <p>Download a binary for macOS (Apple silicon or Intel) or Linux (x86-64) from the <a href="https://github.com/relatedb/relate-gram/releases">Releases page</a> and check it against <code>SHA256SUMS</code>. Or install from <a href="https://crates.io/crates/relate-gram">crates.io</a>:</p>
+<pre><code>cargo install relate-gram</code></pre>
 
   <h2>As a Rust library</h2>
 <pre><code>let report = relate_gram::load(&amp;mut conn, source, &amp;LoadSettings::default())?;
