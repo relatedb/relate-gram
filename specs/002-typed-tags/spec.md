@@ -113,8 +113,8 @@ A developer reading the supported-gram page, the diagnostics contract or the cha
 
 - A tag spelled in a different case (`Date`) is unrecognized, so it is dropped and reported.
 - A recognized tag on an empty or whitespace-only string is a bad value.
-- A fenced or single-quoted tagged string with a recognized tag is read the same as a double-quoted one.
-- A typed value as the value of an identity property or an `@id`: identity properties take strings and integers only, so this fails with an existing identity error (to be confirmed in planning).
+- A recognized tag written as a fenced tagged string (the grammar's second spelling, with the tag after the opening fence) is read the same as the backtick form.
+- A typed value as the value of a configured identity property is not usable as an identity, like a list: the element is treated as lacking the property and the load reports `id.property-missing`. A typed value cannot be an `@id`, since keys starting with `@` are errors.
 - `--tags error` still applies to unrecognized tags only; recognized tags are always typed.
 - A nanosecond fraction of more than nine digits is a bad value.
 - Records inside a node's map, or a nested map as a value, remain errors (`value.map`).
@@ -125,7 +125,7 @@ A developer reading the supported-gram page, the diagnostics contract or the cha
 
 - **FR-001**: The loader MUST give each tag of ADR-011 section 2.2 its Relate type, with the content form and ranges stated there, and MUST store the value as that type.
 - **FR-002**: A recognized tag with content that breaks its form or a range MUST fail with `value.tag-content` at the tagged string's position, naming the tag and the fault (ADR-011 section 2.3).
-- **FR-003**: `check` MUST report every form and range error of FR-002 without a database, except zone-name validity, which the load reports (ADR-011 section 2.2).
+- **FR-003**: `check` MUST report every form and range error of FR-002 without a database, except whether a zone name is known and matches the offset, which the load reports (ADR-011 section 2.2).
 - **FR-004**: A load that fails MUST leave the database unchanged, including when the database rejects a value the loader accepted (ADR-011 section 2.3).
 - **FR-005**: Unrecognized tags MUST keep the drop-and-report behavior and the `tags` setting (ADR-006 section 2.3).
 - **FR-006**: Arrays of tagged strings MUST follow ADR-011 section 2.4: one recognized tag gives a typed list, a mix gives `value.array-mixed`.
@@ -148,7 +148,7 @@ A developer reading the supported-gram page, the diagnostics contract or the cha
 
 - **SC-001**: For each of the eight types, a database value exported and reloaded has the same type and equal value, with no loss of nanoseconds, sign, dimension or zone name.
 - **SC-002**: Every invalid form listed in ADR-011 section 2.2 and 2.3 has a fixture that fails with the stated code at the stated line and column, and leaves a database holding known content unchanged.
-- **SC-003**: `check` on every such fixture reports the same error without a database, except the zone-name fixtures, which `check` accepts and the load rejects.
+- **SC-003**: `check` on every such fixture reports the same error without a database, except the unknown-zone fixtures, which `check` accepts and the load rejects.
 - **SC-004**: Loading a file of 10,000 elements in which every element carries typed values takes no more than three times as long as the same file with plain strings.
 - **SC-005**: The existing corpus, round-trip, position and performance tests pass unchanged except where ADR-011 changes the expected outcome, and each such change is named in the changelog.
 - **SC-006**: A file that used one of the eight tags before this change and now loads differently is documented in the changelog with the rewrite to restore the old behavior.

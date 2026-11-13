@@ -4,7 +4,7 @@ Decisions that ADR-011 leaves to implementation, each checked against Relate 1.0
 
 ## R1. How typed values are read on export
 
-- **Decision**: read `properties(n)` as today. A UUID is formatted with `relate::uuid_hyphenated`; a point with the public fields `srid`, `x`, `y`, `z` of the matched `Value::Point`. Temporal values (and lists of them) take their text from a column added to the two existing export queries: `[k IN keys(n) WHERE <temporal> | [k, toString(n[k])]]`, with `[x IN n[k] | toString(x)]` for lists.
+- **Decision**: read `properties(n)` as today. A UUID is formatted locally from its `u128` as lower-case 8-4-4-4-12 hexadecimal (not with `relate::uuid_hyphenated`, which is not on the public-API check's allowed list); a point from the public fields `srid`, `x`, `y`, `z` of the matched `Value::Point`. Temporal values (and lists of them) take their text from a column added to the two existing export queries, selecting keys whose `valueType` is one of the six temporal types or a list of one, and returning `toString(n[k])` for a scalar and `[x IN n[k] | toString(x)]` for a list (`toString` of a list is one bracketed string, so the list needs its own branch).
 - **Rationale**: `Temporal`'s `Display` and `iso_string()` drop zero seconds (`2024-01-15T10:30+01:00[Europe/Paris]`), which is not the `hh:mm:ss` form ADR-011 section 2.2 requires, while Cypher's `toString` prints `10:30:00`. Dynamic property access (`n[k]`) and `valueType` work in Relate 1.0.1.
 - **Alternatives considered**: format the `Temporal` variants ourselves (needs the time library's types, which `relate` does not re-export); post-process `Display` text (fragile); one extra query per element (slow).
 

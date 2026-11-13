@@ -21,7 +21,7 @@ A `PropValue` is now an integer, a float, a boolean, a string, a typed value, or
 | Tag | Accepted | Rejected with `value.tag-content` |
 |---|---|---|
 | `date` | `YYYY-MM-DD`, year of 4 or more digits, optional `-` | week, ordinal, basic and `+year` forms; month or day out of range, including 29 February in a common year |
-| `time`, `datetime` | seconds present; offset `Z` or `+hh:mm`; datetime may add `[zone]` | no offset; no seconds; second 60; a bare date as a datetime |
+| `time`, `datetime` | seconds present; offset `Z` or `+hh:mm`; datetime may add `[zone]` | no offset; no seconds; second 60; a bare date as a datetime; an empty or malformed zone name |
 | `localtime`, `localdatetime` | seconds present; no offset | an offset; no seconds |
 | `duration` | upper-case `P`, at least one component, sign per number, fraction on seconds only | `P` or `PT` alone; weeks; a leading `-` before `P`; fraction on other components; lower case |
 | `point` | `SRID=n;POINT(x y)` for 4326 and 7203, `SRID=n;POINT Z(x y z)` for 4979 and 9157 | other SRIDs; a missing SRID; dimension and SRID disagreeing; exponent form; non-finite values; latitude outside [-90, 90] |
@@ -29,7 +29,7 @@ A `PropValue` is now an integer, a float, a boolean, a string, a typed value, or
 
 A fraction of seconds has 1 to 9 digits; more is rejected.
 
-**Relation to ISO 8601** (ADR-011 section 2.2). The temporal forms are ISO 8601 extended-format representations, narrowed as the table says (seconds required, second 60 and `24:00:00` rejected, offset as `Z` or `±hh:mm`). Three accepted forms go beyond ISO 8601: a negative year (an expanded year, which ISO 8601 allows only by prior agreement), a bracketed zone name after a datetime (RFC 9557, not ISO 8601), and a sign on each number of a duration (ISO 8601-1 has no negative components; ISO 8601-2's single leading minus on the whole duration is rejected). The validators must accept these three and must reject everything else. The zone name of a datetime is not validated by `check`.
+**Relation to ISO 8601** (ADR-011 section 2.2). The temporal forms are ISO 8601 extended-format representations, narrowed as the table says (seconds required, second 60 and `24:00:00` rejected, offset as `Z` or `±hh:mm`). Three accepted forms go beyond ISO 8601: a negative year (an expanded year, which ISO 8601 allows only by prior agreement), a bracketed zone name after a datetime (RFC 9557, not ISO 8601), and a sign on each number of a duration (ISO 8601-1 has no negative components; ISO 8601-2's single leading minus on the whole duration is rejected). The validators must accept these three and must reject everything else. A datetime's zone name must be non-empty and use only letters, digits and `/ _ + -`, which `check` verifies. Whether it names a known zone, and whether the offset is that zone's, is left to the load (Relate's time-zone database).
 
 ## Load write groups
 

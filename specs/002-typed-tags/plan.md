@@ -38,7 +38,7 @@ Implement ADR-011: eight recognized tags (`date`, `time`, `localtime`, `datetime
 | II. Strict subset, loud failures | Pass | Every bad typed value is a located `value.tag-content`; unrecognized tags keep their documented drop-and-report; nothing is approximated (data model, `contracts/diagnostics.md`) |
 | III. Identity is preserved | Pass | A typed value is not usable as identity, like a list today, and is reported as `id.property-missing` (research R4); `@id` handling is unchanged |
 | IV. Round-trip fidelity | Pass | SC-001 and the round-trip tests cover every type; export stays deterministic |
-| V. Public interfaces only | Pass | Only items `relate` re-exports are used: `Value`, `Temporal` (as a matched type), `uuid_hyphenated`, and the public fields of a matched point; `scripts/check-public-api.sh` stays in the checks (research R1, R2) |
+| V. Public interfaces only | Pass | Only items on the allowed list of `scripts/check-public-api.sh` are used (`Value`, `Connection`, `Database`, `QueryResult`, `Error`, `Result`); the UUID is formatted locally and a point's public fields are read from the matched `Value::Point`, so the list is unchanged (research R1, R2) |
 | VI. Test-first | Pass, enforced in `tasks` | Fixtures and failing tests precede each implementation task |
 | Rust constraints | Pass | No new dependency; toolchain pinned; no `unsafe`; `fmt` and `clippy` in CI |
 | Workflow | Pass | Work is on a feature branch; ADR-011 passed `/adr-review` before acceptance; the plan goes through a PR |
