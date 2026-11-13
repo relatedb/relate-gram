@@ -65,7 +65,11 @@ specs/002-typed-tags/
 ```text
 src/
 ├── values.rs        # PropValue gains a Typed variant; recognized tags are matched in convert_value
-├── typed.rs         # NEW: the eight content-form validators and the typed-value model (no database)
+├── typed/           # NEW: the typed-value model and the eight content-form validators (no database)
+│   ├── mod.rs       #   Tag, TypedValue, dispatch by tag
+│   ├── temporal.rs  #   date, time, localtime, datetime, localdatetime, duration
+│   ├── point.rs     #   extended well-known text
+│   └── uuid.rs
 ├── plan.rs          # typed values are excluded from identity; typed items collected for the write step
 ├── load.rs          # follow-up statements per (kind, key, tag) after the basic properties
 ├── export.rs        # typed values written as tagged strings; one added column for temporal text
@@ -80,7 +84,7 @@ tests/
 docs/supported-gram.md, README.md, CHANGELOG.md                   # updated (FR-012)
 ```
 
-**Structure Decision**: one new module, `typed`, holds everything about the eight forms that does not need a database (parsing, range checks, normalization), so it is testable alone and shared by `values` (load) and `export`. The database-facing code stays in `load` and `export`.
+**Structure Decision**: one new module directory, `typed`, holds everything about the eight forms that does not need a database (parsing, range checks, normalization), so it is testable alone and shared by `values` (load) and `export`. The database-facing code stays in `load` and `export`.
 
 ## Complexity Tracking
 
