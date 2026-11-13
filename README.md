@@ -12,9 +12,8 @@ Anything else is rejected with an error that says what it is and where it is.
 - **A release binary** (macOS Apple silicon and Intel, Linux x86-64): download the archive from the
   [Releases page](https://github.com/relatedb/relate-gram/releases), check it against `SHA256SUMS`, and put
   `relate-gram` on your `PATH`.
-- **From source**: `cargo install --git https://github.com/relatedb/relate-gram` (Rust 1.90 or later).
-- **As a library**: `relate-gram = { git = "https://github.com/relatedb/relate-gram", tag = "v0.1.0" }`. It
-  works with Relate 1.0.x.
+- **From crates.io**: `cargo install relate-gram` (Rust 1.90 or later).
+- **As a library**: `cargo add relate-gram`. It works with Relate 1.0.x.
 
 ## Quick start
 

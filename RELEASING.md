@@ -24,17 +24,12 @@ nothing.
 
 ## Publishing to crates.io
 
-Relate is public and `relate-gram` depends on the published `relate` 1.0.x crate, so the crate can be
-published:
-
-1. Run `cargo publish --dry-run --locked` locally, and check `cargo package --list` holds only what users
-   need (`src/`, `docs/`, `README.md`, `LICENSE`, `CHANGELOG.md`).
-2. Add the crates.io token as the repository secret `CARGO_REGISTRY_TOKEN`.
-3. Try the `publish` workflow by hand with "dry run" on.
-4. Set the repository variable `CRATES_IO_PUBLISH` to `true`. From then on, publishing a GitHub release
-   also publishes the crate. Until the variable is set, the workflow only runs by hand.
-
-A published name cannot be reused: settle the name `relate-gram` before the first publish.
+`relate-gram` 0.1.0 is on crates.io. Publishing a GitHub release now publishes the crate too: the
+`publish` workflow runs on a published release (the repository variable `CRATES_IO_PUBLISH` is `true`)
+with the repository secret `CARGO_REGISTRY_TOKEN`. To rehearse, run the workflow by hand with "dry run" on.
+Publishing runs after the `release` workflow creates the release, so the tag, `Cargo.toml` version and
+changelog must agree first (the `release` workflow checks this). A published version cannot be replaced,
+only yanked.
 
 When a new Relate minor version is released, re-run the tests and the performance check, then widen the
 `~1.0` requirement in `Cargo.toml` deliberately.
