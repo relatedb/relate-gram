@@ -27,6 +27,12 @@ command line or the library interface.
   ``point`30 10` ``; neither is accepted (a time needs seconds and an offset, a point needs an SRID).
 - Vectors still cannot be exported; the error now names the vector.
 
+### Known limits
+
+- A UUID loaded into a persisted database reads back as a string after the database is reopened, because this
+  crate builds Relate without its default `parquet` snapshot codec (SPIKE-005 notes). Dates, times, datetimes,
+  durations and points survive a reopen.
+
 - Built against tree-sitter-gram 0.7.0. An empty array (`{tags: []}`) now parses: it loads as an empty list
   and an empty list exports as `[]` (it used to be a syntax error and an export error). A measurement with a
   decimal magnitude (`3.5kg`) parses and is rejected as a measurement, like `168cm`.

@@ -179,10 +179,10 @@ The fixtures and most tests of this story (T014, T015, T016) are written in Phas
 
 ## Phase 9: Polish and cross-cutting
 
-- [ ] T046 [P] Add a typed-density case to `tests/perf.rs` (an ignored test, like the existing one: 10,000 elements, every element carrying a date, a duration and a point) and to `benches/load_export.rs`; print the ratio to the plain-string case and fail only above ten times (SC-004 states three; the bound is looser so a noisy run does not fail), run with `cargo test --release --test perf -- --ignored --nocapture`, and record the numbers in the PR
-- [ ] T047 Run `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `scripts/check-public-api.sh` and the whole `cargo test`; fix what fails (SC-005)
-- [ ] T048 Run the steps of `specs/002-typed-tags/quickstart.md` by hand against a built binary and note any difference
-- [ ] T049 Tick the completed tasks in this file; commit with the ADR-011 section cited
+- [X] T046 [P] Add a typed-density case to `tests/perf.rs` (an ignored test, like the existing one: 10,000 elements, every element carrying a date, a duration and a point) and to `benches/load_export.rs`; print the ratio to the plain-string case and fail only above ten times (SC-004 states three; the bound is looser so a noisy run does not fail), run with `cargo test --release --test perf -- --ignored --nocapture`, and record the numbers in the PR
+- [X] T047 Run `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `scripts/check-public-api.sh` and the whole `cargo test`; fix what fails (SC-005)
+- [X] T048 Run the steps of `specs/002-typed-tags/quickstart.md` by hand against a built binary and note any difference
+- [X] T049 Tick the completed tasks in this file; commit with the ADR-011 section cited
 
 ---
 

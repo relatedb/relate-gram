@@ -89,6 +89,7 @@ Version 0.1 is the first release: phase 1 of the plan, one graph space with no n
 - The strict subset rejects ranges, measurements, nested maps, annotations, subject patterns, and
   untyped, undirected and bidirectional relationships. `relate-gram fix` corrects the mechanical ones.
 - A tag on a string gives a typed value only for the eight names in [what is supported](docs/supported-gram.md#typed-values) (`date`, `time`, `localtime`, `datetime`, `localdatetime`, `duration`, `point`, `uuid`); any other tag is dropped and reported.
+- A UUID loses its type when a persisted database is reopened: it comes back as a string. `relate-gram` builds Relate without its default `parquet` snapshot codec, and without it Relate stores a UUID as a string on disk (every other typed value survives). In memory, and with a Relate built with its default features, it is a UUID.
 - Vectors cannot be written in gram: exporting a database that holds one fails and names it.
 - Named graphs and graph metadata are planned (see `design/rfc/RFC-003-named-graphs-and-reloading.md`).
 
