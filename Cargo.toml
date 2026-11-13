@@ -11,19 +11,14 @@ homepage = "https://github.com/relatedb/relate-gram"
 readme = "README.md"
 keywords = ["gram", "graph", "cypher", "relate", "import"]
 categories = ["command-line-utilities", "database", "parser-implementations"]
-# Not yet publishable: `relate` is a git dependency until Relate's public release.
-# To publish, follow RELEASING.md ("After Relate's public release").
-publish = false
 exclude = ["/external", "/specs", "/design", "/tests", "/scripts", "/benches", "/.github", "/site", "/.specify", "/.agents", "/.claude", "/CLAUDE.md", "/.gitmodules", "/RELEASING.md", "/CONTRIBUTING.md"]
 
 [lib]
 name = "relate_gram"
 
 [dependencies]
-# research R1: the commit the spikes measured (relate 0.16.1). The parquet
-# snapshot codec is not used here. To move to the public release, follow
-# design/notes/2026-11-09-launch-week-and-relate-release.md.
-relate = { git = "https://github.com/relatedb/relate", rev = "d8b2b620bf5b9222770c9dfcb131a2a44add7c3f", default-features = false }
+# Relate 1.0.x, the first public release. The parquet snapshot codec is not used here.
+relate = { version = "~1.0", default-features = false }
 tree-sitter = "0.25"
 tree-sitter-gram = "=0.6.2"
 thiserror = "2"

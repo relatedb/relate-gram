@@ -5,7 +5,7 @@ All notable changes to relate-gram are documented here. The format follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html); until 1.0, a minor version may change the
 command line or the library interface.
 
-## [0.1.0] - 2026-11-11
+## [0.1.0] - 2026-11-13
 
 First release: gram support for Relate, phase 1 (one graph space; see `design/rfc/RFC-003-*.md` for the
 later phases).
@@ -33,4 +33,4 @@ later phases).
 - Relationships and nodes written without an identifier are created again on every load.
 - Ranges, measurements, nested maps, annotations, subject patterns and tags with a meaning (dates, points)
   are not supported; named graphs are planned.
-- The build depends on a pinned commit of `relatedb/relate` until Relate's public release.
+- Built and tested against Relate 1.0.1 (requirement `~1.0`).

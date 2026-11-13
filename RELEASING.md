@@ -1,12 +1,9 @@
 # Releasing relate-gram
 
-## Launch day (Wednesday 2026-11-11)
+## Launch day
 
-1. Relate's repository goes public first. `relatedb/relate-gram` goes public right after (Settings, General,
-   Danger Zone, Change visibility), so that release downloads and `cargo install --git` work for everyone.
-2. Release 0.1.0 as below. The version and changelog are already set.
-3. Once the `relate` crate is published to crates.io (the owner of the name is donating it to the
-   project), follow "After Relate's public release".
+Done: Relate and this repository are public, and this crate builds against the published Relate 1.0.1.
+Release 0.1.0 as below; the version and changelog are set.
 
 ## A release (binaries on GitHub)
 
@@ -25,26 +22,19 @@ To rehearse without releasing, run the workflow by hand (Actions, release, Run w
 "dry run" on): it builds all three binaries and attaches them to the run as artifacts, and creates
 nothing.
 
-## While Relate is not public
+## Publishing to crates.io
 
-Builds clone `relatedb/relate` (internal) through the organization secret `RELATE_READ_TOKEN`; the
-workflow step is skipped when the secret is absent. A release built this way has no other dependency on
-that access: the binary is self-contained.
+Relate is public and `relate-gram` depends on the published `relate` 1.0.x crate, so the crate can be
+published:
 
-## After Relate's public release
-
-Follow `design/notes/2026-11-09-launch-week-and-relate-release.md` to replace the git dependency with the
-published `relate` crate, then to publish relate-gram itself:
-
-1. In `Cargo.toml`, remove `publish = false`, and check the metadata (`repository`, `readme`, `keywords`,
-   `categories`, `exclude`).
-2. Run `cargo publish --dry-run --locked` locally, and check `cargo package --list` holds only what users
+1. Run `cargo publish --dry-run --locked` locally, and check `cargo package --list` holds only what users
    need (`src/`, `docs/`, `README.md`, `LICENSE`, `CHANGELOG.md`).
-3. Add the crates.io token as the repository secret `CARGO_REGISTRY_TOKEN`.
-4. Try the `publish` workflow by hand with "dry run" on.
-5. Set the repository variable `CRATES_IO_PUBLISH` to `true`. From then on, publishing a GitHub release
+2. Add the crates.io token as the repository secret `CARGO_REGISTRY_TOKEN`.
+3. Try the `publish` workflow by hand with "dry run" on.
+4. Set the repository variable `CRATES_IO_PUBLISH` to `true`. From then on, publishing a GitHub release
    also publishes the crate. Until the variable is set, the workflow only runs by hand.
 
-The `relate` crate name on crates.io is being donated to the project by its current owner, so the
-dependency name stays `relate`. If the name `relate-gram` needs to change, do it before the first publish:
-a published name cannot be reused.
+A published name cannot be reused: settle the name `relate-gram` before the first publish.
+
+When a new Relate minor version is released, re-run the tests and the performance check, then widen the
+`~1.0` requirement in `Cargo.toml` deliberately.
