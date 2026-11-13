@@ -36,7 +36,7 @@ Run `relate-gram check FILE` to find every problem in a file at once.
 | `@desc("x") (a)` | `construct.annotation` | Remove the annotation; put the information in a property |
 | `(a::Label)`, `{k:: 1}` | `construct.double-colon` | Use a single colon |
 | `{r: 1..5}` | `value.range` | Store the bounds as two properties (`low: 1, high: 5`) |
-| `{h: 168cm}` | `value.measurement` | Store a number and a unit (`height: 168, unit: "cm"`) |
+| `{h: 168cm}`, `{w: 3.5kg}` | `value.measurement` | Store a number and a unit (`height: 168, unit: "cm"`) |
 | `{m: {k: 1}}` | `value.map` | Flatten the entries into separate properties |
 | `{o: 010}` | `value.octal` | Write the value in decimal (`8`) or hexadecimal (`0x8`) |
 | `{n: 9223372036854775808}` | `value.integer-range` | Integers must fit in 64 bits; use a string for larger numbers |

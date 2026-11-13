@@ -29,7 +29,7 @@ The constitution's Rust Constraints section requires the crate to depend on `gra
 
 ### 2.1 The parser is tree-sitter-gram
 
-The loader parses gram text with the `tree-sitter` crate and the `tree-sitter-gram` grammar crate, pinned to 0.6.1 in `Cargo.toml` and bumped deliberately along with the corpus tests. It reads the resulting syntax tree and builds its own load plan from it. `gram-codec` is not a dependency of the library.
+The loader parses gram text with the `tree-sitter` crate and the `tree-sitter-gram` grammar crate, pinned in `Cargo.toml` (0.7.0 at the time of writing) and bumped deliberately along with the corpus tests. It reads the resulting syntax tree and builds its own load plan from it. `gram-codec` is not a dependency of the library.
 
 ### 2.2 A malformed tree is an error
 

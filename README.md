@@ -64,8 +64,8 @@ Try it: `cargo run --example load_and_query -- tests/fixtures/valid/people.gram`
   errors listed, and give the file name for the file-kind check.
 - **Export** (`relate_gram::export`): nodes, a blank line, relationships, in a deterministic order, so
   two exports of one database are identical. `ExportSettings` selects how element identifiers are
-  chosen (`auto`, `generate` or `property`). A value that has no gram form (a date, a point, an
-  empty list, a non-finite float) is an error that lists every offender before any text is written.
+  chosen (`auto`, `generate` or `property`). A value that has no gram form (a date, a point, a
+  non-finite float) is an error that lists every offender before any text is written.
 - **Errors and warnings** are `Diagnostic` values with a stable `code`, a severity, the span of the
   source text (line, column and byte offset) and a message. The codes are listed in
   [`specs/001-phase1-load-export/contracts/diagnostics.md`](specs/001-phase1-load-export/contracts/diagnostics.md).
