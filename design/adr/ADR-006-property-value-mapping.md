@@ -8,6 +8,8 @@ created: 2026-11-08
 
 # ADR-006: Property Value Mapping
 
+> Amended 2026-11-13 by ADR-011 (proposed): tags that name a Cypher type give typed values, and empty lists are supported once the grammar allows them; sections 2.3, 2.5 and 2.6 and alternatives 3.2 and 3.3 are superseded where they conflict.
+>
 > Amended 2026-11-09: section 2.5 now says how a leading slash is written (SPIKE-003, found while implementing the exporter). tree-sitter-gram 0.6.2 fixed the parse error; the escape stays so that exports also parse with 0.6.1.
 
 ## 1. Context
