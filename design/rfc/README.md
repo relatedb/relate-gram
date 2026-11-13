@@ -65,6 +65,6 @@ Use `/rfc-review` before moving a draft to `review`/`accepted`.
 | RFC | Title | Status | ADRs |
 |---|---|---|---|
 | [RFC-001](RFC-001-gram-support-for-relate.md) | Gram Graph Support for Relate | review | ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-007, ADR-008, ADR-009 |
-| [RFC-002](RFC-002-property-value-mapping.md) | Property Value Mapping Between Gram and Cypher | review | ADR-006, ADR-007 |
+| [RFC-002](RFC-002-property-value-mapping.md) | Property Value Mapping Between Gram and Cypher | review | ADR-006, ADR-007, ADR-011 |
 | [RFC-003](RFC-003-named-graphs-and-reloading.md) | Named Graphs and Reloading Changed Files | draft | ADR-001, ADR-002, ADR-003, ADR-004, ADR-005 |
 | [RFC-004](RFC-004-fixing-rejected-gram-files.md) | Fixing Rejected Gram Files | review | ADR-010 |

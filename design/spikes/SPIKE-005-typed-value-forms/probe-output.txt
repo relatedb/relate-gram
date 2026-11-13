@@ -1,0 +1,360 @@
+== date
+-- date: date('2024-01-15')
+  ok  CREATE (:T {v: date('2024-01-15')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(Date(2024-01-15)), String("2024-01-15"), String("DATE NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = date(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- date neg year: date('-0044-03-15')
+  ok  CREATE (:T {v: date('-0044-03-15')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(Date(-0044-03-15)), String("-0044-03-15"), String("DATE NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = date(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- date week form: date('2024-W03-1')
+  ok  CREATE (:T {v: date('2024-W03-1')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(Date(2024-01-15)), String("2024-01-15"), String("DATE NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = date(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+== time / localtime
+-- time Z: time('10:30:00Z')
+  ok  CREATE (:T {v: time('10:30:00Z')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(Time { time: 10:30:00, offset: 0 }), String("10:30:00Z"), String("ZONED TIME NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = time(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- time offset: time('10:30:00+01:00')
+  ok  CREATE (:T {v: time('10:30:00+01:00')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(Time { time: 10:30:00, offset: 3600 }), String("10:30:00+01:00"), String("ZONED TIME NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = time(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- time nanos: time('10:30:00.123456789+05:30')
+  ok  CREATE (:T {v: time('10:30:00.123456789+05:30')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(Time { time: 10:30:00.123456789, offset: 19800 }), String("10:30:00.123456789+05:30"), String("ZONED TIME NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = time(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- localtime: localtime('10:30:00')
+  ok  CREATE (:T {v: localtime('10:30:00')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(LocalTime(10:30:00)), String("10:30:00"), String("LOCAL TIME NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = localtime(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- localtime nanos: localtime('10:30:00.123456789')
+  ok  CREATE (:T {v: localtime('10:30:00.123456789')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(LocalTime(10:30:00.123456789)), String("10:30:00.123456789"), String("LOCAL TIME NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = localtime(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+== datetime / localdatetime
+-- datetime Z: datetime('2024-01-15T10:30:00Z')
+  ok  CREATE (:T {v: datetime('2024-01-15T10:30:00Z')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(DateTime { utc: 2024-01-15T10:30:00, offset: 0, zone: Some("Z") }), String("2024-01-15T10:30:00Z"), String("ZONED DATETIME NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = datetime(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- datetime offset: datetime('2024-01-15T10:30:00+01:00')
+  ok  CREATE (:T {v: datetime('2024-01-15T10:30:00+01:00')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(DateTime { utc: 2024-01-15T09:30:00, offset: 3600, zone: None }), String("2024-01-15T10:30:00+01:00"), String("ZONED DATETIME NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = datetime(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- datetime zone: datetime('2024-01-15T10:30:00[Europe/Paris]')
+  ok  CREATE (:T {v: datetime('2024-01-15T10:30:00[Europe/Paris]')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(DateTime { utc: 2024-01-15T09:30:00, offset: 3600, zone: Some("Europe/Paris") }), String("2024-01-15T10:30:00+01:00[Europe/Paris]"), String("ZONED DATETIME NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = datetime(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- datetime offset+zone: datetime('2024-01-15T10:30:00+01:00[Europe/Paris]')
+  ok  CREATE (:T {v: datetime('2024-01-15T10:30:00+01:00[Europe/Paris]')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(DateTime { utc: 2024-01-15T09:30:00, offset: 3600, zone: Some("Europe/Paris") }), String("2024-01-15T10:30:00+01:00[Europe/Paris]"), String("ZONED DATETIME NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = datetime(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- datetime nanos: datetime('2024-01-15T10:30:00.123456789Z')
+  ok  CREATE (:T {v: datetime('2024-01-15T10:30:00.123456789Z')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(DateTime { utc: 2024-01-15T10:30:00.123456789, offset: 0, zone: Some("Z") }), String("2024-01-15T10:30:00.123456789Z"), String("ZONED DATETIME NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = datetime(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- localdatetime: localdatetime('2024-01-15T10:30:00')
+  ok  CREATE (:T {v: localdatetime('2024-01-15T10:30:00')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(LocalDateTime(2024-01-15T10:30:00)), String("2024-01-15T10:30:00"), String("LOCAL DATETIME NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = localdatetime(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- localdatetime nanos: localdatetime('2024-01-15T10:30:00.123456789')
+  ok  CREATE (:T {v: localdatetime('2024-01-15T10:30:00.123456789')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(LocalDateTime(2024-01-15T10:30:00.123456789)), String("2024-01-15T10:30:00.123456789"), String("LOCAL DATETIME NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = localdatetime(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+== duration
+-- duration: duration('P1DT2H')
+  ok  CREATE (:T {v: duration('P1DT2H')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(Duration { months: 0, days: 1, nanos: 7200000000000 }), String("P1DT2H"), String("DURATION NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = duration(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- duration mixed: duration('P1Y2M3DT4H5M6.789S')
+  ok  CREATE (:T {v: duration('P1Y2M3DT4H5M6.789S')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(Duration { months: 14, days: 3, nanos: 14706789000000 }), String("P1Y2M3DT4H5M6.789S"), String("DURATION NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = duration(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- duration negative: duration('-P1DT2H')
+  ok  CREATE (:T {v: duration('-P1DT2H')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(Duration { months: 0, days: -1, nanos: -7200000000000 }), String("P-1DT-2H"), String("DURATION NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = duration(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- duration weeks: duration('P2W')
+  ok  CREATE (:T {v: duration('P2W')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(Duration { months: 0, days: 14, nanos: 0 }), String("P14D"), String("DURATION NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = duration(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- duration nanos: duration('PT0.123456789S')
+  ok  CREATE (:T {v: duration('PT0.123456789S')})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Temporal(Duration { months: 0, days: 0, nanos: 123456789 }), String("PT0.123456789S"), String("DURATION NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = duration(toString(v)) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+== point
+-- point 2D cartesian: point({x: 1.0, y: 2.0})
+  ok  CREATE (:T {v: point({x: 1.0, y: 2.0})})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Point(PointValue { srid: 7203, x: 1.0, y: 2.0, z: None }), String("point({x: 1.0, y: 2.0, crs: 'cartesian'})"), String("POINT NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = point({x: v.x, y: v.y, srid: v.srid}) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- point 3D cartesian: point({x: 1.0, y: 2.0, z: 3.0})
+  ok  CREATE (:T {v: point({x: 1.0, y: 2.0, z: 3.0})})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Point(PointValue { srid: 9157, x: 1.0, y: 2.0, z: Some(3.0) }), String("point({x: 1.0, y: 2.0, z: 3.0, crs: 'cartesian-3d'})"), String("POINT NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = point({x: v.x, y: v.y, z: v.z, srid: v.srid}) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- point WGS-84 2D: point({latitude: 40.7, longitude: -74.0})
+  ok  CREATE (:T {v: point({latitude: 40.7, longitude: -74.0})})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Point(PointValue { srid: 4326, x: -74.0, y: 40.7, z: None }), String("point({x: -74.0, y: 40.7, crs: 'wgs-84'})"), String("POINT NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = point({longitude: v.longitude, latitude: v.latitude, srid: v.srid}) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- point WGS-84 3D: point({latitude: 40.7, longitude: -74.0, height: 10.0})
+  ok  CREATE (:T {v: point({latitude: 40.7, longitude: -74.0, height: 10.0})})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Point(PointValue { srid: 4979, x: -74.0, y: 40.7, z: Some(10.0) }), String("point({x: -74.0, y: 40.7, z: 10.0, crs: 'wgs-84-3d'})"), String("POINT NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = point({longitude: v.longitude, latitude: v.latitude, height: v.height, srid: v.srid}) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+-- point srid: point({x: 1.0, y: 2.0, srid: 7203})
+  ok  CREATE (:T {v: point({x: 1.0, y: 2.0, srid: 7203})})
+      -> 
+  ok  MATCH (n:T) RETURN n.v, toString(n.v), valueType(n.v)
+      -> [Point(PointValue { srid: 7203, x: 1.0, y: 2.0, z: None }), String("point({x: 1.0, y: 2.0, crs: 'cartesian'})"), String("POINT NOT NULL")]
+  ok  MATCH (n:T) WITH n.v AS v RETURN v = point({x: v.x, y: v.y, srid: v.srid}) AS same_after_toString
+      -> [Bool(true)]
+  ok  MATCH (n:T) DELETE n
+      -> 
+  ok  RETURN point({x: 1.0, y: 2.0}) AS p, toString(point({x: 1.0, y: 2.0})) AS s
+      -> [Point(PointValue { srid: 7203, x: 1.0, y: 2.0, z: None }), String("point({x: 1.0, y: 2.0, crs: 'cartesian'})")]
+  ok  RETURN point({x: 1.0, y: 2.0}).srid, point({latitude: 1.0, longitude: 2.0}).srid
+      -> [Int(7203), Int(4326)]
+== vector
+  ok  RETURN vector([1, 2, 3], 3, FLOAT32) AS v, toString(vector([1, 2, 3], 3, FLOAT32)) AS s
+      -> [Vector { coord: Float32, values: [Float(1.0), Float(2.0), Float(3.0)] }, String("vector([1.0, 2.0, 3.0], 3, FLOAT32)")]
+  ok  RETURN vector('[1,2,3]', 3, FLOAT32) AS v
+      -> [Vector { coord: Float32, values: [Float(1.0), Float(2.0), Float(3.0)] }]
+  ok  RETURN vector([1, 2, 3], 3, INTEGER8) AS v, valueType(vector([1,2,3], 3, INTEGER8))
+      -> [Vector { coord: Int8, values: [Int(1), Int(2), Int(3)] }, String("VECTOR<INTEGER8 NOT NULL>(3) NOT NULL")]
+  ok  CREATE (:V {v: vector([1.5, 2.5], 2, FLOAT32)})
+      -> 
+  ok  MATCH (n:V) RETURN n.v, toString(n.v), valueType(n.v), vector_dimension_count(n.v)
+      -> [Vector { coord: Float32, values: [Float(1.5), Float(2.5)] }, String("vector([1.5, 2.5], 2, FLOAT32)"), String("VECTOR<FLOAT32 NOT NULL>(2) NOT NULL"), Int(2)]
+== uuid
+  ok  RETURN randomUUID() AS u, valueType(randomUUID())
+      -> [String("01a1d6a2-9f24-72aa-a88b-aff5ccff53cc"), String("STRING NOT NULL")]
+  ok  CREATE (:U {u: uuid('123e4567-e89b-12d3-a456-426614174000')})
+      -> 
+  ok  MATCH (n:U) RETURN n.u, toString(n.u), valueType(n.u)
+      -> [Uuid(24249434048109030647017182301789831168), String("123e4567-e89b-12d3-a456-426614174000"), String("UUID NOT NULL")]
+  ok  RETURN uuid('123E4567-E89B-12D3-A456-426614174000') = uuid('123e4567-e89b-12d3-a456-426614174000')
+      -> [Bool(true)]
+== malformed text
+  ERR RETURN date('not a date')
+      -> syntax error: cannot parse date 'not a date'
+  ERR RETURN date('2024-13-45')
+      -> syntax error: invalid date '2024-13-45'
+  ERR RETURN time('25:00')
+      -> syntax error: cannot parse time '25:00'
+  ok  RETURN datetime('2024-01-15')
+      -> [Temporal(DateTime { utc: 2024-01-15T00:00:00, offset: 0, zone: Some("Z") })]
+  ERR RETURN duration('1 day')
+      -> syntax error: cannot parse duration '1 day'
+  ERR RETURN uuid('xyz')
+      -> InvalidArgumentValue: The UUID string must consist of 32 hexadecimal digits displayed in 5 groups, separated by 4 hyphens.
+  ERR RETURN point({x: 1.0})
+      -> syntax error: InvalidPoint: the map is not a valid POINT. Use either Cartesian ('x' and 'y') or geographic ('latitude' and 'longitude') coordinates
+  ERR RETURN point('POINT(1 2)')
+      -> syntax error: InvalidArgumentType: point() requires a map, node, or relationship
+  ERR RETURN date('')
+      -> syntax error: cannot parse date ''
+== lists of typed values
+  ok  CREATE (:LT {a: [date('2024-01-15'), date('2024-02-01')]})
+      -> 
+  ok  MATCH (n:LT) RETURN n.a, valueType(n.a)
+      -> [List([Temporal(Date(2024-01-15)), Temporal(Date(2024-02-01))]), String("LIST<DATE NOT NULL> NOT NULL")]
+  ok  CREATE (:LT2 {a: [date('2024-01-15'), datetime('2024-01-15T10:30:00Z')]})
+      -> 
+  ok  CREATE (:LT3 {a: [point({x: 1.0, y: 2.0})]})
+      -> 
+  ok  CREATE (:LT4 {a: [duration('P1D'), duration('P2D')]})
+      -> 
+  ok  MATCH (n:LT4) RETURN n.a, valueType(n.a)
+      -> [List([Temporal(Duration { months: 0, days: 1, nanos: 0 }), Temporal(Duration { months: 0, days: 2, nanos: 0 })]), String("LIST<DURATION NOT NULL> NOT NULL")]
+== follow-up probes
+  ok  MATCH (n:LT2) RETURN n.a, valueType(n.a)
+      -> [List([Temporal(Date(2024-01-15)), Temporal(DateTime { utc: 2024-01-15T10:30:00, offset: 0, zone: Some("Z") })]), String("LIST<DATE NOT NULL | ZONED DATETIME NOT NULL> NOT NULL")]
+  ok  MATCH (n:LT3) RETURN n.a, valueType(n.a)
+      -> [List([Point(PointValue { srid: 7203, x: 1.0, y: 2.0, z: None })]), String("LIST<POINT NOT NULL> NOT NULL")]
+  ERR RETURN point({x: 1.0, y: 2.0, srid: 1234}) AS p
+      -> semantic error: InvalidArgumentValue: point() unknown srid 1234: expected one of 4326, 4979, 7203, 9157
+  ok  RETURN point({x: 1.0, y: 2.0, crs: 'wgs-84'}) AS p
+      -> [Point(PointValue { srid: 4326, x: 1.0, y: 2.0, z: None })]
+  ERR RETURN point({longitude: 200.0, latitude: 95.0}) AS p
+      -> semantic error: InvalidArgumentValue: point() latitude must be in the range [-90, 90]
+  ok  RETURN datetime('2024-01-15T10:30:00') AS p
+      -> [Temporal(DateTime { utc: 2024-01-15T10:30:00, offset: 0, zone: Some("Z") })]
+  ok  RETURN time('10:30:00') AS p
+      -> [Temporal(Time { time: 10:30:00, offset: 0 })]
+  ERR RETURN date('2024-01-15T10:30:00') AS p
+      -> syntax error: cannot parse date '2024-01-15T10:30:00'
+  ok  date($s) in CREATE
+      -> [Temporal(Date(2024-01-15))]
+== review probes (ADR-011 review)
+  ERR RETURN datetime('2024-01-15T10:30:00+05:00[Europe/Paris]') AS v
+      -> syntax error: Timezone and offset do not match: Europe/Paris
+  ERR RETURN datetime('2024-01-15T10:30:00[Mars/Base]') AS v
+      -> syntax error: unknown timezone 'Mars/Base'
+  ERR RETURN datetime('2024-01-15T10:30:00Z[Europe/Paris]') AS v
+      -> syntax error: Timezone and offset do not match: Europe/Paris
+  ERR RETURN duration('P') AS v
+      -> syntax error: invalid duration component
+  ERR RETURN duration('PT') AS v
+      -> syntax error: invalid duration time
+  ok  RETURN duration('P1.5D') AS v
+      -> [Temporal(Duration { months: 0, days: 1, nanos: 43200000000000 })]
+  ok  RETURN duration('p1d') AS v
+      -> [Temporal(Duration { months: 0, days: 1, nanos: 0 })]
+  ok  RETURN duration('P1W2D') AS v
+      -> [Temporal(Duration { months: 0, days: 9, nanos: 0 })]
+  ok  RETURN time('10:30') AS v
+      -> [Temporal(Time { time: 10:30:00, offset: 0 })]
+  ok  RETURN time('10:30:60Z') AS v
+      -> [Temporal(Time { time: 10:30:60, offset: 0 })]
+  ok  RETURN localtime('10:30:00.1234567890') AS v
+      -> [Temporal(LocalTime(10:30:00.123456789))]
+  ok  RETURN date('+2024-01-15') AS v
+      -> [Temporal(Date(2024-01-15))]
+  ok  RETURN date('20240115') AS v
+      -> [Temporal(Date(2024-01-15))]
+  ERR RETURN date('2023-02-29') AS v
+      -> syntax error: invalid date '2023-02-29'
+  ok  RETURN date('2024-02-29') AS v
+      -> [Temporal(Date(2024-02-29))]
+  ERR RETURN uuid('123e4567e89b12d3a456426614174000') AS v
+      -> InvalidArgumentValue: The UUID string must consist of 32 hexadecimal digits displayed in 5 groups, separated by 4 hyphens.
+  ERR RETURN uuid('{123e4567-e89b-12d3-a456-426614174000}') AS v
+      -> InvalidArgumentValue: The UUID string must consist of 32 hexadecimal digits displayed in 5 groups, separated by 4 hyphens.
+  ERR RETURN point({x: 1.0, y: 2.0, z: 3.0, srid: 4326}) AS v
+      -> semantic error: InvalidArgumentValue: point() srid 4326 does not match the coordinate dimension
+  ERR RETURN point({x: 1.0, y: 2.0, srid: 4979}) AS v
+      -> semantic error: InvalidArgumentValue: point() srid 4979 does not match the coordinate dimension
+  ok  RETURN point({x: 1e3, y: 2.0}) AS v
+      -> [Point(PointValue { srid: 7203, x: 1000.0, y: 2.0, z: None })]
+  ERR RETURN point({x: 'a', y: 2.0}) AS v
+      -> semantic error: InvalidArgumentType: point() coordinate 'x' must be a float or integer
+== empty list
+  ok  CREATE (:E {a: []})
+      -> 
+  ok  MATCH (n:E) RETURN n.a, valueType(n.a), size(n.a)
+      -> [List([]), String("LIST<NOTHING> NOT NULL"), Int(0)]
+== runtime-only values as properties
+  ERR CREATE (:M {a: {k: 1}})
+      -> type error: InvalidPropertyType
+  ok  CREATE (:M {a: null})
+      -> 
+  ok  MATCH (n:M) RETURN n
+      -> [Node(Node { id: 33, labels: ["M"], properties: PropertyMap { entries: [] } })]

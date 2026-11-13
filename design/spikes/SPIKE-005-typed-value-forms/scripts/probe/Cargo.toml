@@ -1,0 +1,10 @@
+[package]
+name = "probe5"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+relate = { version = "=1.0.1", default-features = false }
