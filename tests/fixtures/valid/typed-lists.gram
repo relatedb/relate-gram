@@ -1,0 +1,2 @@
+// lists of typed values: one tag per array
+(a {dates: [date`2024-01-01`, date`2024-02-02`], spans: [duration`P1D`, duration`PT1H`], places: [point`SRID=4326;POINT(1.0 2.0)`, point`SRID=9157;POINT Z(1.0 2.0 3.0)`], ids: [uuid`123e4567-e89b-12d3-a456-426614174000`, uuid`00000000-0000-0000-0000-000000000001`], one: [date`2024-05-05`]})

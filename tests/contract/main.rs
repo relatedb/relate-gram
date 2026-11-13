@@ -4,6 +4,7 @@ mod common;
 mod check;
 mod export_basic;
 mod export_identity;
+mod export_typed;
 mod export_values;
 mod identity_property;
 mod load_basic;

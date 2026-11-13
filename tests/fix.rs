@@ -462,3 +462,27 @@ fn warnings_are_not_annotated() {
     let out = run(src, &LoadSettings::default(), &annotating(opts()));
     assert_eq!(out.text, src.as_bytes());
 }
+
+// --- typed tags (ADR-011 section 4) ------------------------------------------
+
+#[test]
+fn a_bad_typed_value_has_no_fix_and_is_annotated_once() {
+    let src = "(a {when: date`2024-13-45`})\n";
+    let o = annotating(opts());
+    let first = run(src, &LoadSettings::default(), &o);
+    assert!(first.applied.is_empty());
+    assert_eq!(errors(&first), vec!["value.tag-content"]);
+    assert_eq!(first.annotations_added, 1);
+    let text = String::from_utf8(first.text.clone()).unwrap();
+    assert!(
+        text.contains("// relate-gram: error[value.tag-content]:"),
+        "{text}"
+    );
+    assert!(text.ends_with("(a {when: date`2024-13-45`})\n"), "{text}");
+    // a second run replaces the annotation instead of adding another
+    let second = run(&text, &LoadSettings::default(), &o);
+    assert_eq!(second.annotations_removed, 1);
+    assert_eq!(second.annotations_added, 1);
+    let text2 = String::from_utf8(second.text).unwrap();
+    assert_eq!(text2.matches("relate-gram: error").count(), 1);
+}

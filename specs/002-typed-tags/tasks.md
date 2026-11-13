@@ -106,16 +106,16 @@ The fixtures and most tests of this story (T014, T015, T016) are written in Phas
 
 ### Tests for User Story 3 (write first, confirm they fail)
 
-- [ ] T026 [P] [US5] Update `tests/contract/export_values.rs` before T031 (the suite is red from T031 until these change): `every_value_with_no_gram_form_is_listed_before_any_output` and `relationship_values_are_checked_too` use a date and a point as offenders, which become writable; replace them with a vector (`vector([1.0, 2.0], 2, FLOAT32)`) and a mixed temporal list, keeping the expected counts, and add a test that a vector is listed with its element and key (scenario 1)
-- [ ] T027 [P] [US3] Write `tests/contract/export_typed.rs` and add `mod export_typed;` to `tests/contract/main.rs`: build a database with Cypher constructors for each type on a node and on a relationship (a date, a zoned time with nanoseconds, a local time, a zoned datetime with a zone name, a local datetime, a negative and a mixed-sign duration, a 2D geographic point, a 3D Cartesian point, a UUID); assert the exported text is exactly the expected tagged strings, byte-identical on a second export, and that the geographic point is written longitude first with its SRID (scenarios 1 and 3)
-- [ ] T028 [P] [US3] In `tests/contract/export_typed.rs` add the round trip: export, load into a fresh database, compare every property's type and value with `dump_graph`
-- [ ] T029 [P] [US3] Extend `tests/roundtrip/fixtures.rs` `FIXTURES` with the `typed-*` names so every valid typed fixture survives load, export and load
+- [X] T026 [P] [US5] Update `tests/contract/export_values.rs` before T031 (the suite is red from T031 until these change): `every_value_with_no_gram_form_is_listed_before_any_output` and `relationship_values_are_checked_too` use a date and a point as offenders, which become writable; replace them with a vector (`vector([1.0, 2.0], 2, FLOAT32)`) and a mixed temporal list, keeping the expected counts, and add a test that a vector is listed with its element and key (scenario 1)
+- [X] T027 [P] [US3] Write `tests/contract/export_typed.rs` and add `mod export_typed;` to `tests/contract/main.rs`: build a database with Cypher constructors for each type on a node and on a relationship (a date, a zoned time with nanoseconds, a local time, a zoned datetime with a zone name, a local datetime, a negative and a mixed-sign duration, a 2D geographic point, a 3D Cartesian point, a UUID); assert the exported text is exactly the expected tagged strings, byte-identical on a second export, and that the geographic point is written longitude first with its SRID (scenarios 1 and 3)
+- [X] T028 [P] [US3] In `tests/contract/export_typed.rs` add the round trip: export, load into a fresh database, compare every property's type and value with `dump_graph`
+- [X] T029 [P] [US3] Extend `tests/roundtrip/fixtures.rs` `FIXTURES` with the `typed-*` names so every valid typed fixture survives load, export and load
 
 ### Implementation for User Story 3
 
-- [ ] T030 [US3] In `src/export.rs` add a column to the node and relationship queries that returns the temporal text: `[k IN keys(n) WHERE valueType(n[k]) IN [...] | [k, CASE WHEN valueType(n[k]) STARTS WITH 'LIST<' THEN [x IN n[k] | toString(x)] ELSE toString(n[k]) END]]`, where the list names `DATE NOT NULL`, `ZONED TIME NOT NULL`, `LOCAL TIME NOT NULL`, `ZONED DATETIME NOT NULL`, `LOCAL DATETIME NOT NULL`, `DURATION NOT NULL` and the `LIST<...>` of each (research R1); parse it into a map from key to text, or to a list of texts
-- [ ] T031 [US3] In `src/export.rs` `scalar_text`, write `Value::Temporal` as `` tag`text` `` using that map (the tag from the value's kind), `Value::Uuid` formatted locally from the `u128` as lower-case 8-4-4-4-12 hexadecimal (do not call `relate::uuid_hyphenated`: `scripts/check-public-api.sh` allows only `Connection Value Database QueryResult Error Result`), and `Value::Point` as extended well-known text from its public fields with `float_text` (decimals without an exponent; `POINT Z` for 3D); remove date, point and uuid from the unwritable cases of `kind_name` and the error text (ADR-011 sections 2.2 and 2.6)
-- [ ] T032 [US3] Run the T027 to T029 tests and the whole suite
+- [X] T030 [US3] In `src/export.rs` add a column to the node and relationship queries that returns the temporal text: `[k IN keys(n) WHERE valueType(n[k]) IN [...] | [k, CASE WHEN valueType(n[k]) STARTS WITH 'LIST<' THEN [x IN n[k] | toString(x)] ELSE toString(n[k]) END]]`, where the list names `DATE NOT NULL`, `ZONED TIME NOT NULL`, `LOCAL TIME NOT NULL`, `ZONED DATETIME NOT NULL`, `LOCAL DATETIME NOT NULL`, `DURATION NOT NULL` and the `LIST<...>` of each (research R1); parse it into a map from key to text, or to a list of texts
+- [X] T031 [US3] In `src/export.rs` `scalar_text`, write `Value::Temporal` as `` tag`text` `` using that map (the tag from the value's kind), `Value::Uuid` formatted locally from the `u128` as lower-case 8-4-4-4-12 hexadecimal (do not call `relate::uuid_hyphenated`: `scripts/check-public-api.sh` allows only `Connection Value Database QueryResult Error Result`), and `Value::Point` as extended well-known text from its public fields with `float_text` (decimals without an exponent; `POINT Z` for 3D); remove date, point and uuid from the unwritable cases of `kind_name` and the error text (ADR-011 sections 2.2 and 2.6)
+- [X] T032 [US3] Run the T027 to T029 tests and the whole suite
 
 **Checkpoint**: typed values round-trip.
 
@@ -129,15 +129,15 @@ The fixtures and most tests of this story (T014, T015, T016) are written in Phas
 
 ### Tests for User Story 4 (write first, confirm they fail)
 
-- [ ] T033 [P] [US4] Create fixtures `tests/fixtures/valid/typed-lists.gram` (arrays of dates, durations, points, UUIDs), and invalid `tests/fixtures/invalid/array-mixed-tag-plain.gram` (a recognized tag and a plain string), `array-mixed-tag-two.gram` (two recognized tags), each `.expect` as `value.array-mixed <line> <column> <offset>` at the first element that differs
-- [ ] T034 [P] [US4] Write tests in `tests/contract/load_typed.rs` and `export_typed.rs`: a typed list loads as `LIST<DATE ...>` and exports as the same array; an array of unrecognized tags loads as strings with the drops reported; a database list mixing a date and a datetime fails the export and is listed (scenarios 1 to 4); add `typed-lists` to the round-trip `FIXTURES`
+- [X] T033 [P] [US4] Create fixtures `tests/fixtures/valid/typed-lists.gram` (arrays of dates, durations, points, UUIDs), and invalid `tests/fixtures/invalid/array-mixed-tag-plain.gram` (a recognized tag and a plain string), `array-mixed-tag-two.gram` (two recognized tags), each `.expect` as `value.array-mixed <line> <column> <offset>` at the first element that differs
+- [X] T034 [P] [US4] Write tests in `tests/contract/load_typed.rs` and `export_typed.rs`: a typed list loads as `LIST<DATE ...>` and exports as the same array; an array of unrecognized tags loads as strings with the drops reported; a database list mixing a date and a datetime fails the export and is listed (scenarios 1 to 4); add `typed-lists` to the round-trip `FIXTURES`
 
 ### Implementation for User Story 4
 
-- [ ] T035 [US4] In `src/values.rs` the `array` branch, treat an element tagged with a recognized tag as that tag's kind: all elements of one recognized tag give a `PropValue::List` of typed values; a recognized tag mixed with plain strings or another recognized tag is `value.array-mixed` at the first element that differs (ADR-011 section 2.4)
-- [ ] T036 [US4] In `src/load.rs` `write_typed`, handle a list as shape `list`: `SET n.` + key + ` = [x IN r.v | date(x)]` with the matching constructor; points in a list use per-element maps
-- [ ] T037 [US4] In `src/export.rs`, write a list of one typed kind as an array of tagged strings, taking the element texts from the T030 column; a list that mixes kinds stays an `export.value` error (ADR-011 section 2.6)
-- [ ] T038 [US4] Run the T033 and T034 tests and the whole suite
+- [X] T035 [US4] (no code change was needed: the existing one-kind array rule already treats each recognized tag as its own kind) In `src/values.rs` the `array` branch, treat an element tagged with a recognized tag as that tag's kind: all elements of one recognized tag give a `PropValue::List` of typed values; a recognized tag mixed with plain strings or another recognized tag is `value.array-mixed` at the first element that differs (ADR-011 section 2.4)
+- [X] T036 [US4] (done in T020: lists are a scalar-or-list group of `write_typed`) In `src/load.rs` `write_typed`, handle a list as shape `list`: `SET n.` + key + ` = [x IN r.v | date(x)]` with the matching constructor; points in a list use per-element maps
+- [X] T037 [US4] (done in T031: the T030 column and `scalar_text` handle lists) In `src/export.rs`, write a list of one typed kind as an array of tagged strings, taking the element texts from the T030 column; a list that mixes kinds stays an `export.value` error (ADR-011 section 2.6)
+- [X] T038 [US4] Run the T033 and T034 tests and the whole suite
 
 **Checkpoint**: typed lists work.
 
@@ -151,11 +151,11 @@ The fixtures and most tests of this story (T014, T015, T016) are written in Phas
 
 ### Tests for User Story 5
 
-- [ ] T039 [P] [US5] Add a test in `tests/contract/load_typed.rs` that a `vector` tag is unrecognized: the content loads as a string and the drop is reported (scenario 2)
+- [X] T039 [P] [US5] Add a test in `tests/contract/load_typed.rs` that a `vector` tag is unrecognized: the content loads as a string and the drop is reported (scenario 2)
 
 ### Implementation for User Story 5
 
-- [ ] T040 [US5] In `src/export.rs` confirm vectors and byte arrays fall through to the existing `export.value` error with a message naming the kind (a vector and a byte array, not "temporal value"); adjust the message text if needed; run T026 (written in Phase 5) and T039
+- [X] T040 [US5] In `src/export.rs` confirm vectors and byte arrays fall through to the existing `export.value` error with a message naming the kind (a vector and a byte array, not "temporal value"); adjust the message text if needed; run T026 (written in Phase 5) and T039
 
 **Checkpoint**: unwritable values are still loud.
 
@@ -167,7 +167,7 @@ The fixtures and most tests of this story (T014, T015, T016) are written in Phas
 
 **Independent Test**: each emitted code appears in the docs table and the contract; `fix` annotates a bad typed value.
 
-- [ ] T041 [P] [US6] Write a test in `tests/fix.rs` that `fix` leaves a file with a bad typed tag unchanged and annotates the error with `// relate-gram: error[value.tag-content]: ...`, and that a second run does not duplicate the annotation (ADR-010 section 4)
+- [X] T041 [P] [US6] Write a test in `tests/fix.rs` that `fix` leaves a file with a bad typed tag unchanged and annotates the error with `// relate-gram: error[value.tag-content]: ...`, and that a second run does not duplicate the annotation (ADR-010 section 4)
 - [ ] T042 [P] [US6] Update `docs/supported-gram.md`: add the eight recognized tags with their forms, the rewrite for each rejected form, `value.tag-content` and the extended `value.array-mixed` rows; state the three ISO 8601 extensions (a negative year, a bracketed zone name, a sign on each duration number)
 - [ ] T043 [P] [US6] Merge `specs/002-typed-tags/contracts/diagnostics.md` into `specs/001-phase1-load-export/contracts/diagnostics.md` (add `value.tag-content`; mark `export.value` offenders changed), note the new `PropValue::Typed` variant in `specs/001-phase1-load-export/contracts/library-api.md` (research R6), then replace the 002 contract with a one-line pointer to the 001 contract
 - [ ] T044 [P] [US6] Update `README.md` ("What is accepted", the list of values with no gram form, "Known limits") and add to `CHANGELOG.md` under Unreleased: the eight tags, the new code, `PropValue::Typed`, and the migration note that a file whose string used one of these tags now loads typed values or fails (SC-006), with the rewrite to restore the old behavior

@@ -10,6 +10,17 @@ const FIXTURES: &[&str] = &[
     "slashes",
     "empty",
     "empty-array",
+    "typed-date",
+    "typed-time",
+    "typed-localtime",
+    "typed-datetime",
+    "typed-localdatetime",
+    "typed-duration",
+    "typed-point",
+    "typed-uuid",
+    "typed-fenced",
+    "typed-all",
+    "typed-lists",
     "record-only",
 ];
 

@@ -202,3 +202,41 @@ fn a_typed_value_is_not_usable_as_an_identity_property() {
         .iter()
         .any(|d| d.code == code::ID_PROPERTY_MISSING));
 }
+
+#[test]
+fn an_array_of_one_recognized_tag_loads_as_a_typed_list() {
+    let (_db, mut c) = fresh_db();
+    load_fixture(&mut c, "valid", "typed-lists").unwrap();
+    for (key, ty) in [
+        ("dates", "LIST<DATE NOT NULL> NOT NULL"),
+        ("spans", "LIST<DURATION NOT NULL> NOT NULL"),
+        ("places", "LIST<POINT NOT NULL> NOT NULL"),
+        ("ids", "LIST<UUID NOT NULL> NOT NULL"),
+        ("one", "LIST<DATE NOT NULL> NOT NULL"),
+    ] {
+        assert_eq!(node_prop_type(&mut c, key).0, ty, "{key}");
+    }
+    assert_eq!(
+        node_prop_type(&mut c, "dates").1,
+        "[2024-01-01, 2024-02-02]"
+    );
+}
+
+#[test]
+fn an_array_of_unrecognized_tags_is_a_list_of_strings_with_the_drops_reported() {
+    let (_db, mut c) = fresh_db();
+    let r = load_str(&mut c, "(a {xs: [md`a`, md`b`]})").unwrap();
+    assert_eq!(r.counts.tags_dropped, 2);
+    assert_eq!(
+        node_prop_type(&mut c, "xs").0,
+        "LIST<STRING NOT NULL> NOT NULL"
+    );
+}
+
+#[test]
+fn a_vector_tag_is_unrecognized_so_the_content_loads_as_a_string() {
+    let (_db, mut c) = fresh_db();
+    let r = load_str(&mut c, "(a {v: vector`FLOAT32[1.0, 2.0]`})").unwrap();
+    assert_eq!(r.counts.tags_dropped, 1);
+    assert_eq!(node_prop_type(&mut c, "v").0, "STRING NOT NULL");
+}
