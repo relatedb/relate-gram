@@ -1,7 +1,7 @@
 ---
 id: ADR-009
 title: The relate-gram Command
-status: proposed
+status: accepted
 rfcs: [RFC-001]
 created: 2026-11-09
 ---
@@ -12,9 +12,9 @@ created: 2026-11-09
 
 ## 1. Context
 
-The library can load and export, but a person who wants to try gram with Relate has to write Rust. The parent RFC wants load and export available through the `relate` command-line tool (goal 3.9), and leaves how open (question 7.11). Relate's tool hosts extensions (`relate run <name>`), but that mechanism and its contract are not yet used by any project outside Relate, and Relate launches this week. A person also needs to find out what is wrong with a file without a database: every error the loader reports carries a line, a column and a message, which are only useful if they are shown next to the source text.
+The library can load and export, but a person who wants to try gram with Relate has to write Rust. The parent RFC wants load and export available through the `relate` command-line tool (goal 3.9), and leaves how open (question 7.11). Relate's tool hosts extensions (`relate run <name>`), but that mechanism and its contract are not yet used by any project outside Relate, and Relate has just launched. A person also needs to find out what is wrong with a file without a database: every error the loader reports carries a line, a column and a message, which are only useful if they are shown next to the source text.
 
-Relate's tool opens a database directory (`--database PATH`). A directory written by this library opens there, and a query on it returns the loaded graph (checked by hand against Relate 0.16.1, and by `tests/cli.rs` for the library's own reopen).
+Relate's tool opens a database directory (`--database PATH`). A directory written by this library opens there, and a query on it returns the loaded graph (checked by hand against Relate 0.16.1 and 1.0.1, and by `tests/cli.rs` for the library's own reopen).
 
 ## 2. Decision
 
@@ -51,7 +51,7 @@ The library gains `check(source, settings)`, which returns a `CheckReport`, and 
 
 3.3. **Add the command to the library as an example only.** Rejected: an example is not installed or documented as a tool, and it cannot carry exit codes and options that people script against.
 
-3.4. **Use an argument-parsing crate.** Rejected: the four commands and nine options are parsed by about 80 lines, and a dependency would add build time for a single-purpose tool. Revisit if the surface grows.
+3.4. **Use an argument-parsing crate.** Rejected: the commands and options are parsed by about 110 lines, and a dependency would add build time for a single-purpose tool. Revisit if the surface grows.
 
 3.5. **Colour and terminal detection in diagnostics.** Rejected for the first release: plain text is correct in pipes and logs. It can be added without changing the format.
 
@@ -59,10 +59,10 @@ The library gains `check(source, settings)`, which returns a `CheckReport`, and 
 
 - The command surface (names, options, exit codes) is something people script against and needs the care of a public interface: changing it later is a compatibility decision.
 - `load --db PATH` makes a database on disk the user's responsibility; a failed load leaves it unchanged, but there is no `--dry-run` and no confirmation before loading into an existing database.
-- Reopening a database written by another process is covered by tests for this crate's own `load` and `export`, and by a manual check with Relate 0.16.1; it is not yet a test that runs the `relate` tool.
+- Reopening a database written by another process is covered by tests for this crate's own `load` and `export`, and by a manual check with the `relate` tool; no automated test runs the `relate` tool.
 - `check` cannot report the errors that depend on what a database holds (`match.*`); `load` does.
 - A fixer that repairs rejected files (design note of 2026-11-09) would add a command or option here and needs the diagnostics to carry edits.
-- The binary links the same dependencies as the library, so building it needs the same access to Relate's repository as the library does.
+- The binary links the same dependencies as the library, so it builds wherever the library does (it needs a C compiler for tree-sitter).
 
 ## 5. Related
 
