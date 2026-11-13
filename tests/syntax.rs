@@ -58,9 +58,17 @@ fn missing_value_is_parse_missing_with_expected_kind() {
 }
 
 #[test]
-fn empty_array_is_parse_missing() {
-    let (d, _) = fail(b"(a {xs: []})", 100);
-    assert!(d.iter().any(|x| x.code == code::PARSE_MISSING));
+fn empty_array_parses() {
+    assert!(parse(b"(a {xs: []})", 100).is_ok());
+    assert!(parse(b"(a {xs: [ ]})", 100).is_ok());
+}
+
+#[test]
+fn array_of_empty_arrays_is_an_error() {
+    let (d, _) = fail(b"(a {xs: [[]]})", 100);
+    assert!(d
+        .iter()
+        .any(|x| x.code == code::PARSE_ERROR || x.code == code::PARSE_MISSING));
 }
 
 #[test]

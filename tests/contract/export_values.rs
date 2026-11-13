@@ -126,7 +126,6 @@ fn every_value_with_no_gram_form_is_listed_before_any_output() {
             ("nan", Value::Float(f64::NAN)),
             ("inf", Value::Float(f64::INFINITY)),
             ("ninf", Value::Float(f64::NEG_INFINITY)),
-            ("empty list", list(vec![])),
             ("nul", str_value("a\0b")),
             ("", Value::Int(1)),
             ("@x", Value::Int(1)),
@@ -139,8 +138,8 @@ fn every_value_with_no_gram_form_is_listed_before_any_output() {
     let f = export_str(&mut c).unwrap_err();
     let mut got = codes_of(&f);
     got.sort();
-    // nan, inf, ninf, empty list, nul, empty key, date, point
-    let mut want = vec!["export.value"; 8];
+    // nan, inf, ninf, nul, empty key, date, point
+    let mut want = vec!["export.value"; 7];
     want.push("export.key-reserved");
     want.sort();
     assert_eq!(got, want, "{:#?}", f.diagnostics);
@@ -162,4 +161,17 @@ fn relationship_values_are_checked_too() {
         "{}",
         f.diagnostics[0].message
     );
+}
+
+#[test]
+fn an_empty_list_is_written_as_empty_brackets_and_reads_back() {
+    let (_db, mut c) = fresh_db();
+    create_node(&mut c, ":L", vec![("xs", list(vec![]))]);
+    let text = export_str(&mut c).unwrap();
+    assert_eq!(text, "(n0:L {xs: []})\n");
+    let (_db2, mut d) = fresh_db();
+    load_str(&mut d, &text).unwrap();
+    let rows = run(&mut d, "MATCH (n:L) RETURN n.xs, size(n.xs)");
+    assert_eq!(fmt_value(&rows[0][0]), "[]");
+    assert_eq!(fmt_value(&rows[0][1]), "0");
 }

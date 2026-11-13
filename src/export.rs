@@ -142,7 +142,7 @@ fn value_text(v: &Value) -> Result<String, String> {
     match v {
         Value::List(items) => {
             if items.is_empty() {
-                return Err("an empty list has no gram form".to_string());
+                return Ok("[]".to_string());
             }
             let mut parts = Vec::with_capacity(items.len());
             for item in items.iter() {

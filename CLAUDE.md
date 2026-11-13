@@ -23,7 +23,7 @@ ADR-0429/0431 upstream). It may be brought in-house later.
 - Second phase: one Relate database holds several graphs, distinguished by named graphs, with membership recorded per element (RFC-003). Elements keep their `@id`, which
   round-trips to gram by becoming the element identifier. Also: managed multi-graph load, and merging
   graphs within one named graph.
-- Parser: `tree-sitter` with `tree-sitter-gram` 0.6.2, read directly, not through `gram-codec` (ADR-007, which also
+- Parser: `tree-sitter` with `tree-sitter-gram` 0.7.0, read directly, not through `gram-codec` (ADR-007, which also
   ignores all comments in data files); tree-sitter-gram's corpus is the conformance reference.
 
 - **Export IDs:** modes `auto` (default), `generate`, `property`. `auto` uses `@id` if present, else a configured

@@ -9,6 +9,7 @@ const FIXTURES: &[&str] = &[
     "identity",
     "slashes",
     "empty",
+    "empty-array",
     "record-only",
 ];
 

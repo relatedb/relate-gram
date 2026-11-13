@@ -20,7 +20,7 @@ name = "relate_gram"
 # Relate 1.0.x, the first public release. The parquet snapshot codec is not used here.
 relate = { version = "~1.0", default-features = false }
 tree-sitter = "0.25"
-tree-sitter-gram = "=0.6.2"
+tree-sitter-gram = "=0.7.0"
 thiserror = "2"
 
 [dev-dependencies]

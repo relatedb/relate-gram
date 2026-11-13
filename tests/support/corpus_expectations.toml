@@ -1195,3 +1195,95 @@ codes = ["key.reserved"]
 file = "value_pair.txt"
 name = "Value pair: key names may use backticks"
 expect = "accept"
+
+[[case]]
+file = "array_properties.txt"
+name = "Empty array in a property"
+expect = "accept"
+
+[[case]]
+file = "array_properties.txt"
+name = "Empty array with whitespace"
+expect = "accept"
+
+[[case]]
+file = "array_properties.txt"
+name = "Empty array as a map entry value"
+expect = "reject"
+codes = ["value.map"]
+
+[[case]]
+file = "array_properties.txt"
+name = "Empty and non-empty arrays side by side"
+expect = "accept"
+
+[[case]]
+file = "array_properties.txt"
+name = "Array of empty arrays is not ok."
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "array_properties.txt"
+name = "Bare [] at top level is still an empty subject pattern"
+expect = "reject"
+codes = ["construct.subject-pattern"]
+
+[[case]]
+file = "number_values.txt"
+name = "Number: measurements may have a decimal magnitude"
+expect = "reject"
+codes = ["value.measurement"]
+
+[[case]]
+file = "number_values.txt"
+name = "Number: decimal without a suffix is still a decimal"
+expect = "accept"
+
+[[case]]
+file = "number_values.txt"
+name = "Number: range of integers is not a measurement"
+expect = "reject"
+codes = ["value.range"]
+
+[[case]]
+file = "number_values.txt"
+name = "Number: zero with decimal magnitude is a measurement"
+expect = "reject"
+codes = ["value.measurement"]
+
+[[case]]
+file = "number_values.txt"
+name = "Number: measurements with decimal magnitudes in an array"
+expect = "reject"
+codes = ["value.measurement"]
+
+[[case]]
+file = "number_values.txt"
+name = "Number: range of decimal measurements"
+expect = "reject"
+codes = ["value.range", "value.measurement"]
+
+[[case]]
+file = "number_values.txt"
+name = "Number: decimal point without fraction digits is not a measurement"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "number_values.txt"
+name = "Number: decimal point without leading digits is not a measurement"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "number_values.txt"
+name = "Number: two decimal points is not a measurement"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
+
+[[case]]
+file = "number_values.txt"
+name = "Number: leading zero before decimal magnitude is not a measurement"
+expect = "reject"
+codes = ["parse.error", "parse.missing"]
