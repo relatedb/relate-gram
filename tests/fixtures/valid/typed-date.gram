@@ -1,0 +1,2 @@
+// a date and a date before the common era (ADR-011 section 2.2)
+(a:Person {born: date`1990-04-12`, bc: date`-0044-03-15`})

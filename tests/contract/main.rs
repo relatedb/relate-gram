@@ -9,6 +9,7 @@ mod identity_property;
 mod load_basic;
 mod load_errors;
 mod load_identity;
+mod load_typed;
 mod load_values;
 mod reload;
 mod support_smoke;

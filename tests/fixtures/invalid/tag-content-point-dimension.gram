@@ -1,0 +1,2 @@
+// point with content that breaks its form (point-dimension)
+(a {when: point`SRID=4326;POINT Z(1 2 3)`})

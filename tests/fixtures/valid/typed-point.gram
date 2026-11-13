@@ -1,0 +1,2 @@
+// points: geographic 2D and Cartesian 3D
+(a {g: point`SRID=4326;POINT(-74.0 40.7)`, c: point`SRID=9157;POINT Z(1 2 3)`})

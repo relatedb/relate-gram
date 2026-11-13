@@ -1,0 +1,2 @@
+// point with content that breaks its form (point-latitude)
+(a {when: point`SRID=4326;POINT(0 95)`})

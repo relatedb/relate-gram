@@ -160,6 +160,7 @@ pub mod code {
     pub const VALUE_ARRAY_MIXED: &str = "value.array-mixed";
     pub const VALUE_TAG_DROPPED: &str = "value.tag-dropped";
     pub const VALUE_TAG: &str = "value.tag";
+    pub const VALUE_TAG_CONTENT: &str = "value.tag-content";
     pub const KEY_DUPLICATE: &str = "key.duplicate";
     pub const KEY_EMPTY: &str = "key.empty";
     pub const KEY_RESERVED: &str = "key.reserved";
@@ -208,6 +209,7 @@ pub mod code {
         VALUE_ARRAY_MIXED,
         VALUE_TAG_DROPPED,
         VALUE_TAG,
+        VALUE_TAG_CONTENT,
         KEY_DUPLICATE,
         KEY_EMPTY,
         KEY_RESERVED,

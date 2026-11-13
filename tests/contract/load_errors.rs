@@ -202,3 +202,78 @@ fn repeated_and_conflicting_constructs_point_back_at_the_first() {
     assert_eq!(f.diagnostics[0].code, code::ID_KIND_CONFLICT);
     assert_eq!(f.diagnostics[0].related[0].1.column, 2);
 }
+
+#[test]
+fn several_bad_typed_values_are_all_reported_with_positions() {
+    let (_db, mut c) = fresh_db();
+    run(&mut c, "CREATE (:Existing {k: 1})");
+    let f = load_str(
+        &mut c,
+        "(a {d: date`2024-13-45`})\n(b {t: time`10:30:00`})\n(c {u: uuid`nope`})\n",
+    )
+    .unwrap_err();
+    assert_eq!(f.total, 3);
+    assert_eq!(
+        errors(&f),
+        vec![code::VALUE_TAG_CONTENT; 3],
+        "{:#?}",
+        f.diagnostics
+    );
+    let lines: Vec<usize> = f.diagnostics.iter().map(|d| d.span.unwrap().line).collect();
+    assert_eq!(lines, vec![1, 2, 3]);
+    assert_eq!(
+        run(&mut c, "MATCH (n) RETURN count(n)")[0][0],
+        relate::Value::Int(1)
+    );
+}
+
+#[test]
+fn an_unknown_zone_passes_check_and_fails_the_load_at_its_position() {
+    let source = "(a:Keep)\n(b {when: datetime`2024-01-15T10:30:00Z[Mars/Base]`})\n";
+    let report = relate_gram::check(source.as_bytes(), &LoadSettings::default());
+    assert!(!report.has_errors(), "{:?}", report.diagnostics);
+    let (_db, mut c) = fresh_db();
+    let f = load_str(&mut c, source).unwrap_err();
+    let e: Vec<_> = f.diagnostics.iter().filter(|d| d.is_error()).collect();
+    assert_eq!(e.len(), 1, "{:#?}", f.diagnostics);
+    assert_eq!(e[0].code, code::VALUE_TAG_CONTENT);
+    assert_eq!(
+        (e[0].span.unwrap().line, e[0].span.unwrap().column),
+        (2, 11)
+    );
+    assert_eq!(
+        run(&mut c, "MATCH (n) RETURN count(n)")[0][0],
+        relate::Value::Int(0)
+    );
+}
+
+#[test]
+fn an_offset_that_is_not_the_zones_fails_the_load() {
+    let (_db, mut c) = fresh_db();
+    let f = load_str(
+        &mut c,
+        "(a {when: datetime`2024-01-15T10:30:00+05:00[Europe/Paris]`})\n",
+    )
+    .unwrap_err();
+    assert!(f
+        .diagnostics
+        .iter()
+        .any(|d| d.code == code::VALUE_TAG_CONTENT));
+}
+
+#[test]
+fn the_same_bad_zone_written_twice_is_reported_at_both_positions() {
+    let (_db, mut c) = fresh_db();
+    let f = load_str(
+        &mut c,
+        "(a {w: datetime`2024-01-15T10:30:00Z[Mars/Base]`})\n(b {w: datetime`2024-01-15T10:30:00Z[Mars/Base]`})\n",
+    )
+    .unwrap_err();
+    let lines: Vec<usize> = f
+        .diagnostics
+        .iter()
+        .filter(|d| d.code == code::VALUE_TAG_CONTENT)
+        .map(|d| d.span.unwrap().line)
+        .collect();
+    assert_eq!(lines, vec![1, 2], "{:#?}", f.diagnostics);
+}

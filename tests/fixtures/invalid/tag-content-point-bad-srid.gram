@@ -1,0 +1,2 @@
+// point with content that breaks its form (point-bad-srid)
+(a {when: point`SRID=1234;POINT(1 2)`})

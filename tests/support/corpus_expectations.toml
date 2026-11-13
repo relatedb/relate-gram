@@ -1172,7 +1172,10 @@ expect = "accept"
 [[case]]
 file = "text_values.txt"
 name = "Text: tagged string properties"
-expect = "accept"
+expect = "reject"
+codes = ["value.tag-content"]
+# The corpus writes `time`17:35`` (no offset, no seconds) and `point`30 10`` (no SRID): forms
+# ADR-011 section 2.2 does not accept.
 
 [[case]]
 file = "value_pair.txt"

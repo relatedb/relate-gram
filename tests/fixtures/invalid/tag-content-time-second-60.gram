@@ -1,0 +1,2 @@
+// time with content that breaks its form (time-second-60)
+(a {when: time`10:30:60Z`})

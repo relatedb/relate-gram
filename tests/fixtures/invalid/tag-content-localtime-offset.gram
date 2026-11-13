@@ -1,0 +1,2 @@
+// localtime with content that breaks its form (localtime-offset)
+(a {when: localtime`10:30:00Z`})
