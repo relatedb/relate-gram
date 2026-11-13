@@ -105,7 +105,7 @@ Gram text does not write vectors, in any form. A vector property is an export er
 - A database with vector properties still cannot be exported while those properties are present. A person can remove them or move them elsewhere, and the error lists each one.
 - The fixer (ADR-010) has no fix for a bad typed value, since it cannot know the intended value, and `--tags error` makes no difference to recognized tags: they are always typed.
 - The empty-list behavior (2.5) was implemented, with the grammar bump, before the typed tags; the typed tags, `value.tag-content` and the follow-up statements are not yet built.
-- Follow-up work: the new diagnostic codes (`value.tag-content`, and `value.array-mixed` for tags) go in the diagnostics contract and `docs/supported-gram.md`;  the tag vocabulary is a candidate for the gram specification, and RFC-002 questions 7.3 and 7.4 are resolved by this decision, except that vectors and byte arrays, which 7.3 lists, get no tag (2.1, 2.8).
+- Follow-up work: the new diagnostic codes (`value.tag-content`, and `value.array-mixed` for tags) go in the diagnostics contract and `docs/supported-gram.md`; the tag vocabulary is a candidate for the gram specification, and RFC-002 questions 7.3 and 7.4 are resolved by this decision, except that vectors and byte arrays, which 7.3 lists, get no tag (2.1, 2.8).
 
 ## 5. Related
 
