@@ -10,12 +10,6 @@ on:
         type: boolean
         default: false
 env:
-  # Cargo's built-in git client cannot use the credential set up below.
-  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
-  # Until Relate's repository is public, building needs read access to it. Add a
-  # read-only token for relatedb/relate as the repository secret
-  # RELATE_READ_TOKEN. Once Relate is public the secret is not needed.
-  RELATE_READ_TOKEN: ${{ secrets.RELATE_READ_TOKEN }}
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -23,9 +17,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Let cargo fetch the Relate repository
-        if: env.RELATE_READ_TOKEN != ''
-        run: git config --global url."https://x-access-token:${RELATE_READ_TOKEN}@github.com/relatedb/relate".insteadOf "https://github.com/relatedb/relate"
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.96.0
@@ -41,9 +32,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Let cargo fetch the Relate repository
-        if: env.RELATE_READ_TOKEN != ''
-        run: git config --global url."https://x-access-token:${RELATE_READ_TOKEN}@github.com/relatedb/relate".insteadOf "https://github.com/relatedb/relate"
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.96.0

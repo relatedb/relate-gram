@@ -12,10 +12,9 @@ Anything else is rejected with an error that says what it is and where it is.
 - **A release binary** (macOS Apple silicon and Intel, Linux x86-64): download the archive from the
   [Releases page](https://github.com/relatedb/relate-gram/releases), check it against `SHA256SUMS`, and put
   `relate-gram` on your `PATH`.
-- **From source**: `cargo install --git https://github.com/relatedb/relate-gram` (Rust 1.90 or later; until Relate
-  is public this needs access to `relatedb/relate`).
+- **From source**: `cargo install --git https://github.com/relatedb/relate-gram` (Rust 1.90 or later).
 - **As a library**: `relate-gram = { git = "https://github.com/relatedb/relate-gram", tag = "v0.1.0" }`. It
-  is not on crates.io yet, because it depends on Relate by git until Relate's public release.
+  works with Relate 1.0.x.
 
 ## Quick start
 
@@ -111,6 +110,4 @@ cargo test --release --test perf -- --ignored           # the 10,000-element per
 cargo bench --bench load_export
 ```
 
-Rust 1.96.0 is pinned in `rust-toolchain.toml`. `relate` is a git dependency on the commit the design
-spikes measured; the plan for moving to Relate's public release is in
-[`design/notes/2026-11-09-launch-week-and-relate-release.md`](design/notes/2026-11-09-launch-week-and-relate-release.md).
+Rust 1.96.0 is pinned in `rust-toolchain.toml`. `relate` is the published 1.0.x crate (`~1.0`).

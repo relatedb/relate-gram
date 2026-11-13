@@ -33,4 +33,4 @@ later phases).
 - Relationships and nodes written without an identifier are created again on every load.
 - Ranges, measurements, nested maps, annotations, subject patterns and tags with a meaning (dates, points)
   are not supported; named graphs are planned.
-- The build depends on a pinned commit of `relatedb/relate` until Relate's public release.
+- Built and tested against Relate 1.0.1 (requirement `~1.0`).
