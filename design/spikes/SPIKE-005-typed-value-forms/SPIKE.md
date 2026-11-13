@@ -23,6 +23,7 @@ Half a day.
 ## 4. Notes
 
 2026-11-13
+- Vectors were dropped from the typed-tag vocabulary after the spike (ADR-011 2.8): a vector is a very long list of numbers that a person cannot read or write, so gram does not carry it. The vector findings below stay as evidence.
 - `Value` has the variants `Temporal`, `Point`, `Uuid` and `Vector` for the types in question, and also `Bytes`, which the engine documents as statement-scoped: it can appear in results but storing it as a property fails. `Temporal` and `Value` are re-exported by the `relate` crate; the point and vector types are not, so a loader outside Relate cannot build those values directly and has to construct them with Cypher (`date($s)`, `point({...})`). A constructor used with a parameter works inside `CREATE` (`CREATE (n {d: date($s)})` stored a date).
 
 ## 5. Findings
