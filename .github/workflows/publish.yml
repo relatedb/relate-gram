@@ -10,7 +10,6 @@ on:
         description: "Run `cargo publish --dry-run` only"
         type: boolean
         default: true
-env:
 jobs:
   publish:
     if: github.event_name == 'workflow_dispatch' || vars.CRATES_IO_PUBLISH == 'true'

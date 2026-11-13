@@ -9,7 +9,6 @@ on:
         description: "Run the ignored performance test (SC-006)"
         type: boolean
         default: false
-env:
 jobs:
   test:
     runs-on: ubuntu-latest

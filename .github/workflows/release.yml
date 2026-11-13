@@ -10,7 +10,6 @@ on:
         default: true
 permissions:
   contents: write
-env:
 jobs:
   version:
     runs-on: ubuntu-latest
