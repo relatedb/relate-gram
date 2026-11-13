@@ -1,7 +1,7 @@
 ---
 id: ADR-011
 title: Typed Tags, Typed Lists and Empty Lists
-status: proposed
+status: accepted
 rfcs: [RFC-002]
 created: 2026-11-13
 ---

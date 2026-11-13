@@ -68,4 +68,4 @@ Use `/adr-review` before moving a draft to `accepted`.
 | [ADR-008](ADR-008-relationship-forms.md) | Relationship Types and Arrow Forms | accepted | RFC-001 |
 | [ADR-009](ADR-009-command-line.md) | The relate-gram Command | accepted | RFC-001 |
 | [ADR-010](ADR-010-fixing-rejected-files.md) | The Fix Model and the fix Command | accepted | RFC-004 |
-| [ADR-011](ADR-011-typed-tags-and-empty-lists.md) | Typed Tags, Typed Lists and Empty Lists | proposed | RFC-002 |
+| [ADR-011](ADR-011-typed-tags-and-empty-lists.md) | Typed Tags, Typed Lists and Empty Lists | accepted | RFC-002 |
