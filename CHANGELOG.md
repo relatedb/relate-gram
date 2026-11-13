@@ -5,7 +5,7 @@ All notable changes to relate-gram are documented here. The format follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html); until 1.0, a minor version may change the
 command line or the library interface.
 
-## [0.1.0] - 2026-11-11
+## [0.1.0] - 2026-11-13
 
 First release: gram support for Relate, phase 1 (one graph space; see `design/rfc/RFC-003-*.md` for the
 later phases).

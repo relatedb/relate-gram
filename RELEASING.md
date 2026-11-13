@@ -1,6 +1,6 @@
 # Releasing relate-gram
 
-## Launch day (Wednesday 2026-11-11)
+## Launch day
 
 Done: Relate and this repository are public, and this crate builds against the published Relate 1.0.1.
 Release 0.1.0 as below; the version and changelog are set.
