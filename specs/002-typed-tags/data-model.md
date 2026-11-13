@@ -27,7 +27,9 @@ A `PropValue` is now an integer, a float, a boolean, a string, a typed value, or
 | `point` | `SRID=n;POINT(x y)` for 4326 and 7203, `SRID=n;POINT Z(x y z)` for 4979 and 9157 | other SRIDs; a missing SRID; dimension and SRID disagreeing; exponent form; non-finite values; latitude outside [-90, 90] |
 | `uuid` | 8-4-4-4-12 hexadecimal digits, either case | any other grouping, braces or no hyphens |
 
-A fraction of seconds has 1 to 9 digits; more is rejected. The zone name of a datetime is not validated by `check`.
+A fraction of seconds has 1 to 9 digits; more is rejected.
+
+**Relation to ISO 8601** (ADR-011 section 2.2). The temporal forms are ISO 8601 extended-format representations, narrowed as the table says (seconds required, second 60 and `24:00:00` rejected, offset as `Z` or `±hh:mm`). Three accepted forms go beyond ISO 8601: a negative year (an expanded year, which ISO 8601 allows only by prior agreement), a bracketed zone name after a datetime (RFC 9557, not ISO 8601), and a sign on each number of a duration (ISO 8601-1 has no negative components; ISO 8601-2's single leading minus on the whole duration is rejected). The validators must accept these three and must reject everything else. The zone name of a datetime is not validated by `check`.
 
 ## Load write groups
 

@@ -44,9 +44,17 @@ A tagged string whose tag is one of the following, written in lower case, become
 | `localtime` | LOCAL TIME | `hh:mm:ss` with the optional fraction, no offset |
 | `datetime` | ZONED DATETIME | a `date`, `T`, a `time` (offset required), and optionally a zone name in square brackets, as in `2024-01-15T10:30:00+01:00[Europe/Paris]`; the offset must be the zone's offset at that instant |
 | `localdatetime` | LOCAL DATETIME | a `date`, `T`, a `localtime` |
-| `duration` | DURATION | ISO 8601 as Relate prints it: an upper-case `P`, then optional `nY`, `nM`, `nD`, then optionally `T` with `nH`, `nM`, `nS`, with at least one component; each number may carry a leading `-`; only the seconds may have a fraction, of up to 9 digits |
+| `duration` | DURATION | the ISO 8601 duration form, with the sign extension below, as Relate prints it: an upper-case `P`, then optional `nY`, `nM`, `nD`, then optionally `T` with `nH`, `nM`, `nS`, with at least one component; each number may carry a leading `-`; only the seconds may have a fraction, of up to 9 digits |
 | `point` | POINT | extended well-known text, `SRID=n;POINT(x y)` for SRIDs 4326 and 7203, and `SRID=n;POINT Z(x y z)` for 4979 and 9157 (a 2D SRID with `POINT Z`, or the reverse, is an error); coordinates are decimal numbers without an exponent; for the geographic SRIDs `x` is longitude and `y` latitude |
 | `uuid` | UUID | 32 hexadecimal digits in 8-4-4-4-12 groups, either case |
+
+**Relation to ISO 8601.** The date, time, local time, local datetime and datetime forms are the extended-format ISO 8601 representations, restricted: seconds are required, second 60 and `24:00:00` are not accepted, and an offset is written `Z` or `±hh:mm`. Three forms go beyond ISO 8601, each because Relate stores or prints it that way:
+
+- A year with a leading `-` (`-0044-03-15`) is an expanded year, which ISO 8601 allows only by prior agreement between the parties.
+- A zone name in square brackets after a datetime's offset (`[Europe/Paris]`) is not ISO 8601; it is the notation of RFC 9557, the IETF extension of RFC 3339.
+- A sign on each number of a duration (`P-1DT-2H`, or `P1DT-2H`) is not ISO 8601-1, which has no negative components. A duration holds months, days and nanoseconds separately, and their signs can differ, which a single leading minus cannot write. ISO 8601-2 allows that single leading minus on the whole duration; it is rejected here, since Relate prints the per-number form and one spelling is enough. The restrictions that remain, no weeks and a fraction on the seconds only, are narrower than ISO 8601, which allows both.
+
+A point is extended well-known text, and a UUID is its canonical text; neither is covered by ISO 8601.
 
 The loader accepts only these forms. The week, ordinal and basic (`20240115`) date spellings, a time without seconds, a time or datetime without an offset, a datetime written as a bare date, a duration in weeks or with a leading `-` before the `P`, and a point without an SRID are load errors, because Relate would either fill in a missing part or normalize the text, and a file that reads back different from what it wrote should not load silently. Hours are 0 to 23, minutes and seconds 0 to 59, months 1 to 12, a day exists in its month (leap years included), a geographic latitude is within [-90, 90], and coordinates are finite. A zone name is not checked by `check`, which has no time-zone database; Relate rejects an unknown zone, or an offset that is not the zone's, when the value is built, and the load reports that as in 2.3. Typed tags in the top-level record are validated like any value but are not stored, as for every record value (ADR-003, ADR-006 2.7).
 
