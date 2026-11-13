@@ -96,6 +96,28 @@ fn main() {
         Ok(r) => println!("  ok  date($s) in CREATE\n      -> {}", show(&r.rows)),
         Err(e) => println!("  ERR date($s) in CREATE\n      -> {e}"),
     }
+    println!("== review probes (ADR-011 review)");
+    run(&mut c, "RETURN datetime('2024-01-15T10:30:00+05:00[Europe/Paris]') AS v");
+    run(&mut c, "RETURN datetime('2024-01-15T10:30:00[Mars/Base]') AS v");
+    run(&mut c, "RETURN datetime('2024-01-15T10:30:00Z[Europe/Paris]') AS v");
+    run(&mut c, "RETURN duration('P') AS v");
+    run(&mut c, "RETURN duration('PT') AS v");
+    run(&mut c, "RETURN duration('P1.5D') AS v");
+    run(&mut c, "RETURN duration('p1d') AS v");
+    run(&mut c, "RETURN duration('P1W2D') AS v");
+    run(&mut c, "RETURN time('10:30') AS v");
+    run(&mut c, "RETURN time('10:30:60Z') AS v");
+    run(&mut c, "RETURN localtime('10:30:00.1234567890') AS v");
+    run(&mut c, "RETURN date('+2024-01-15') AS v");
+    run(&mut c, "RETURN date('20240115') AS v");
+    run(&mut c, "RETURN date('2023-02-29') AS v");
+    run(&mut c, "RETURN date('2024-02-29') AS v");
+    run(&mut c, "RETURN uuid('123e4567e89b12d3a456426614174000') AS v");
+    run(&mut c, "RETURN uuid('{123e4567-e89b-12d3-a456-426614174000}') AS v");
+    run(&mut c, "RETURN point({x: 1.0, y: 2.0, z: 3.0, srid: 4326}) AS v");
+    run(&mut c, "RETURN point({x: 1.0, y: 2.0, srid: 4979}) AS v");
+    run(&mut c, "RETURN point({x: 1e3, y: 2.0}) AS v");
+    run(&mut c, "RETURN point({x: 'a', y: 2.0}) AS v");
     println!("== empty list");
     run(&mut c, "CREATE (:E {a: []})");
     run(&mut c, "MATCH (n:E) RETURN n.a, valueType(n.a), size(n.a)");

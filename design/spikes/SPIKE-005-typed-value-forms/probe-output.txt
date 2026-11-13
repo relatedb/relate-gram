@@ -245,7 +245,7 @@
       -> [Vector { coord: Float32, values: [Float(1.5), Float(2.5)] }, String("vector([1.5, 2.5], 2, FLOAT32)"), String("VECTOR<FLOAT32 NOT NULL>(2) NOT NULL"), Int(2)]
 == uuid
   ok  RETURN randomUUID() AS u, valueType(randomUUID())
-      -> [String("01a1d655-f5b3-74f1-909a-3b6a1d6cdd24"), String("STRING NOT NULL")]
+      -> [String("01a1d6a2-9f24-72aa-a88b-aff5ccff53cc"), String("STRING NOT NULL")]
   ok  CREATE (:U {u: uuid('123e4567-e89b-12d3-a456-426614174000')})
       -> 
   ok  MATCH (n:U) RETURN n.u, toString(n.u), valueType(n.u)
@@ -303,6 +303,49 @@
       -> syntax error: cannot parse date '2024-01-15T10:30:00'
   ok  date($s) in CREATE
       -> [Temporal(Date(2024-01-15))]
+== review probes (ADR-011 review)
+  ERR RETURN datetime('2024-01-15T10:30:00+05:00[Europe/Paris]') AS v
+      -> syntax error: Timezone and offset do not match: Europe/Paris
+  ERR RETURN datetime('2024-01-15T10:30:00[Mars/Base]') AS v
+      -> syntax error: unknown timezone 'Mars/Base'
+  ERR RETURN datetime('2024-01-15T10:30:00Z[Europe/Paris]') AS v
+      -> syntax error: Timezone and offset do not match: Europe/Paris
+  ERR RETURN duration('P') AS v
+      -> syntax error: invalid duration component
+  ERR RETURN duration('PT') AS v
+      -> syntax error: invalid duration time
+  ok  RETURN duration('P1.5D') AS v
+      -> [Temporal(Duration { months: 0, days: 1, nanos: 43200000000000 })]
+  ok  RETURN duration('p1d') AS v
+      -> [Temporal(Duration { months: 0, days: 1, nanos: 0 })]
+  ok  RETURN duration('P1W2D') AS v
+      -> [Temporal(Duration { months: 0, days: 9, nanos: 0 })]
+  ok  RETURN time('10:30') AS v
+      -> [Temporal(Time { time: 10:30:00, offset: 0 })]
+  ok  RETURN time('10:30:60Z') AS v
+      -> [Temporal(Time { time: 10:30:60, offset: 0 })]
+  ok  RETURN localtime('10:30:00.1234567890') AS v
+      -> [Temporal(LocalTime(10:30:00.123456789))]
+  ok  RETURN date('+2024-01-15') AS v
+      -> [Temporal(Date(2024-01-15))]
+  ok  RETURN date('20240115') AS v
+      -> [Temporal(Date(2024-01-15))]
+  ERR RETURN date('2023-02-29') AS v
+      -> syntax error: invalid date '2023-02-29'
+  ok  RETURN date('2024-02-29') AS v
+      -> [Temporal(Date(2024-02-29))]
+  ERR RETURN uuid('123e4567e89b12d3a456426614174000') AS v
+      -> InvalidArgumentValue: The UUID string must consist of 32 hexadecimal digits displayed in 5 groups, separated by 4 hyphens.
+  ERR RETURN uuid('{123e4567-e89b-12d3-a456-426614174000}') AS v
+      -> InvalidArgumentValue: The UUID string must consist of 32 hexadecimal digits displayed in 5 groups, separated by 4 hyphens.
+  ERR RETURN point({x: 1.0, y: 2.0, z: 3.0, srid: 4326}) AS v
+      -> semantic error: InvalidArgumentValue: point() srid 4326 does not match the coordinate dimension
+  ERR RETURN point({x: 1.0, y: 2.0, srid: 4979}) AS v
+      -> semantic error: InvalidArgumentValue: point() srid 4979 does not match the coordinate dimension
+  ok  RETURN point({x: 1e3, y: 2.0}) AS v
+      -> [Point(PointValue { srid: 7203, x: 1000.0, y: 2.0, z: None })]
+  ERR RETURN point({x: 'a', y: 2.0}) AS v
+      -> semantic error: InvalidArgumentType: point() coordinate 'x' must be a float or integer
 == empty list
   ok  CREATE (:E {a: []})
       -> 
