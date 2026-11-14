@@ -9,6 +9,8 @@ created: 2026-11-13
 # ADR-011: Typed Tags, Typed Lists and Empty Lists
 
 > Amends ADR-006 sections 2.3 (tags), 2.5 and 2.6 (export), and resolves its deferred alternatives 3.2 and 3.3.
+>
+> Amended 2026-11-14 (section 2.9): the forms of 2.2 are relate-gram's profile of the general known-tag forms that the `gram-value` project defines, not the definition of the tags. Behavior is unchanged.
 
 ## 1. Context
 
@@ -84,6 +86,14 @@ The loader writes typed values with a follow-up statement per (key, tag) pair in
 
 Gram text does not write vectors, in any form. A vector property is an export error that names the element and key (ADR-006 2.6 already lists it among values Relate may store but gram cannot hold), and no tag exists for it. A gram file cannot load one, so a round trip through gram never produces or drops a vector without saying so.
 
+### 2.9 The forms are a profile of gram-value's known tags (amendment, 2026-11-14)
+
+`gram-value` (github.com/gram-data/gram-value, RFC-001 7.6 and 7.17) is the shared model of gram's data values. It defines ten known tags, the eight of 2.2 plus `week` and `weekDate`, with general content forms that are wider than those of 2.2: the offset of `time` and `datetime` is optional, seconds are optional, and a `point` may have no SRID, with two or three coordinates. It leaves stricter rules to each consumer.
+
+The table and rules of 2.2 are therefore relate-gram's profile: the narrowing that Relate's types need (a required offset, seconds, the four SRIDs and extended well-known text for points, a zone name in the datetime, no vectors). A value outside the profile but inside the general form is still a `value.tag-content` error here, with a message that says the general tag accepts it and Relate does not. The tag names of 2.2 are the general ones. `week` and `weekDate` are known to `gram-value` but not supported by Relate, so relate-gram treats them as unrecognized tags (dropped and reported, as ADR-006 2.3). Behavior, diagnostics and exports of 2.2 to 2.8 do not change.
+
+Until `gram-value`'s specification is written, 2.2 remains the only complete statement of the forms; the spelling of a point's SRID in the general form is open there, and relate-gram's extended well-known text may be aligned with it later by a further amendment. Adopting the `gram-value` crate in place of `src/typed/` is a separate ADR (the note `design/notes/2026-11-14-gram-value.md`).
+
 ## 3. Alternatives Considered
 
 3.1. **Pass typed values to Relate as parameters instead of constructing them in Cypher.** Rejected: `PointValue` is not exported by `relate`, so points cannot be built that way, and one route for every typed value is simpler than a mix.
@@ -113,7 +123,7 @@ Gram text does not write vectors, in any form. A vector property is an export er
 - A database with vector properties still cannot be exported while those properties are present. A person can remove them or move them elsewhere, and the error lists each one.
 - The fixer (ADR-010) has no fix for a bad typed value, since it cannot know the intended value, and `--tags error` makes no difference to recognized tags: they are always typed.
 - The empty-list behavior (2.5) was implemented, with the grammar bump, before the typed tags; the typed tags, `value.tag-content` and the follow-up statements are not yet built.
-- Follow-up work: the new diagnostic codes (`value.tag-content`, and `value.array-mixed` for tags) go in the diagnostics contract and `docs/supported-gram.md`; the tag vocabulary is a candidate for the gram specification, and RFC-002 questions 7.3 and 7.4 are resolved by this decision, except that vectors and byte arrays, which 7.3 lists, get no tag (2.1, 2.8).
+- Follow-up work: the new diagnostic codes (`value.tag-content`, and `value.array-mixed` for tags) go in the diagnostics contract and `docs/supported-gram.md`; the tag vocabulary is now defined generally by `gram-value` (2.9), and RFC-002 questions 7.3 and 7.4 are resolved by this decision, except that vectors and byte arrays, which 7.3 lists, get no tag (2.1, 2.8).
 
 ## 5. Related
 
@@ -121,3 +131,4 @@ Gram text does not write vectors, in any form. A vector property is an export er
 - ADR-006 is amended as stated above; ADR-007 (the syntax tree the tags are read from) is unchanged.
 - SPIKE-005 records how Relate 1.0.1 stores, prints and round-trips each type.
 - Upstream: gram-data/tree-sitter-gram#38 (allowed `[]`; released in 0.7.0).
+- `gram-value` RFC-001 (7.6 and 7.17): the general known-tag forms that 2.9 relates this profile to.
