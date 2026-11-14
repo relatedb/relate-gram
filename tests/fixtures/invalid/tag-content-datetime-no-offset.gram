@@ -1,0 +1,2 @@
+// datetime with content that breaks its form (datetime-no-offset)
+(a {when: datetime`2024-01-15T10:30:00`})

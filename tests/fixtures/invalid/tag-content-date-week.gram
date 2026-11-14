@@ -1,0 +1,2 @@
+// date with content that breaks its form (date-week)
+(a {when: date`2024-W03-1`})

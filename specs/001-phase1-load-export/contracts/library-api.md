@@ -83,3 +83,8 @@ pub struct Diagnostic { pub code: &'static str, pub severity: Severity, pub span
 ## Compatibility
 
 Diagnostic codes are stable across releases within a major version; messages are not. The library does not read the environment or print anything: warnings and errors are returned, and a caller decides how to show them.
+
+## Typed values (ADR-011)
+
+`values::PropValue` has a `Typed(typed::TypedValue)` variant: a tagged string with a recognized tag, validated, holding its `typed::Tag`, its content and its source span. The `typed` module holds `Tag` (`from_name`, `name`, `validate`), `TypedContent`, `PointContent` and `TypedValue`. Adding the variant changes the library interface, which a pre-1.0 minor version may do.
+

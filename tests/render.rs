@@ -117,3 +117,22 @@ fn input_that_is_not_utf8_and_a_byte_order_mark_are_handled() {
     assert!(out.contains("1 | (a)-->(b)\n"), "{out}");
     assert!(out.contains("  |    ^^^\n"), "{out}");
 }
+
+#[test]
+fn a_bad_typed_value_shows_a_marker_under_the_tagged_string() {
+    let src = "(a {when: date`2024-13-45`})\n";
+    let report = relate_gram::check(
+        src.as_bytes(),
+        &relate_gram::settings::LoadSettings::default(),
+    );
+    let d = &report.diagnostics[0];
+    assert_eq!(d.code, "value.tag-content");
+    let out = render(d, src.as_bytes(), "t.gram");
+    assert!(
+        out.starts_with("error[value.tag-content]: the content of the `date` tag is not valid"),
+        "{out}"
+    );
+    assert!(out.contains(" --> t.gram:1:11\n"), "{out}");
+    assert!(out.contains("1 | (a {when: date`2024-13-45`})\n"), "{out}");
+    assert!(out.contains("  |           ^^^^^^^^^^^^^^^^\n"), "{out}");
+}

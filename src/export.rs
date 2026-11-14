@@ -7,21 +7,123 @@
 use crate::diagnostics::{code, Diagnostic};
 use crate::names;
 use crate::settings::{ExportSettings, IdentityMode};
+use crate::typed::Tag;
 use relate::{Connection, Value};
 use std::collections::{BTreeMap, HashMap, HashSet};
+
+/// The text of a temporal value or of a list of them, as the database prints it.
+enum TemporalText {
+    Scalar(String),
+    List(Vec<String>),
+}
+
+/// The temporal properties of one element, by key: their tag and printed text (ADR-011
+/// section 2.6). Relate's own `Display` of a temporal value drops zero seconds, so the text
+/// comes from Cypher's `toString` instead (specs/002-typed-tags research R1).
+type Temporals = BTreeMap<String, (Tag, TemporalText)>;
 
 struct ExNode {
     id: i64,
     labels: Vec<String>,
     props: BTreeMap<String, Value>,
+    temporal: Temporals,
 }
 
 struct ExRel {
     id: i64,
     ty: String,
     props: BTreeMap<String, Value>,
+    temporal: Temporals,
     start: i64,
     end: i64,
+}
+
+/// The `valueType` strings of the six temporal types, scalar and as a list.
+const TEMPORAL_TYPES: [&str; 6] = [
+    "DATE",
+    "ZONED TIME",
+    "LOCAL TIME",
+    "ZONED DATETIME",
+    "LOCAL DATETIME",
+    "DURATION",
+];
+
+/// The Cypher expression that lists an element's temporal properties as
+/// `[key, valueType, text]`, with the elements' texts for a list.
+fn temporal_column(var: &str) -> String {
+    let scalars: Vec<String> = TEMPORAL_TYPES
+        .iter()
+        .flat_map(|t| {
+            [
+                format!("'{t} NOT NULL'"),
+                format!("'LIST<{t} NOT NULL> NOT NULL'"),
+            ]
+        })
+        .collect();
+    format!(
+        "[k IN keys({var}) WHERE valueType({var}[k]) IN [{}] | [k, valueType({var}[k]), \
+         CASE WHEN valueType({var}[k]) STARTS WITH 'LIST<' \
+         THEN [x IN {var}[k] | toString(x)] ELSE toString({var}[k]) END]]",
+        scalars.join(", ")
+    )
+}
+
+/// The tag a temporal `valueType` names, and whether it is a list.
+fn temporal_tag(value_type: &str) -> Option<(Tag, bool)> {
+    let (inner, list) = match value_type.strip_prefix("LIST<") {
+        Some(rest) => (rest, true),
+        None => (value_type, false),
+    };
+    let tag = if inner.starts_with("DATE NOT NULL") {
+        Tag::Date
+    } else if inner.starts_with("ZONED TIME") {
+        Tag::Time
+    } else if inner.starts_with("LOCAL TIME") {
+        Tag::LocalTime
+    } else if inner.starts_with("ZONED DATETIME") {
+        Tag::DateTime
+    } else if inner.starts_with("LOCAL DATETIME") {
+        Tag::LocalDateTime
+    } else if inner.starts_with("DURATION") {
+        Tag::Duration
+    } else {
+        return None;
+    };
+    Some((tag, list))
+}
+
+fn parse_temporals(column: &Value) -> Result<Temporals, Diagnostic> {
+    let bad = || db_error("unexpected temporal column");
+    let Value::List(entries) = column else {
+        return Err(bad());
+    };
+    let mut out = Temporals::new();
+    for entry in entries.iter() {
+        let Value::List(e) = entry else {
+            return Err(bad());
+        };
+        let (Some(Value::String(key)), Some(Value::String(vt)), Some(text)) =
+            (e.first(), e.get(1), e.get(2))
+        else {
+            return Err(bad());
+        };
+        let (tag, list) = temporal_tag(vt).ok_or_else(bad)?;
+        let text = match (list, text) {
+            (false, Value::String(s)) => TemporalText::Scalar(s.to_string()),
+            (true, Value::List(items)) => TemporalText::List(
+                items
+                    .iter()
+                    .map(|i| match i {
+                        Value::String(s) => Ok(s.to_string()),
+                        _ => Err(bad()),
+                    })
+                    .collect::<Result<_, _>>()?,
+            ),
+            _ => return Err(bad()),
+        };
+        out.insert(key.to_string(), (tag, text));
+    }
+    Ok(out)
 }
 
 fn db_error(e: impl std::fmt::Display) -> Diagnostic {
@@ -44,7 +146,10 @@ fn as_map(v: &Value) -> Option<BTreeMap<String, Value>> {
 
 fn read_graph(conn: &mut Connection) -> Result<(Vec<ExNode>, Vec<ExRel>), Diagnostic> {
     let node_rows = conn
-        .query("MATCH (n) RETURN id(n), labels(n), properties(n) ORDER BY id(n)")
+        .query(&format!(
+            "MATCH (n) RETURN id(n), labels(n), properties(n), {} ORDER BY id(n)",
+            temporal_column("n")
+        ))
         .map_err(db_error)?
         .rows;
     let mut nodes = Vec::with_capacity(node_rows.len());
@@ -62,12 +167,20 @@ fn read_graph(conn: &mut Connection) -> Result<(Vec<ExNode>, Vec<ExRel>), Diagno
             })
             .collect();
         labels.sort();
-        nodes.push(ExNode { id, labels, props });
+        let temporal = parse_temporals(&row[3])?;
+        nodes.push(ExNode {
+            id,
+            labels,
+            props,
+            temporal,
+        });
     }
     let rel_rows = conn
-        .query(
-            "MATCH (a)-[r]->(b) RETURN id(r), type(r), properties(r), id(a), id(b) ORDER BY id(r)",
-        )
+        .query(&format!(
+            "MATCH (a)-[r]->(b) RETURN id(r), type(r), properties(r), id(a), id(b), {} \
+             ORDER BY id(r)",
+            temporal_column("r")
+        ))
         .map_err(db_error)?
         .rows;
     let mut rels = Vec::with_capacity(rel_rows.len());
@@ -81,10 +194,12 @@ fn read_graph(conn: &mut Connection) -> Result<(Vec<ExNode>, Vec<ExRel>), Diagno
         ) else {
             return Err(db_error("unexpected relationship row"));
         };
+        let temporal = parse_temporals(&row[5])?;
         rels.push(ExRel {
             id,
             ty: ty.to_string(),
             props,
+            temporal,
             start,
             end,
         });
@@ -133,7 +248,60 @@ fn scalar_text(v: &Value) -> Result<String, String> {
             Err("a string containing a NUL character cannot be written".to_string())
         }
         Value::String(s) => Ok(names::string_literal(s)),
+        Value::Point(p) => point_text(p.srid, p.x, p.y, p.z),
+        Value::Uuid(u) => Ok(format!("uuid`{}`", uuid_text(*u))),
+        Value::Temporal(_) => {
+            Err("a temporal value in a list that mixes kinds has no gram form".to_string())
+        }
         other => Err(format!("a {} has no gram form", kind_name(other))),
+    }
+}
+
+/// A UUID as lower-case 8-4-4-4-12 hexadecimal.
+fn uuid_text(u: u128) -> String {
+    let h = format!("{u:032x}");
+    format!(
+        "{}-{}-{}-{}-{}",
+        &h[..8],
+        &h[8..12],
+        &h[12..16],
+        &h[16..20],
+        &h[20..]
+    )
+}
+
+/// A point as a `point` tagged string of extended well-known text (ADR-011 section 2.2).
+fn point_text(srid: i32, x: f64, y: f64, z: Option<f64>) -> Result<String, String> {
+    if ![x, y].iter().chain(z.iter()).all(|c| c.is_finite()) {
+        return Err("a point with a coordinate that is not finite has no gram form".to_string());
+    }
+    match (srid, z) {
+        (4326 | 7203, None) => Ok(format!(
+            "point`SRID={srid};POINT({} {})`",
+            float_text(x),
+            float_text(y)
+        )),
+        (4979 | 9157, Some(z)) => Ok(format!(
+            "point`SRID={srid};POINT Z({} {} {})`",
+            float_text(x),
+            float_text(y),
+            float_text(z)
+        )),
+        _ => Err(format!("a point with SRID {srid} has no gram form")),
+    }
+}
+
+/// A temporal property as gram text: the tag with the database's text, or an array of them.
+fn temporal_value_text(tag: Tag, text: &TemporalText) -> String {
+    match text {
+        TemporalText::Scalar(s) => format!("{}`{s}`", tag.name()),
+        TemporalText::List(items) => {
+            let parts: Vec<String> = items
+                .iter()
+                .map(|s| format!("{}`{s}`", tag.name()))
+                .collect();
+            format!("[{}]", parts.join(", "))
+        }
     }
 }
 
@@ -184,6 +352,7 @@ fn record_text(
     kind: Kind,
     id: i64,
     props: &BTreeMap<String, Value>,
+    temporal: &Temporals,
     errors: &mut Vec<Diagnostic>,
 ) -> String {
     let mut parts = Vec::new();
@@ -205,6 +374,14 @@ fn record_text(
                     "{} has the property `{key}`: keys that start with `@` cannot be written",
                     kind.label(id)
                 ),
+            ));
+            continue;
+        }
+        if let Some((tag, text)) = temporal.get(key) {
+            parts.push(format!(
+                "{}: {}",
+                names::name(key),
+                temporal_value_text(*tag, text)
             ));
             continue;
         }
@@ -350,11 +527,11 @@ pub fn export(conn: &mut Connection, settings: &ExportSettings) -> Result<String
     // Records first (they find every value problem), then identifiers.
     let node_records: Vec<String> = nodes
         .iter()
-        .map(|n| record_text(Kind::Node, n.id, &n.props, &mut errors))
+        .map(|n| record_text(Kind::Node, n.id, &n.props, &n.temporal, &mut errors))
         .collect();
     let rel_records: Vec<String> = rels
         .iter()
-        .map(|r| record_text(Kind::Relationship, r.id, &r.props, &mut errors))
+        .map(|r| record_text(Kind::Relationship, r.id, &r.props, &r.temporal, &mut errors))
         .collect();
 
     let node_ident: Vec<Option<String>> = nodes

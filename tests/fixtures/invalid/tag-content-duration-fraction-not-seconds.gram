@@ -1,0 +1,2 @@
+// duration with content that breaks its form (duration-fraction-not-seconds)
+(a {when: duration`P1.5D`})

@@ -133,12 +133,13 @@ fn every_value_with_no_gram_form_is_listed_before_any_output() {
     );
     run(
         &mut c,
-        "CREATE (:Bad {when: date('2020-01-01'), where: point({x: 1.0, y: 2.0})})",
+        "CREATE (:Bad {embedding: vector([1.0, 2.0], 2, FLOAT32), \
+         mixed: [date('2020-01-01'), datetime('2020-01-01T00:00:00Z')]})",
     );
     let f = export_str(&mut c).unwrap_err();
     let mut got = codes_of(&f);
     got.sort();
-    // nan, inf, ninf, nul, empty key, date, point
+    // nan, inf, ninf, nul, empty key, a vector, a list that mixes temporal kinds
     let mut want = vec!["export.value"; 7];
     want.push("export.key-reserved");
     want.sort();
@@ -146,14 +147,21 @@ fn every_value_with_no_gram_form_is_listed_before_any_output() {
     for d in &f.diagnostics {
         assert!(d.message.contains("node "), "{}", d.message);
     }
-    assert!(f.diagnostics.iter().any(|d| d.message.contains("when")));
-    assert!(f.diagnostics.iter().any(|d| d.message.contains("where")));
+    assert!(f
+        .diagnostics
+        .iter()
+        .any(|d| d.message.contains("embedding")));
+    assert!(f.diagnostics.iter().any(|d| d.message.contains("mixed")));
+    assert!(f.diagnostics.iter().any(|d| d.message.contains("vector")));
 }
 
 #[test]
 fn relationship_values_are_checked_too() {
     let (_db, mut c) = fresh_db();
-    run(&mut c, "CREATE (:A)-[:R {when: date('2020-01-01')}]->(:B)");
+    run(
+        &mut c,
+        "CREATE (:A)-[:R {embedding: vector([1.0, 2.0], 2, FLOAT32)}]->(:B)",
+    );
     let f = export_str(&mut c).unwrap_err();
     assert_eq!(codes_of(&f), vec!["export.value"]);
     assert!(

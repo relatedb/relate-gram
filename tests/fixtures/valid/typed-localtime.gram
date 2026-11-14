@@ -1,0 +1,2 @@
+// a local time
+(a {t: localtime`10:30:00`, u: localtime`00:00:00.000000001`})

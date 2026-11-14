@@ -4,16 +4,32 @@
 use crate::diagnostics::{code, Diagnostic};
 use crate::settings::TagPolicy;
 use crate::syntax::Syntax;
+use crate::typed::{Tag, TypedValue};
 use tree_sitter::Node;
 
-/// A property value the loader can store: a Cypher scalar or a list of one scalar kind.
+/// A property value the loader can store: a Cypher scalar, a typed value (ADR-011), or a
+/// list of one kind.
 #[derive(Clone, Debug, PartialEq)]
 pub enum PropValue {
     Int(i64),
     Float(f64),
     Bool(bool),
     Str(String),
+    /// A tagged string with a recognized tag, validated; the database builds the value.
+    Typed(TypedValue),
     List(Vec<PropValue>),
+}
+
+impl PropValue {
+    /// Whether the value is a typed value or a list of them. The loader writes these with
+    /// constructor statements after the other properties (ADR-011 section 2.7).
+    pub fn is_typed(&self) -> bool {
+        match self {
+            PropValue::Typed(_) => true,
+            PropValue::List(items) => items.first().is_some_and(PropValue::is_typed),
+            _ => false,
+        }
+    }
 }
 
 /// Resolve the escapes of a quoted string or name. `quote` is the style's own
@@ -82,6 +98,7 @@ fn kind_name(v: &PropValue) -> &'static str {
         PropValue::Float(_) => "decimal",
         PropValue::Bool(_) => "boolean",
         PropValue::Str(_) => "string",
+        PropValue::Typed(t) => t.tag.name(),
         PropValue::List(_) => "list",
     }
 }
@@ -155,6 +172,30 @@ pub(crate) fn convert_value(
         "string_literal" => Some(PropValue::Str(string_value(syn, node))),
         "tagged_string" => {
             let tag = node.child_by_field_name("tag").map(|t| syn.text(t)).unwrap_or("");
+            let raw = content(syn, node);
+            let body = if text.starts_with("```") {
+                raw.to_string()
+            } else {
+                unescape(raw, '`')
+            };
+            // A recognized tag gives a typed value, or an error: never a plain string
+            // (ADR-011 sections 2.2 and 2.3).
+            if let Some(recognized) = Tag::from_name(tag) {
+                return match recognized.validate(&body) {
+                    Ok(content) => Some(PropValue::Typed(TypedValue {
+                        tag: recognized,
+                        content,
+                        span: syn.span(node),
+                    })),
+                    Err(fault) => reject(
+                        syn,
+                        node,
+                        code::VALUE_TAG_CONTENT,
+                        format!("the content of the `{tag}` tag is not valid: {fault}"),
+                        diags,
+                    ),
+                };
+            }
             let diag = match tags {
                 TagPolicy::Warn => Diagnostic::warning(
                     code::VALUE_TAG_DROPPED,
@@ -168,12 +209,7 @@ pub(crate) fn convert_value(
                 ),
             };
             diags.push(diag);
-            let raw = content(syn, node);
-            if text.starts_with("```") {
-                Some(PropValue::Str(raw.to_string()))
-            } else {
-                Some(PropValue::Str(unescape(raw, '`')))
-            }
+            Some(PropValue::Str(body))
         }
         "array" => {
             let mut items: Vec<(PropValue, Node<'_>)> = Vec::new();

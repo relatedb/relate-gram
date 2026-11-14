@@ -14,6 +14,7 @@ pub mod plan;
 pub mod render;
 pub mod settings;
 pub mod syntax;
+pub mod typed;
 pub mod values;
 
 use diagnostics::{code, Diagnostic};

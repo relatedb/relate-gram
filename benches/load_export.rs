@@ -49,4 +49,39 @@ fn main() {
             );
         }
     }
+
+    // Typed values (specs/002-typed-tags SC-004): every node carries a date, a duration, a point.
+    for typed in [false, true] {
+        let mut text = String::new();
+        for i in 0..10_000 {
+            let (d, du, p) = if typed {
+                (
+                    format!("date`2024-01-{:02}`", i % 28 + 1),
+                    format!("duration`PT{}S`", i % 1000 + 1),
+                    format!("point`SRID=7203;POINT({}.5 {}.5)`", i % 90, i % 45),
+                )
+            } else {
+                (
+                    format!("\"2024-01-{:02}\"", i % 28 + 1),
+                    format!("\"PT{}S\"", i % 1000 + 1),
+                    format!("\"{}.5 {}.5\"", i % 90, i % 45),
+                )
+            };
+            text.push_str(&format!("(n{i}:L {{d: {d}, du: {du}, p: {p}}})\n"));
+        }
+        let db = Database::open(":memory:").unwrap();
+        let mut conn = db.connect().unwrap();
+        let t = Instant::now();
+        relate_gram::load(&mut conn, text.as_bytes(), &Default::default()).unwrap();
+        let load = t.elapsed();
+        let t = Instant::now();
+        relate_gram::export(&mut conn, &Default::default()).unwrap();
+        println!(
+            "{:>6} typed elements, typed {:<5}: load {:>10.1?}, export {:>10.1?}",
+            10_000,
+            typed,
+            load,
+            t.elapsed()
+        );
+    }
 }

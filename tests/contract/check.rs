@@ -72,3 +72,27 @@ fn check_agrees_with_load_on_every_invalid_fixture() {
     }
     assert!(n > 30);
 }
+
+#[test]
+fn check_reports_every_bad_typed_value_without_a_database() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/invalid");
+    let mut n = 0;
+    for entry in std::fs::read_dir(dir).unwrap() {
+        let path = entry.unwrap().path();
+        let name = path.file_name().unwrap().to_string_lossy().to_string();
+        if !(name.starts_with("tag-content-") && name.ends_with(".gram")) {
+            continue;
+        }
+        let source = std::fs::read(&path).unwrap();
+        let r = relate_gram::check(&source, &LoadSettings::default());
+        assert!(
+            r.diagnostics
+                .iter()
+                .any(|d| d.code == code::VALUE_TAG_CONTENT),
+            "{name}: {:?}",
+            r.diagnostics
+        );
+        n += 1;
+    }
+    assert!(n >= 20, "expected the tag-content fixtures, found {n}");
+}

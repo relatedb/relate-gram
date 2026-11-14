@@ -1,0 +1,2 @@
+// point with content that breaks its form (point-exponent)
+(a {when: point`SRID=7203;POINT(1e3 2)`})

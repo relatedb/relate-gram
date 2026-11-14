@@ -7,7 +7,31 @@ command line or the library interface.
 
 ## [Unreleased]
 
+### Added
+
+- Typed tags (ADR-011): a tagged string with the tag `date`, `time`, `localtime`, `datetime`,
+  `localdatetime`, `duration`, `point` or `uuid` loads as a value of the matching Relate type, an array of one
+  such tag loads as a list of that type, and typed values export as tagged strings, so a database holding them
+  can be exported and read back with equal values. The content forms are in `docs/supported-gram.md`.
+- The diagnostic code `value.tag-content`: the content of a recognized tag does not follow its form. `check`
+  finds it without a database, except whether a zone name exists and matches its offset, which only a load can
+  tell.
+- Library: `values::PropValue` has a new `Typed` variant, and the new `typed` module holds the tags and their
+  validators.
+
 ### Changed
+
+- A file that wrote one of those eight tags on a string used to load the content as a string with a warning. It
+  now loads a typed value, or fails with `value.tag-content` if the content does not follow the form. To keep a
+  plain string, remove the tag or use another one. The tree-sitter-gram corpus itself writes ``time`17:35` `` and
+  ``point`30 10` ``; neither is accepted (a time needs seconds and an offset, a point needs an SRID).
+- Vectors still cannot be exported; the error now names the vector.
+
+### Known limits
+
+- A UUID loaded into a persisted database reads back as a string after the database is reopened, because this
+  crate builds Relate without its default `parquet` snapshot codec (SPIKE-005 notes). Dates, times, datetimes,
+  durations and points survive a reopen.
 
 - Built against tree-sitter-gram 0.7.0. An empty array (`{tags: []}`) now parses: it loads as an empty list
   and an empty list exports as `[]` (it used to be a syntax error and an export error). A measurement with a

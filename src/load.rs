@@ -1,10 +1,12 @@
 //! Matching a load plan against the database and writing it in one
 //! transaction (ADR-001 section 2.7, research R4 to R6).
 
+use crate::diagnostics::Span;
 use crate::diagnostics::{code, Diagnostic};
 use crate::names::cypher_name;
 use crate::plan::{node_identity, rel_identity, LoadPlan, PlannedNode, PlannedRel};
 use crate::settings::LoadSettings;
+use crate::typed::{Tag, TypedContent, TypedValue};
 use crate::values::PropValue;
 use relate::{Connection, Value};
 use std::collections::{BTreeMap, HashMap};
@@ -33,6 +35,8 @@ fn to_value(v: &PropValue) -> Value {
         PropValue::Float(f) => Value::Float(*f),
         PropValue::Bool(b) => Value::Bool(*b),
         PropValue::Str(s) => Value::String(Arc::from(s.as_str())),
+        // Typed values are written by their own statements and never reach this conversion.
+        PropValue::Typed(_) => Value::Null,
         PropValue::List(items) => Value::List(Arc::new(items.iter().map(to_value).collect())),
     }
 }
@@ -48,7 +52,7 @@ fn props_value(identity: Option<&str>, props: &[(String, PropValue)]) -> Value {
     if let Some(id) = identity {
         map.insert("@id".to_string(), Value::String(Arc::from(id)));
     }
-    for (k, v) in props {
+    for (k, v) in props.iter().filter(|(_, v)| !v.is_typed()) {
         map.insert(k.clone(), to_value(v));
     }
     map_value(map)
@@ -289,7 +293,206 @@ fn write_in_transaction(
 ) -> Result<Written, Vec<Diagnostic>> {
     let table = scan(conn, settings).map_err(|e| vec![e])?;
     let res = resolve(plan, &table, settings)?;
-    write_plan(conn, plan, settings, &res).map_err(|e| vec![e])
+    let (written, node_ids, rel_ids) =
+        write_plan(conn, plan, settings, &res).map_err(|e| vec![e])?;
+    write_typed(conn, plan, &node_ids, &rel_ids)?;
+    Ok(written)
+}
+
+/// What a typed write sets: one property of one element, to a typed value or a list of them.
+struct TypedWrite<'a> {
+    node: bool,
+    id: i64,
+    key: &'a str,
+    value: &'a PropValue,
+}
+
+/// The statement group a typed write belongs to: all writes of one kind of element, key and
+/// tag, scalar or list, run as one batched statement (ADR-011 section 2.7).
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone)]
+struct TypedGroup {
+    node: bool,
+    key: String,
+    tag: Tag,
+    list: bool,
+}
+
+fn typed_tag(v: &PropValue) -> Option<Tag> {
+    match v {
+        PropValue::Typed(t) => Some(t.tag),
+        PropValue::List(items) => items.first().and_then(typed_tag),
+        _ => None,
+    }
+}
+
+/// The parameter value for one typed value: its text, or for a point its numbers.
+fn typed_param(v: &PropValue) -> Value {
+    let PropValue::Typed(t) = v else {
+        return Value::Null;
+    };
+    match &t.content {
+        TypedContent::Text(s) => Value::String(Arc::from(s.as_str())),
+        TypedContent::Point(p) => {
+            let mut m = BTreeMap::new();
+            m.insert("x".to_string(), Value::Float(p.x));
+            m.insert("y".to_string(), Value::Float(p.y));
+            m.insert("z".to_string(), p.z.map_or(Value::Null, Value::Float));
+            m.insert("srid".to_string(), Value::Int(p.srid));
+            map_value(m)
+        }
+    }
+}
+
+/// The Cypher expression that builds a typed value from `var` (a row's `v`, or a list element).
+fn typed_expr(tag: Tag, var: &str) -> String {
+    match tag {
+        Tag::Point => format!(
+            "CASE WHEN {var}.z IS NULL THEN point({{x: {var}.x, y: {var}.y, srid: {var}.srid}}) \
+             ELSE point({{x: {var}.x, y: {var}.y, z: {var}.z, srid: {var}.srid}}) END"
+        ),
+        other => format!("{}({var})", other.name()),
+    }
+}
+
+/// The spans of every value in a group, for reporting.
+fn group_spans(values: &[&PropValue]) -> Vec<(Tag, Span, String)> {
+    let mut out = Vec::new();
+    for v in values {
+        match v {
+            PropValue::Typed(t) => out.push((t.tag, t.span, typed_text(t))),
+            PropValue::List(items) => {
+                for item in items {
+                    if let PropValue::Typed(t) = item {
+                        out.push((t.tag, t.span, typed_text(t)));
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
+/// The text a typed value was written as, for matching against a database message.
+fn typed_text(t: &TypedValue) -> String {
+    match &t.content {
+        TypedContent::Text(s) => s.clone(),
+        TypedContent::Point(_) => String::new(),
+    }
+}
+
+/// The zone name inside the brackets of a datetime text, if any.
+fn zone_of(text: &str) -> Option<&str> {
+    let open = text.find('[')?;
+    text[open + 1..].strip_suffix(']')
+}
+
+/// Report a database rejection of one group as `value.tag-content` at the values it names.
+/// A failed statement poisons the transaction, so rows cannot be retried one by one; the
+/// values are found by matching the text the message quotes (ADR-011 section 2.3).
+fn typed_failure(message: &str, values: &[&PropValue]) -> Vec<Diagnostic> {
+    let spans = group_spans(values);
+    let mut hits: Vec<&(Tag, Span, String)> = spans
+        .iter()
+        .filter(|(_, _, text)| {
+            !text.is_empty()
+                && (message.contains(text.as_str())
+                    || zone_of(text).is_some_and(|z| message.contains(z)))
+        })
+        .collect();
+    if hits.is_empty() {
+        hits = spans.iter().take(1).collect();
+    }
+    hits.iter()
+        .map(|(tag, span, _)| {
+            Diagnostic::error(
+                code::VALUE_TAG_CONTENT,
+                *span,
+                format!(
+                    "the database rejected the content of the `{}` tag: {message}",
+                    tag.name()
+                ),
+            )
+        })
+        .collect()
+}
+
+/// Write the typed values of the plan: one batched statement per (element kind, key, tag,
+/// scalar or list) group, by internal id, after the basic properties (ADR-011 section 2.7).
+fn write_typed(
+    conn: &mut Connection,
+    plan: &LoadPlan,
+    node_ids: &[i64],
+    rel_ids: &[i64],
+) -> Result<(), Vec<Diagnostic>> {
+    let mut writes: Vec<TypedWrite<'_>> = Vec::new();
+    for (k, n) in plan.nodes.iter().enumerate() {
+        for (key, value) in n.props.iter().filter(|(_, v)| v.is_typed()) {
+            writes.push(TypedWrite {
+                node: true,
+                id: node_ids[k],
+                key,
+                value,
+            });
+        }
+    }
+    for (k, r) in plan.rels.iter().enumerate() {
+        for (key, value) in r.props.iter().filter(|(_, v)| v.is_typed()) {
+            writes.push(TypedWrite {
+                node: false,
+                id: rel_ids[k],
+                key,
+                value,
+            });
+        }
+    }
+    let mut groups: BTreeMap<TypedGroup, Vec<&TypedWrite<'_>>> = BTreeMap::new();
+    for w in &writes {
+        let Some(tag) = typed_tag(w.value) else {
+            continue;
+        };
+        let group = TypedGroup {
+            node: w.node,
+            key: w.key.to_string(),
+            tag,
+            list: matches!(w.value, PropValue::List(_)),
+        };
+        groups.entry(group).or_default().push(w);
+    }
+    for (group, members) in groups {
+        let name =
+            cypher_name(&group.key).map_err(|_| vec![db_error("a property key contains a NUL")])?;
+        let expr = if group.list {
+            format!("[x IN r.v | {}]", typed_expr(group.tag, "x"))
+        } else {
+            typed_expr(group.tag, "r.v")
+        };
+        let pattern = if group.node { "(n)" } else { "()-[n]->()" };
+        let cypher =
+            format!("UNWIND $rows AS r MATCH {pattern} WHERE id(n) = r.id SET n.{name} = {expr}");
+        for chunk in members.chunks(BATCH) {
+            let rows: Vec<Value> = chunk
+                .iter()
+                .map(|w| {
+                    let mut row = BTreeMap::new();
+                    row.insert("id".to_string(), Value::Int(w.id));
+                    let v = match w.value {
+                        PropValue::List(items) => {
+                            Value::List(Arc::new(items.iter().map(typed_param).collect()))
+                        }
+                        single => typed_param(single),
+                    };
+                    row.insert("v".to_string(), v);
+                    map_value(row)
+                })
+                .collect();
+            if let Err(e) = conn.query_with_params(&cypher, batch_params(rows)) {
+                let values: Vec<&PropValue> = chunk.iter().map(|w| w.value).collect();
+                return Err(typed_failure(&e.to_string(), &values));
+            }
+        }
+    }
+    Ok(())
 }
 
 fn node_stored_id<'a>(n: &'a PlannedNode, settings: &LoadSettings) -> Option<&'a str> {
@@ -314,7 +517,7 @@ fn write_plan(
     plan: &LoadPlan,
     settings: &LoadSettings,
     res: &Resolution,
-) -> Result<Written, Diagnostic> {
+) -> Result<(Written, Vec<i64>, Vec<i64>), Diagnostic> {
     let mut written = Written::default();
     let mut ids: Vec<i64> = res.node.iter().map(|m| m.unwrap_or(0)).collect();
 
@@ -431,6 +634,7 @@ fn write_plan(
     written.relationships_updated = matched_rels.len();
 
     // Create the unmatched relationships: runs with one type, in order of appearance.
+    let mut rel_ids: Vec<i64> = res.rel.iter().map(|m| m.unwrap_or(0)).collect();
     let rel_create: Vec<usize> = (0..plan.rels.len())
         .filter(|i| res.rel[*i].is_none())
         .collect();
@@ -448,6 +652,7 @@ fn write_plan(
             .map(|&k| {
                 let r = &plan.rels[k];
                 let mut row = BTreeMap::new();
+                row.insert("i".to_string(), Value::Int(k as i64));
                 row.insert("s".to_string(), Value::Int(ids[r.start]));
                 row.insert("e".to_string(), Value::Int(ids[r.end]));
                 row.insert(
@@ -459,10 +664,22 @@ fn write_plan(
             .collect();
         let cypher = format!(
             "UNWIND $rows AS r MATCH (a) WHERE id(a) = r.s MATCH (b) WHERE id(b) = r.e \
-             CREATE (a)-[x:{name}]->(b) SET x = r.props"
+             CREATE (a)-[x:{name}]->(b) SET x = r.props RETURN r.i, id(x)"
         );
-        conn.query_with_params(&cypher, batch_params(rows))
+        let result = conn
+            .query_with_params(&cypher, batch_params(rows))
             .map_err(db_error)?;
+        if result.rows.len() != j - i {
+            return Err(db_error(
+                "a relationship batch returned an unexpected number of rows",
+            ));
+        }
+        for row in &result.rows {
+            let (Some(k), Some(id)) = (int_value(&row[0]), int_value(&row[1])) else {
+                return Err(db_error("a relationship batch returned a non-integer id"));
+            };
+            rel_ids[k as usize] = id;
+        }
         written.relationships_created += j - i;
         i = j;
     }
@@ -473,5 +690,5 @@ fn write_plan(
             written.warnings.extend(n.reference_only_warning());
         }
     }
-    Ok(written)
+    Ok((written, ids, rel_ids))
 }
