@@ -68,3 +68,4 @@ Use `/rfc-review` before moving a draft to `review`/`accepted`.
 | [RFC-002](RFC-002-property-value-mapping.md) | Property Value Mapping Between Gram and Cypher | review | ADR-006, ADR-007, ADR-011, ADR-012, ADR-013, ADR-014 |
 | [RFC-003](RFC-003-named-graphs-and-reloading.md) | Named Graphs and Reloading Changed Files | draft | ADR-001, ADR-002, ADR-003, ADR-004, ADR-005 |
 | [RFC-004](RFC-004-fixing-rejected-gram-files.md) | Fixing Rejected Gram Files | review | ADR-010 |
+| [RFC-005](RFC-005-other-language-implementations.md) | relate-gram in Other Languages | draft | |
