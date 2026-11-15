@@ -298,12 +298,51 @@ fn write_in_transaction(
     plan: &LoadPlan,
     settings: &LoadSettings,
 ) -> Result<Written, Vec<Diagnostic>> {
+    probe_sixteen_bit(conn, plan)?;
     let table = scan(conn, settings).map_err(|e| vec![e])?;
     let res = resolve(plan, &table, settings)?;
     let (written, node_ids, rel_ids) =
         write_plan(conn, plan, settings, &res).map_err(|e| vec![e])?;
     write_typed(conn, plan, &node_ids, &rel_ids)?;
     Ok(written)
+}
+
+/// Find out, before anything is written, whether the database accepts 16-bit vectors, if the plan
+/// holds any `F16` or `BF16` embedding (ADR-014 section 2.2).
+///
+/// Relate refuses the 16-bit kinds unless `RELATE_PREVIEW=float16-coordinate-types` is set, and
+/// it decides from the statement text, so the failure of the batch statement would quote no
+/// content and point at one value of many. One probe lets the load stop with nothing written
+/// and report every affected value. The loader never sets the flag: it belongs to the caller's
+/// environment.
+fn probe_sixteen_bit(conn: &mut Connection, plan: &LoadPlan) -> Result<(), Vec<Diagnostic>> {
+    let affected: Vec<Span> = plan
+        .nodes
+        .iter()
+        .flat_map(|n| n.props.iter())
+        .chain(plan.rels.iter().flat_map(|r| r.props.iter()))
+        .filter(|(_, v)| matches!(embedding_kind(v), "FLOAT16" | "BFLOAT16"))
+        .map(|(_, v)| v.span)
+        .collect();
+    if affected.is_empty() {
+        return Ok(());
+    }
+    let Err(e) = conn.query("RETURN vector([0.0], 1, FLOAT16)") else {
+        return Ok(());
+    };
+    Err(affected
+        .into_iter()
+        .map(|span| {
+            Diagnostic::error(
+                code::VALUE_TAG_CONTENT,
+                span,
+                format!(
+                    "this database does not accept 16-bit vectors ({e}); start the process with \
+                     RELATE_PREVIEW=float16-coordinate-types to load `F16` and `BF16` embeddings"
+                ),
+            )
+        })
+        .collect())
 }
 
 /// What a typed write sets: one property of one element, to a typed value or a list of them.
@@ -321,6 +360,9 @@ struct TypedGroup {
     node: bool,
     key: String,
     tag: Tag,
+    /// The Cypher vector kind for an embedding (a literal in the statement, ADR-014 section 2.2);
+    /// empty for every other tag.
+    kind: &'static str,
     list: bool,
 }
 
@@ -352,12 +394,44 @@ fn typed_param(v: &GramValue) -> Value {
             }
         }
     }
+    if t.tag() == "embedding" {
+        if let Ok(Some(i)) = gram_value::tags::interpret_tag("embedding", t.content()) {
+            if let gram_value::tags::Typed::Embedding(e) = i.typed {
+                let floats = crate::typed::elements::widen(e.dtype(), e.bytes());
+                return Value::List(Arc::new(floats.into_iter().map(Value::Float).collect()));
+            }
+        }
+    }
     Value::String(Arc::from(t.content()))
 }
 
+/// The Cypher vector kind an embedding's dtype is stored as, or empty if `v` is not an embedding.
+fn embedding_kind(v: &Lowered) -> &'static str {
+    use gram_value::tags::{interpret_tag, EmbeddingDtype, Typed};
+    let GramValue::Tagged(t) = &v.value else {
+        return "";
+    };
+    if t.tag() != "embedding" {
+        return "";
+    }
+    match interpret_tag("embedding", t.content()) {
+        Ok(Some(i)) => match i.typed {
+            Typed::Embedding(e) => match e.dtype() {
+                EmbeddingDtype::F16 => "FLOAT16",
+                EmbeddingDtype::BF16 => "BFLOAT16",
+                EmbeddingDtype::F32 => "FLOAT32",
+                EmbeddingDtype::F64 => "FLOAT64",
+            },
+            _ => "",
+        },
+        _ => "",
+    }
+}
+
 /// The Cypher expression that builds a typed value from `var` (a row's `v`, or a list element).
-fn typed_expr(tag: Tag, var: &str) -> String {
+fn typed_expr(tag: Tag, kind: &str, var: &str) -> String {
     match tag {
+        Tag::Embedding => format!("vector({var}, size({var}), {kind})"),
         Tag::Point => format!(
             "CASE WHEN {var}.z IS NULL THEN point({{x: {var}.x, y: {var}.y, srid: {var}.srid}}) \
              ELSE point({{x: {var}.x, y: {var}.y, z: {var}.z, srid: {var}.srid}}) END"
@@ -466,6 +540,7 @@ fn write_typed(
             node: w.node,
             key: w.key.to_string(),
             tag,
+            kind: embedding_kind(w.value),
             list: matches!(w.value.value, GramValue::Array(_)),
         };
         groups.entry(group).or_default().push(w);
@@ -474,9 +549,9 @@ fn write_typed(
         let name =
             cypher_name(&group.key).map_err(|_| vec![db_error("a property key contains a NUL")])?;
         let expr = if group.list {
-            format!("[x IN r.v | {}]", typed_expr(group.tag, "x"))
+            format!("[x IN r.v | {}]", typed_expr(group.tag, group.kind, "x"))
         } else {
-            typed_expr(group.tag, "r.v")
+            typed_expr(group.tag, group.kind, "r.v")
         };
         let pattern = if group.node { "(n)" } else { "()-[n]->()" };
         let cypher =

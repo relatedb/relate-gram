@@ -7,7 +7,20 @@ command line or the library interface.
 
 ## [Unreleased]
 
+### Added
+
+- The `embedding` tag (ADR-014, `gram-value` 0.2): a Relate vector of `FLOAT32` or `FLOAT64` is written as an
+  `embedding` tagged string on export and loaded back as the same vector; the 16-bit kinds (`F16`, `BF16`) load only
+  in a process started with `RELATE_PREVIEW=float16-coordinate-types` and otherwise stop the load before any write,
+  with an error at each such value. `check` finds, without a database, a dimension above 4096 (Relate's limit), a
+  NaN or infinite element, and an array of embeddings. Integer vectors still cannot be exported, and the error now
+  says that `embedding` carries float vectors only.
+
 ### Changed
+
+- A file that used `embedding` as an unrecognized tag used to load the value as a string with a `value.tag-dropped`
+  warning; it is now recognized, so the value is a vector or a located error.
+- Library users: `typed::Tag` has a ninth variant, `Embedding`; exhaustive matches need an arm. `gram-value` is 0.2.
 
 - A decimal that a 64-bit float cannot hold exactly (`0.1000000000000000055511151231257827`) still loads as the
   nearest float, and now reports the warning `value.decimal-precision` with its position, so the loss is

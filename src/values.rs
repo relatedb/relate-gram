@@ -227,6 +227,16 @@ pub(crate) fn convert_value(
             Some(Lowered::scalar(Value::string(body), span))
         }
         "array" => {
+            if is_array_of_embeddings(syn, node) {
+                return reject(
+                    syn,
+                    node,
+                    code::VALUE_TAG_CONTENT,
+                    "an array of embeddings has no Relate type; write one property per vector"
+                        .to_string(),
+                    diags,
+                );
+            }
             let mut items: Vec<(Lowered, Node<'_>)> = Vec::new();
             let mut ok = true;
             let mut cursor = node.walk();
@@ -329,6 +339,29 @@ fn decimal_float(text: &str) -> (f64, bool) {
         Ok(Value::BigDecimal(b)) => (b.as_str().parse().unwrap_or(f64::INFINITY), true),
         _ => (f64::INFINITY, false),
     }
+}
+
+/// Whether every element of an array node is an `embedding` tagged string (ADR-014 section 2.2).
+/// Relate does not store a list of vectors, and the array is rejected before its elements are
+/// checked so that one error is reported. An array that mixes an embedding with another value is
+/// left to the homogeneity check.
+fn is_array_of_embeddings(syn: &Syntax, node: Node<'_>) -> bool {
+    let mut cursor = node.walk();
+    let mut any = false;
+    for child in node.named_children(&mut cursor) {
+        if child.kind() == "comment" || child.kind() == "doc_comment" {
+            continue;
+        }
+        let embedding = child.kind() == "tagged_string"
+            && child
+                .child_by_field_name("tag")
+                .is_some_and(|t| syn.text(t) == "embedding");
+        if !embedding {
+            return false;
+        }
+        any = true;
+    }
+    any
 }
 
 /// Shorten long literal text for messages.

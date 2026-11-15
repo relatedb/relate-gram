@@ -33,7 +33,7 @@ A new library function proposes a fix for one diagnostic by finding the node at 
 | `value.array-mixed` | If the array holds only integers (decimal or hexadecimal) and decimals, write each integer as a decimal: `1` is `1.0`, `0x1F` is `31.0`. An array with any other mixture, or an integer that a 64-bit float cannot hold exactly, gets no fix. | none |
 | `value.tag` | Delete the tag: `` md`x` `` is `` `x` ``, and a fenced tag after the opening fence is removed. | none (appears with `--tags error`) |
 
-An error with no row here has no fix. `--direction right` keeps the arrow pointing from the left node to the right node as written; `left` points it the other way. A warning is never fixed, since a file that only has warnings loads (`value.tag-dropped` is fixed only through the error form).
+An error with no row here has no fix, among them `value.tag-content` for every tag including `embedding`: the intended numbers are not known, and no fix removes a recognized tag (ADR-014 section 2.5). `--direction right` keeps the arrow pointing from the left node to the right node as written; `left` points it the other way. A warning is never fixed, since a file that only has warnings loads (`value.tag-dropped` is fixed only through the error form).
 
 ### 2.3 Rounds
 

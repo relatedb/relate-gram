@@ -1,0 +1,2 @@
+// gram-value 0.2.0 conformance case tag-embedding-nonnormal (conformance/tags.gram)
+(a {e: embedding`TwAAAAAAAAB7ICJlbWJlZGRpbmciIDogeyAic2hhcGUiIDogWzJdICwgImRhdGFfb2Zmc2V0cyIgOiBbMCwgOF0gLCAiZHR5cGUiIDogIkYzMiIgfSB9AACAPwAAAMA=`})
