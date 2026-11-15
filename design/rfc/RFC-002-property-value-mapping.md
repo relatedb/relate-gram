@@ -118,6 +118,6 @@ The mapping applies equally to node properties, relationship properties and the 
 - ADR-011: Typed Tags, Typed Lists and Empty Lists (resolves questions 7.3 and 7.4, and the empty-list part of 7.5)
 - ADR-012: Known Tags Come from gram-value
 - ADR-013: gram-value Is the Value Model for Load and Export (the canonical spelling of question 7.2)
+- ADR-014: The embedding Tag Carries Relate Vectors (the vectors that ADR-011 left unwritten)
 
 _(populated automatically as `/adr-create` links ADRs to this RFC)_
-- ADR-014: The embedding Tag Carries Relate Vectors (the vectors that ADR-011 left unwritten)
