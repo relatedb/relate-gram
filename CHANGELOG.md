@@ -7,6 +7,11 @@ command line or the library interface.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-15
+
+Vectors: the `embedding` tag carries Relate's float vectors through gram. A minor version: a tag that used to be
+dropped is now stored, and exports that failed for vectors now succeed.
+
 ### Added
 
 - The `embedding` tag (ADR-014, `gram-value` 0.2): a Relate vector of `FLOAT32` or `FLOAT64` is written as an
@@ -15,16 +20,15 @@ command line or the library interface.
   with an error at each such value. `check` finds, without a database, a dimension above 4096 (Relate's limit), a
   NaN or infinite element, and an array of embeddings. Integer vectors still cannot be exported, and the error now
   says that `embedding` carries float vectors only.
+- A warning, `value.decimal-precision`, with the position of a decimal that a 64-bit float cannot hold exactly
+  (`0.1000000000000000055511151231257827`). It still loads as the nearest float; decimals a float holds exactly
+  (`0.1`, `1.50`) give no warning, and nothing is rejected that loaded before.
 
 ### Changed
 
 - A file that used `embedding` as an unrecognized tag used to load the value as a string with a `value.tag-dropped`
   warning; it is now recognized, so the value is a vector or a located error.
 - Library users: `typed::Tag` has a ninth variant, `Embedding`; exhaustive matches need an arm. `gram-value` is 0.2.
-
-- A decimal that a 64-bit float cannot hold exactly (`0.1000000000000000055511151231257827`) still loads as the
-  nearest float, and now reports the warning `value.decimal-precision` with its position, so the loss is
-  visible. Decimals a float holds exactly (`0.1`, `1.50`) give no warning. Nothing is rejected that loaded before.
 
 ## [0.2.0] - 2026-11-15
 
