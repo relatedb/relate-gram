@@ -10,7 +10,7 @@ created: 2026-11-15
 
 ## 1. Context
 
-relate-gram's behavior is defined by its Rust tests. The invalid cases are files: 71 `.expect` files under `tests/fixtures/invalid/`, each beside a gram file, give the expected error code, line, column and byte offset. Everything else is code. The 29 valid fixtures are loaded by tests that assert the resulting graph inline, expected export text is written as string literals in the contract tests, the fixer's inputs and outputs are literals in `tests/fixtures`-less tests in `tests/fix.rs`, and the starting state of a database (the `Existing` nodes that every rejected file must leave untouched) is a Cypher statement in `tests/positions/main.rs`. A second implementation, in Python or TypeScript, has to extract all of that before it can tell whether it agrees.
+relate-gram's behavior is defined by its Rust tests. The invalid cases are files: 71 `.expect` files under `tests/fixtures/invalid/`, each beside a gram file, give the expected error code, line, column and byte offset. Everything else is code. The 25 valid fixtures are loaded by tests that assert the resulting graph inline, expected export text is written as string literals in the contract tests, the fixer's inputs and outputs are literals in `tests/fix.rs`, and the starting state of a database (the `Existing` nodes that every rejected file must leave untouched) is a Cypher statement in `tests/positions/main.rs`. A second implementation, in Python or TypeScript, has to extract all of that before it can tell whether it agrees.
 
 Four properties of the behavior shape any shared form:
 
