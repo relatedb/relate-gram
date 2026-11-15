@@ -1,0 +1,4 @@
+(ada:Person {name: "Ada Lovelace", born: 1815, score: 1.0, joined: date`2024-01-15`})
+(bob:Person:Admin {name: "Bob", id: 42})
+(ada)-[:KNOWS {since: 1.5}]->(bob)
+(:Doc {title: "orphan"})

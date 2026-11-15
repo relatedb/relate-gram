@@ -1,0 +1,8 @@
+(a {zero: -0, neg: -3, hex: 0x1F, dec: 0.1, negdec: -2.50, bigint: 9223372036854775807})
+(b {str: "a\nb\t\"q\"", sym: active, quoted: "active", t: true, tstr: "true", empty: ""})
+(c {unicode: "naïve — ✓", fence: ```md
+line one
+line two
+```})
+(d {arr: [1, 2, 3], strs: ["a", "b"], decs: [1.0, 2.5], tags: [date`2024-01-01`, date`2024-02-02`], none: []})
+(e {m: {x: 1, y: "two", z: [1, 2]}})

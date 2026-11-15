@@ -1,0 +1,3 @@
+@desc("the first one") (a:N)
+@@id1:Note @desc("identified") (b:N)
+@error({code: "rel.no-type", line: 2}) (e)

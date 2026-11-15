@@ -1,0 +1,4 @@
+// a line comment
+(a {s: "kept"})
+/** a doc comment between patterns */
+(b)
