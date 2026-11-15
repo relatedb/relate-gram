@@ -31,7 +31,7 @@ fn integers_booleans_strings_and_lists() {
         export_str(&mut c).unwrap(),
         "(n0 {bools: [true, false], empty: \"\", f: false, floats: [1.5, 2.0], i: -7, \
          ints: [1, 2], max: 9223372036854775807, min: -9223372036854775808, \
-         s: \"plain\", strs: [\"a\", \"b\"], t: true})\n"
+         s: plain, strs: [a, b], t: true})\n"
     );
 }
 
@@ -182,4 +182,45 @@ fn an_empty_list_is_written_as_empty_brackets_and_reads_back() {
     let rows = run(&mut d, "MATCH (n:L) RETURN n.xs, size(n.xs)");
     assert_eq!(fmt_value(&rows[0][0]), "[]");
     assert_eq!(fmt_value(&rows[0][1]), "0");
+}
+
+// ADR-013 section 2.5: the exporter's checks that stay, and what the canonical text writes.
+
+#[test]
+fn a_string_with_nul_fails_the_export_in_a_property_and_in_a_list() {
+    let (_db, mut c) = fresh_db();
+    create_node(&mut c, ":P", vec![("a", str_value("x\0y"))]);
+    let f = export_str(&mut c).unwrap_err();
+    assert!(codes_of(&f).contains(&"export.value"), "{:?}", codes_of(&f));
+    let (_db2, mut c2) = fresh_db();
+    create_node(
+        &mut c2,
+        ":P",
+        vec![(
+            "l",
+            Value::List(Arc::new(vec![str_value("ok"), str_value("a\0b")])),
+        )],
+    );
+    let f2 = export_str(&mut c2).unwrap_err();
+    assert!(codes_of(&f2).contains(&"export.value"));
+}
+
+#[test]
+fn floats_are_written_positionally_and_keep_negative_zero() {
+    let (_db, mut c) = fresh_db();
+    create_node(
+        &mut c,
+        ":P",
+        vec![
+            ("a", Value::Float(-0.0)),
+            ("b", Value::Float(1e21)),
+            ("c", Value::Float(5e-324)),
+            ("d", Value::Float(2.0)),
+        ],
+    );
+    let out = export_str(&mut c).unwrap();
+    assert!(out.contains("a: -0.0"), "{out}");
+    assert!(out.contains("b: 1000000000000000000000.0"), "{out}");
+    assert!(out.contains("d: 2.0"), "{out}");
+    assert!(!out.contains('e') || !out.contains("e-"), "{out}");
 }

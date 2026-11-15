@@ -131,13 +131,20 @@ fn negative_zero_integers_load_as_zero() {
     let (_db, mut c) = fresh_db();
     load_str(&mut c, "(a {i: -0, l: [-0, 1]})").unwrap();
     assert_eq!(node_prop(&mut c, "a", "i"), Value::Int(0));
-    assert_eq!(node_prop(&mut c, "a", "l"), list(vec![Value::Int(0), Value::Int(1)]));
+    assert_eq!(
+        node_prop(&mut c, "a", "l"),
+        list(vec![Value::Int(0), Value::Int(1)])
+    );
 }
 
 #[test]
 fn a_decimal_a_float_cannot_hold_exactly_loads_as_the_nearest_float() {
     let (_db, mut c) = fresh_db();
-    load_str(&mut c, "(a {d: 0.1000000000000000055511151231257827, z: -0.0, t: 1.50})").unwrap();
+    load_str(
+        &mut c,
+        "(a {d: 0.1000000000000000055511151231257827, z: -0.0, t: 1.50})",
+    )
+    .unwrap();
     assert_eq!(node_prop(&mut c, "a", "d"), Value::Float(0.1));
     assert_eq!(node_prop(&mut c, "a", "t"), Value::Float(1.5));
     match node_prop(&mut c, "a", "z") {
@@ -153,7 +160,10 @@ fn a_decimal_that_overflows_or_underflows_is_rejected() {
     let tiny = format!("(a {{d: 0.{}1}})", "0".repeat(400));
     for src in [huge, tiny] {
         let f = load_str(&mut c, &src).unwrap_err();
-        assert!(codes(&f.diagnostics).contains(&"value.decimal"), "{src:.40}");
+        assert!(
+            codes(&f.diagnostics).contains(&"value.decimal"),
+            "{src:.40}"
+        );
     }
 }
 
@@ -165,7 +175,15 @@ fn an_array_that_mixes_tags_names_the_tag_in_the_message() {
         "(a {d: [date`2024-01-01`, datetime`2024-01-01T10:00Z`]})",
     )
     .unwrap_err();
-    let d = f.diagnostics.iter().find(|d| d.code == "value.array-mixed").unwrap();
-    assert!(d.message.contains("datetime") && !d.message.contains("tagged"), "{}", d.message);
+    let d = f
+        .diagnostics
+        .iter()
+        .find(|d| d.code == "value.array-mixed")
+        .unwrap();
+    assert!(
+        d.message.contains("datetime") && !d.message.contains("tagged"),
+        "{}",
+        d.message
+    );
     assert_eq!(d.span.unwrap().column, 27);
 }

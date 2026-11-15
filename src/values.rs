@@ -22,7 +22,11 @@ pub struct Lowered {
 
 impl Lowered {
     fn scalar(value: Value, span: Span) -> Self {
-        Lowered { value, span, items: Vec::new() }
+        Lowered {
+            value,
+            span,
+            items: Vec::new(),
+        }
     }
 
     /// Whether the value is a typed value or an array of them. The loader writes these with

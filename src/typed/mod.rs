@@ -60,7 +60,10 @@ impl Tag {
         let interpretation = gram_value::tags::interpret_tag(name, text)
             .map_err(|d| {
                 let prefix = format!("{name}: ");
-                d.message.strip_prefix(&prefix).unwrap_or(&d.message).to_string()
+                d.message
+                    .strip_prefix(&prefix)
+                    .unwrap_or(&d.message)
+                    .to_string()
             })?
             .ok_or_else(|| format!("`{name}` is not a known tag"))?;
         profile::check(&interpretation)?;

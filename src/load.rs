@@ -54,10 +54,7 @@ fn map_value(map: BTreeMap<String, Value>) -> Value {
 
 /// The properties to write for an element. `identity` is the gram identifier to
 /// store as `@id`, or `None` when identity comes from a property.
-fn props_value(
-    identity: Option<&str>,
-    props: &[(String, Lowered)],
-) -> Result<Value, Diagnostic> {
+fn props_value(identity: Option<&str>, props: &[(String, Lowered)]) -> Result<Value, Diagnostic> {
     let mut map: BTreeMap<String, Value> = BTreeMap::new();
     if let Some(id) = identity {
         map.insert("@id".to_string(), Value::String(Arc::from(id)));

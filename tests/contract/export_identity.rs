@@ -56,7 +56,7 @@ fn property_mode_uses_the_configured_property_and_keeps_it_in_the_record() {
         &settings(IdentityMode::Property, Some("email"), None),
     )
     .unwrap();
-    assert_eq!(text, "(x@y:P {email: \"x@y\"})\n(z:P {email: \"z\"})\n");
+    assert_eq!(text, "(x@y:P {email: x@y})\n(z:P {email: z})\n");
 }
 
 #[test]
@@ -97,7 +97,7 @@ fn property_mode_ignores_the_stored_id() {
         &settings(IdentityMode::Property, Some("email"), None),
     )
     .unwrap();
-    assert_eq!(text, "(e:P {email: \"e\"})\n");
+    assert_eq!(text, "(e:P {email: e})\n");
 }
 
 #[test]
@@ -106,7 +106,7 @@ fn auto_takes_the_property_for_elements_without_an_id() {
     create_node(&mut c, ":P", vec![("@id", str_value("a"))]);
     create_node(&mut c, ":P", vec![("email", str_value("b"))]);
     let text = export_with(&mut c, &settings(IdentityMode::Auto, Some("email"), None)).unwrap();
-    assert_eq!(text, "(a:P)\n(b:P {email: \"b\"})\n");
+    assert_eq!(text, "(a:P)\n(b:P {email: b})\n");
 }
 
 #[test]

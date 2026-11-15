@@ -140,8 +140,8 @@ fn normalize_prints_canonical_gram() {
     assert!(o.status.success(), "{}", text(&o.stderr));
     assert_eq!(
         text(&o.stdout),
-        "(ada:Person {born: 1815, name: \"Ada\", note: \"kept\"})\n\
-         (grace:Person {name: \"Grace\"})\n\
+        "(ada:Person {born: 1815, name: Ada, note: kept})\n\
+         (grace:Person {name: Grace})\n\
          \n\
          (ada)-[k:KNOWS {since: 1840}]->(grace)\n"
     );
@@ -190,8 +190,8 @@ fn load_then_export_through_a_database_on_disk() {
     assert!(o.status.success(), "{}", text(&o.stderr));
     assert_eq!(
         text(&o.stdout),
-        "(ada:Person {born: 1815, name: \"Ada\", note: \"kept\"})\n\
-         (grace:Person {name: \"Grace\"})\n\
+        "(ada:Person {born: 1815, name: Ada, note: kept})\n\
+         (grace:Person {name: Grace})\n\
          \n\
          (ada)-[k:KNOWS {since: 1840}]->(grace)\n"
     );

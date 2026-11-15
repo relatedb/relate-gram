@@ -8,6 +8,7 @@ use crate::diagnostics::{code, Diagnostic};
 use crate::names;
 use crate::settings::{ExportSettings, IdentityMode};
 use crate::typed::Tag;
+use gram_value::Value as GramValue;
 use relate::{Connection, Value};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -207,16 +208,6 @@ fn read_graph(conn: &mut Connection) -> Result<(Vec<ExNode>, Vec<ExRel>), Diagno
     Ok((nodes, rels))
 }
 
-/// A float as the shortest decimal that reads back as the same value, with a
-/// dot and no exponent (ADR-006 section 2.5).
-fn float_text(f: f64) -> String {
-    let mut s = format!("{f}");
-    if !s.contains('.') {
-        s.push_str(".0");
-    }
-    s
-}
-
 fn kind_name(v: &Value) -> &'static str {
     match v {
         Value::Null => "null",
@@ -237,24 +228,38 @@ fn kind_name(v: &Value) -> &'static str {
     }
 }
 
-/// A scalar as gram text, or the reason it has none.
-fn scalar_text(v: &Value) -> Result<String, String> {
+/// A scalar as a `gram_value::Value`, or the reason it has no gram form (ADR-013 section 2.5).
+fn scalar_value(v: &Value) -> Result<GramValue, String> {
     match v {
-        Value::Int(i) => Ok(i.to_string()),
-        Value::Bool(b) => Ok(b.to_string()),
-        Value::Float(f) if f.is_finite() => Ok(float_text(*f)),
+        Value::Int(i) => Ok(GramValue::integer(*i)),
+        Value::Bool(b) => Ok(GramValue::boolean(*b)),
+        Value::Float(f) if f.is_finite() => GramValue::decimal(*f).map_err(|d| d.message),
         Value::Float(f) => Err(format!("the float {f} has no gram spelling")),
         Value::String(s) if s.contains('\0') => {
             Err("a string containing a NUL character cannot be written".to_string())
         }
-        Value::String(s) => Ok(names::string_literal(s)),
-        Value::Point(p) => point_text(p.srid, p.x, p.y, p.z),
-        Value::Uuid(u) => Ok(format!("uuid`{}`", uuid_text(*u))),
+        Value::String(s) => Ok(GramValue::string(s.to_string())),
+        Value::Point(p) => tagged("point", point_text(p.srid, p.x, p.y, p.z)?),
+        Value::Uuid(u) => tagged("uuid", uuid_text(*u)),
         Value::Temporal(_) => {
             Err("a temporal value in a list that mixes kinds has no gram form".to_string())
         }
         other => Err(format!("a {} has no gram form", kind_name(other))),
     }
+}
+
+fn tagged(tag: &str, content: String) -> Result<GramValue, String> {
+    GramValue::tagged(tag, content).map_err(|d| d.message)
+}
+
+/// The canonical text of a value; the writer's own errors are reported as the reason.
+fn canonical(v: &GramValue) -> Result<String, String> {
+    v.to_text().map_err(|ds| {
+        ds.into_iter()
+            .map(|d| d.message)
+            .collect::<Vec<_>>()
+            .join("; ")
+    })
 }
 
 /// A UUID as lower-case 8-4-4-4-12 hexadecimal.
@@ -277,12 +282,12 @@ fn point_text(srid: i32, x: f64, y: f64, z: Option<f64>) -> Result<String, Strin
     }
     match (srid, z) {
         (4326 | 7203, None) => Ok(format!(
-            "point`SRID={srid};{} {}`",
+            "SRID={srid};{} {}",
             coordinate_text(x),
             coordinate_text(y)
         )),
         (4979 | 9157, Some(z)) => Ok(format!(
-            "point`SRID={srid};{} {} {}`",
+            "SRID={srid};{} {} {}",
             coordinate_text(x),
             coordinate_text(y),
             coordinate_text(z)
@@ -302,32 +307,30 @@ fn coordinate_text(v: f64) -> String {
 }
 
 /// A temporal property as gram text: the tag with the database's text, or an array of them.
-fn temporal_value_text(tag: Tag, text: &TemporalText) -> String {
+fn temporal_value_text(tag: Tag, text: &TemporalText) -> Result<String, String> {
     match text {
-        TemporalText::Scalar(s) => format!("{}`{s}`", tag.name()),
+        TemporalText::Scalar(s) => canonical(&tagged(tag.name(), s.clone())?),
         TemporalText::List(items) => {
-            let parts: Vec<String> = items
+            let parts = items
                 .iter()
-                .map(|s| format!("{}`{s}`", tag.name()))
-                .collect();
-            format!("[{}]", parts.join(", "))
+                .map(|s| tagged(tag.name(), s.clone()))
+                .collect::<Result<Vec<_>, _>>()?;
+            canonical(&GramValue::array(parts))
         }
     }
 }
 
-/// A property value as gram text, or the reason it has none (ADR-006 sections 2.5 and 2.6).
+/// A property value as gram text, or the reason it has none (ADR-006 sections 2.5 and 2.6,
+/// ADR-013 section 2.5).
 fn value_text(v: &Value) -> Result<String, String> {
     match v {
         Value::List(items) => {
-            if items.is_empty() {
-                return Ok("[]".to_string());
-            }
             let mut parts = Vec::with_capacity(items.len());
             for item in items.iter() {
                 if matches!(item, Value::List(_)) {
                     return Err("a nested list has no gram form".to_string());
                 }
-                parts.push(scalar_text(item)?);
+                parts.push(scalar_value(item)?);
             }
             // Gram arrays hold one kind; Relate stores integers and floats
             // together only by converting to floats, so mixed kinds do not occur,
@@ -336,9 +339,9 @@ fn value_text(v: &Value) -> Result<String, String> {
             if kinds.len() > 1 {
                 return Err("a list of mixed kinds has no gram form".to_string());
             }
-            Ok(format!("[{}]", parts.join(", ")))
+            canonical(&GramValue::array(parts))
         }
-        other => scalar_text(other),
+        other => canonical(&scalar_value(other)?),
     }
 }
 
@@ -388,11 +391,13 @@ fn record_text(
             continue;
         }
         if let Some((tag, text)) = temporal.get(key) {
-            parts.push(format!(
-                "{}: {}",
-                names::name(key),
-                temporal_value_text(*tag, text)
-            ));
+            match temporal_value_text(*tag, text) {
+                Ok(t) => parts.push(format!("{}: {}", names::name(key), t)),
+                Err(why) => errors.push(Diagnostic::error_without_span(
+                    code::EXPORT_VALUE,
+                    format!("{}, property `{key}`: {why}", kind.label(id)),
+                )),
+            }
             continue;
         }
         match value_text(value) {

@@ -355,6 +355,13 @@ fn a_rejected_typed_list_element_is_reported_at_that_element() {
     let (_db, mut c) = fresh_db();
     let src = "(a {when: [datetime`2024-01-15T10:30+01:00[Europe/Paris]`, datetime`2024-01-15T10:30+01:00[No/Such_Zone]`]})";
     let f = relate_gram::load(&mut c, src.as_bytes(), &LoadSettings::default()).unwrap_err();
-    let d = f.diagnostics.iter().find(|d| d.code == code::VALUE_TAG_CONTENT).unwrap();
-    assert_eq!(d.span.unwrap().column, src.find("datetime`2024-01-15T10:30+01:00[No").unwrap() + 1);
+    let d = f
+        .diagnostics
+        .iter()
+        .find(|d| d.code == code::VALUE_TAG_CONTENT)
+        .unwrap();
+    assert_eq!(
+        d.span.unwrap().column,
+        src.find("datetime`2024-01-15T10:30+01:00[No").unwrap() + 1
+    );
 }

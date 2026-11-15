@@ -12,8 +12,8 @@ fn nodes_then_a_blank_line_then_relationships() {
     let text = export_str(&mut c).unwrap();
     assert_eq!(
         text,
-        "(n0:Person {born: 1815, name: \"Ada\"})\n\
-         (n1:Person {name: \"Grace\"})\n\
+        "(n0:Person {born: 1815, name: Ada})\n\
+         (n1:Person {name: Grace})\n\
          \n\
          (n0)-[r0:KNOWS {since: 1843}]->(n1)\n"
     );
