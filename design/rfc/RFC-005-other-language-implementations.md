@@ -1,7 +1,7 @@
 ---
 id: RFC-005
 title: relate-gram in Other Languages
-status: draft
+status: review
 created: 2026-11-15
 adrs: []
 ---
