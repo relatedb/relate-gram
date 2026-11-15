@@ -3,7 +3,7 @@ id: RFC-005
 title: relate-gram in Other Languages
 status: review
 created: 2026-11-15
-adrs: []
+adrs: [ADR-015]
 ---
 
 # RFC-005: relate-gram in Other Languages
@@ -137,5 +137,7 @@ Write the shared cases first (5.2), then build native packages (5.3.3), Python f
 7.8. What would a spike of the split at the statement boundary (5.3.5) have to show: the number of round trips for a scan and an export, and whether the planner can run where every language can call it?
 
 ## 8. ADRs
+
+- ADR-015: A Language-Neutral Conformance Collection (resolves questions 7.4 and 7.5)
 
 _(populated automatically as `/adr-create` links ADRs to this RFC)_

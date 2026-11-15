@@ -72,3 +72,4 @@ Use `/adr-review` before moving a draft to `accepted`.
 | [ADR-012](ADR-012-known-tags-from-gram-value.md) | Known Tags Come from gram-value | accepted | RFC-002 |
 | [ADR-013](ADR-013-gram-value-as-the-value-model.md) | gram-value Is the Value Model for Load and Export | accepted | RFC-002 |
 | [ADR-014](ADR-014-embedding-tag-carries-vectors.md) | The embedding Tag Carries Relate Vectors | accepted | RFC-002 |
+| [ADR-015](ADR-015-conformance-collection.md) | A Language-Neutral Conformance Collection | proposed | RFC-005 |
