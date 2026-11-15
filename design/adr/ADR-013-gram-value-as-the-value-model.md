@@ -87,7 +87,7 @@ Elements, identifiers, labels, relationship types and record keys are not values
 
 3.1. **Keep `PropValue` and call gram-value's writer only for export.** Rejected: the loader would keep a second model of every value, and each binding would still have to describe `PropValue` as well as `Value`. It saves the plumbing of 2.1 and leaves the divergence.
 
-3.2. **A recursive `Located<Value>` tree with a span on every node.** Rejected: the only later uses of positions are a typed value's span and an array element's span (a database rejection of a tagged string, and `value.array-mixed`), which `span` and `items` cover. A full tree repeats the structure of `Value`.
+3.2. **A recursive tree of values with a position on every node.** Rejected: the only later uses of positions are a typed value's position and an array element's position (a database rejection of a tagged string, and `value.array-mixed`), which the value's own position and the element positions cover. A full tree repeats the structure of `Value`.
 
 3.3. **Use `gram_value::Map` for a record.** Rejected: it sorts its keys, while the loader keeps the order of writing, and `Value::map` reports a repeated key without a position, so it cannot replace the loader's duplicate check.
 
