@@ -1,7 +1,7 @@
 ---
 id: ADR-012
 title: Known Tags Come from gram-value
-status: proposed
+status: accepted
 rfcs: [RFC-002]
 created: 2026-11-14
 ---
