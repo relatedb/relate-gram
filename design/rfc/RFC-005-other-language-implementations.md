@@ -14,7 +14,7 @@ Relate is an embedded Cypher graph database, used from Rust, Python, Node.js, th
 
 What has to be shared across languages is behavior, not code: which files are accepted, which are rejected and with what error at what position, what graph a file loads to, and what text a database exports to. Behavior can be written down as cases that any implementation runs.
 
-Six ways to serve other languages are compared: wrap the command, bind the Rust library, write native packages, split the work at the statement boundary, and package the tool as a Relate command extension. The preferred direction is to write down the shared cases first and then build native packages, Python first and TypeScript next, each tested against those cases. Seven questions remain open.
+Five ways to serve other languages are compared: wrap the command, bind the Rust library, write native packages, split the work at the statement boundary, and package the tool as a Relate command extension. The preferred direction is to write down the shared cases first and then build native packages, Python first and TypeScript next, each tested against those cases. Seven questions remain open.
 
 ## 2. Problem / Motivation
 
