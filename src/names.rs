@@ -83,27 +83,6 @@ pub fn name(text: &str) -> String {
     }
 }
 
-/// A string value as a double-quoted gram string (ADR-006 section 2.5).
-pub fn string_literal(text: &str) -> String {
-    let mut out = String::with_capacity(text.len() + 2);
-    out.push('"');
-    escape_into(
-        &mut out,
-        text,
-        &[
-            ('"', "\\\""),
-            ('\\', "\\\\"),
-            ('\n', "\\n"),
-            ('\r', "\\r"),
-            ('\t', "\\t"),
-            ('\u{8}', "\\b"),
-            ('\u{c}', "\\f"),
-        ],
-    );
-    out.push('"');
-    out
-}
-
 /// A label or relationship type as a backtick-quoted Cypher name, with a
 /// backtick doubled. Fails on a NUL, which Cypher text cannot carry.
 pub fn cypher_name(text: &str) -> Result<String, NulInName> {
@@ -170,36 +149,6 @@ mod tests {
         assert_eq!(name("1x"), "`1x`");
         assert_eq!(name("a`b"), "`a\\`b`");
         assert_eq!(name("true"), "true");
-    }
-
-    #[test]
-    fn string_literal_is_double_quoted_with_escapes() {
-        assert_eq!(string_literal("abc"), "\"abc\"");
-        assert_eq!(string_literal(""), "\"\"");
-        assert_eq!(
-            string_literal("a\"b\\c\nd\re\tf\u{8}g\u{c}h"),
-            "\"a\\\"b\\\\c\\nd\\re\\tf\\bg\\fh\""
-        );
-        assert_eq!(string_literal("it's `x`"), "\"it's `x`\"");
-    }
-
-    #[test]
-    fn a_leading_slash_is_escaped_so_a_comment_cannot_start_the_text() {
-        // tree-sitter-gram 0.6.1 reads a quoted text that starts (after blanks)
-        // with `//` or `/**` as a comment
-        assert_eq!(string_literal("//x"), "\"\\/\\/x\"");
-        assert_eq!(string_literal(" //x"), "\" \\/\\/x\"");
-        assert_eq!(string_literal("///"), "\"\\/\\/\\/\"");
-        assert_eq!(string_literal("/**x"), "\"\\/**x\"");
-        assert_eq!(string_literal("/x"), "\"\\/x\"");
-        assert_eq!(string_literal("  /x"), "\"  \\/x\"");
-        assert_eq!(identifier("//a"), "`\\/\\/a`");
-        assert_eq!(name("/**a"), "`\\/**a`");
-        // a slash after the first other character is left alone
-        assert_eq!(string_literal("a/b"), "\"a/b\"");
-        assert_eq!(string_literal("http://x"), "\"http://x\"");
-        assert_eq!(name("a//b"), "`a//b`");
-        assert_eq!(string_literal("/ /x"), "\"\\/ \\/x\"");
     }
 
     #[test]

@@ -34,5 +34,5 @@ Decisions that ADR-011 leaves to implementation, each checked against Relate 1.0
 
 ## R6. Library interface change
 
-- **Decision**: `values::PropValue` gains a variant; the crate is pre-1.0, so this is allowed by the versioning policy ("a minor version may change the library interface"). The changelog and `contracts/library-api.md` say so.
+- **Decision** (superseded by ADR-013, which replaces `PropValue`): `values::PropValue` gains a variant; the crate is pre-1.0, so this is allowed by the versioning policy ("a minor version may change the library interface"). The changelog and `contracts/library-api.md` say so.
 - **Alternatives considered**: `#[non_exhaustive]` now (a breaking change in itself, applied once, would stop future ones); a separate type for typed values (two parallel value types through load and plan).

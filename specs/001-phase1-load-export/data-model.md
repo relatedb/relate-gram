@@ -19,9 +19,9 @@ The values the library passes between its layers. Names are conceptual; the cont
 ## Load
 
 - **LoadPlan**: the file's elements in first-appearance order, with all file-scope rules already applied.
-  - **PlannedNode**: `key` (identifier text, or none if anonymous), `labels` (in written order), `properties` (ordered map of key to **PropValue**), `span` of its definition, `defined` (definition or reference only).
+  - **PlannedNode**: `key` (identifier text, or none if anonymous), `labels` (in written order), `properties` (ordered map of key to **PropValue**, now `values::Lowered`, see ADR-013), `span` of its definition, `defined` (definition or reference only).
   - **PlannedRelationship**: `key` (or none), `type`, `start` and `end` (indexes of planned nodes), `properties`, `span`, `defined`.
-- **PropValue**: `Int(i64)`, `Float(f64)`, `Bool(bool)`, `Str(String)` or `List` of one of these kinds (ADR-006 §2.1, §2.2). Nothing else; every other gram value is a diagnostic before a PropValue exists.
+- **PropValue** (replaced by ADR-013 with `values::Lowered`: a `gram_value::Value` of integer, decimal, boolean, string, tagged or array of one kind, with its position and element positions): `Int(i64)`, `Float(f64)`, `Bool(bool)`, `Str(String)` or `List` of one of these kinds (ADR-006 §2.1, §2.2). Nothing else; every other gram value is a diagnostic before a PropValue exists.
 - **RecordInfo**: the top-level record's keys and spans, used for the not-stored warning (ADR-003 §2.2). No values are kept.
 - **IdentityTable**: built in the loader from one scan of the database: identifier text to the internal id and kind (node or relationship) of each existing element, with the type and endpoint ids of relationships. Duplicates are recorded for the error of ADR-001 §2.7.
 - **LoadReport**: the diagnostics (warnings on success, errors on failure), and counts: nodes created, nodes updated, relationships created, relationships updated, elements created without an identifier (ADR-004), referenced-only nodes created (ADR-001 §2.3), tags dropped (ADR-006 §2.3).

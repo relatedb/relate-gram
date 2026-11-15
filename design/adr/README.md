@@ -70,3 +70,4 @@ Use `/adr-review` before moving a draft to `accepted`.
 | [ADR-010](ADR-010-fixing-rejected-files.md) | The Fix Model and the fix Command | accepted | RFC-004 |
 | [ADR-011](ADR-011-typed-tags-and-empty-lists.md) | Typed Tags, Typed Lists and Empty Lists | accepted | RFC-002 |
 | [ADR-012](ADR-012-known-tags-from-gram-value.md) | Known Tags Come from gram-value | accepted | RFC-002 |
+| [ADR-013](ADR-013-gram-value-as-the-value-model.md) | gram-value Is the Value Model for Load and Export | accepted | RFC-002 |

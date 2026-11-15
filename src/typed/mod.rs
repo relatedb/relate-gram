@@ -1,12 +1,11 @@
 //! Typed values: the eight tags of ADR-011 section 2.2 and the content forms they accept.
 //!
 //! Everything here works on text, with no database, so `check` can find a bad value
-//! without one. The loader turns a validated [`TypedValue`] into a Relate value with a
-//! Cypher constructor (ADR-011 section 2.7), and the exporter writes one back.
+//! without one. The loader keeps a validated value as a `gram_value::Value::tagged` holding the normal
+//! content, turns it into a Relate value with a Cypher constructor (ADR-011 section 2.7,
+//! ADR-013 section 2.3), and the exporter writes one back.
 
 mod profile;
-
-use crate::diagnostics::Span;
 
 /// The tag of a tagged string that gives it a type. Tags are matched exactly, in lower case.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -54,9 +53,10 @@ impl Tag {
     }
 
     /// Check `text` against the content form of this tag: gram-value's interpretation, then the
-    /// Relate profile (ADR-012 sections 2.2 and 2.3). The error is a short description of the
-    /// fault, for a `value.tag-content` message.
-    pub fn validate(self, text: &str) -> Result<TypedContent, String> {
+    /// Relate profile (ADR-012 sections 2.2 and 2.3). The result is the normal content of the
+    /// tagged string, which denotes the same value as the text; the error is a short description
+    /// of the fault, for a `value.tag-content` message.
+    pub fn validate(self, text: &str) -> Result<String, String> {
         let name = self.name();
         let interpretation = gram_value::tags::interpret_tag(name, text)
             .map_err(|d| {
@@ -68,41 +68,8 @@ impl Tag {
             })?
             .ok_or_else(|| format!("`{name}` is not a known tag"))?;
         profile::check(&interpretation)?;
-        Ok(match interpretation.typed {
-            gram_value::tags::Typed::Point(p) => TypedContent::Point(PointContent {
-                srid: p.srid.map_or(0, |s| s as i64),
-                x: p.x,
-                y: p.y,
-                z: p.z,
-            }),
-            _ => TypedContent::Text(interpretation.normal_content),
-        })
+        Ok(interpretation.normal_content)
     }
-}
-
-/// The parsed numbers of a point.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct PointContent {
-    pub srid: i64,
-    pub x: f64,
-    pub y: f64,
-    pub z: Option<f64>,
-}
-
-/// What a validated tagged string holds.
-#[derive(Clone, Debug, PartialEq)]
-pub enum TypedContent {
-    /// The text to pass to the constructor, in its accepted form.
-    Text(String),
-    Point(PointContent),
-}
-
-/// A validated tagged string: the tag, the content, and where it was written.
-#[derive(Clone, Debug, PartialEq)]
-pub struct TypedValue {
-    pub tag: Tag,
-    pub content: TypedContent,
-    pub span: Span,
 }
 
 #[cfg(test)]
@@ -110,10 +77,7 @@ mod tests {
     use super::*;
 
     fn text(tag: Tag, s: &str) -> String {
-        match tag.validate(s).unwrap() {
-            TypedContent::Text(t) => t,
-            other => panic!("{other:?}"),
-        }
+        tag.validate(s).unwrap()
     }
 
     #[test]
@@ -143,17 +107,9 @@ mod tests {
     }
 
     #[test]
-    fn a_point_carries_its_numbers() {
-        let c = Tag::Point.validate("SRID=4979;1.5 -2 3").unwrap();
-        assert_eq!(
-            c,
-            TypedContent::Point(PointContent {
-                srid: 4979,
-                x: 1.5,
-                y: -2.0,
-                z: Some(3.0)
-            })
-        );
+    fn a_point_carries_its_normal_content() {
+        assert_eq!(text(Tag::Point, "SRID=4979;1.5 -2 3"), "SRID=4979;1.5 -2 3");
+        assert_eq!(text(Tag::Point, "SRID=4326;30.0 10"), "SRID=4326;30 10");
     }
 
     #[test]

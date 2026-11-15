@@ -1,32 +1,40 @@
 //! Property values: gram value nodes to Cypher values on load (ADR-006
 //! sections 2.1 to 2.3), and Cypher values to gram text on export.
 
-use crate::diagnostics::{code, Diagnostic};
+use crate::diagnostics::{code, Diagnostic, Span};
 use crate::settings::TagPolicy;
 use crate::syntax::Syntax;
-use crate::typed::{Tag, TypedValue};
+use crate::typed::Tag;
+use gram_value::Value;
 use tree_sitter::Node;
 
-/// A property value the loader can store: a Cypher scalar, a typed value (ADR-011), or a
-/// list of one kind.
+/// A property value the loader can store (ADR-013 section 2.1): a `gram_value::Value` of kind
+/// integer, decimal, boolean, string, tagged (a recognized tag, ADR-012) or an array of one
+/// kind, with where it was written.
 #[derive(Clone, Debug, PartialEq)]
-pub enum PropValue {
-    Int(i64),
-    Float(f64),
-    Bool(bool),
-    Str(String),
-    /// A tagged string with a recognized tag, validated; the database builds the value.
-    Typed(TypedValue),
-    List(Vec<PropValue>),
+pub struct Lowered {
+    pub value: Value,
+    /// The position of the value.
+    pub span: Span,
+    /// The positions of an array's elements, in order; empty for any other value.
+    pub items: Vec<Span>,
 }
 
-impl PropValue {
-    /// Whether the value is a typed value or a list of them. The loader writes these with
+impl Lowered {
+    fn scalar(value: Value, span: Span) -> Self {
+        Lowered {
+            value,
+            span,
+            items: Vec::new(),
+        }
+    }
+
+    /// Whether the value is a typed value or an array of them. The loader writes these with
     /// constructor statements after the other properties (ADR-011 section 2.7).
     pub fn is_typed(&self) -> bool {
-        match self {
-            PropValue::Typed(_) => true,
-            PropValue::List(items) => items.first().is_some_and(PropValue::is_typed),
+        match &self.value {
+            Value::Tagged(_) => true,
+            Value::Array(items) => matches!(items.first(), Some(Value::Tagged(_))),
             _ => false,
         }
     }
@@ -91,15 +99,12 @@ pub(crate) fn name_text(syn: &Syntax, node: Node<'_>) -> String {
     }
 }
 
-/// Which scalar kind a value is, for the homogeneous-array rule (ADR-006 section 2.2).
-fn kind_name(v: &PropValue) -> &'static str {
+/// Which kind a value is, for the homogeneous-array rule (ADR-006 section 2.2): the kind's name,
+/// or the tag for a tagged value, so that a `date` and a `datetime` do not mix.
+fn kind_name(v: &Value) -> String {
     match v {
-        PropValue::Int(_) => "integer",
-        PropValue::Float(_) => "decimal",
-        PropValue::Bool(_) => "boolean",
-        PropValue::Str(_) => "string",
-        PropValue::Typed(t) => t.tag.name(),
-        PropValue::List(_) => "list",
+        Value::Tagged(t) => t.tag().to_string(),
+        other => other.kind().name().to_string(),
     }
 }
 
@@ -109,7 +114,7 @@ fn reject(
     diag_code: &'static str,
     message: String,
     diags: &mut Vec<Diagnostic>,
-) -> Option<PropValue> {
+) -> Option<Lowered> {
     diags.push(Diagnostic::error(diag_code, syn.span(node), message));
     None
 }
@@ -121,12 +126,13 @@ pub(crate) fn convert_value(
     node: Node<'_>,
     tags: TagPolicy,
     diags: &mut Vec<Diagnostic>,
-) -> Option<PropValue> {
+) -> Option<Lowered> {
     let text = syn.text(node);
+    let span = syn.span(node);
     match node.kind() {
-        "integer" => match text.parse::<i64>() {
-            Ok(i) => Some(PropValue::Int(i)),
-            Err(_) => reject(
+        "integer" => match integer_value(text) {
+            Some(v) => Some(Lowered::scalar(v, span)),
+            None => reject(
                 syn,
                 node,
                 code::VALUE_INTEGER_RANGE,
@@ -135,7 +141,7 @@ pub(crate) fn convert_value(
             ),
         },
         "hexadecimal" => match i64::from_str_radix(&text[2..], 16) {
-            Ok(i) => Some(PropValue::Int(i)),
+            Ok(i) => Some(Lowered::scalar(Value::integer(i), span)),
             Err(_) => reject(
                 syn,
                 node,
@@ -145,7 +151,7 @@ pub(crate) fn convert_value(
             ),
         },
         "decimal" => {
-            let f: f64 = text.parse().unwrap_or(f64::INFINITY);
+            let f = decimal_float(text);
             let nonzero_digits = text.chars().any(|c| ('1'..='9').contains(&c));
             if !f.is_finite() {
                 reject(
@@ -164,12 +170,12 @@ pub(crate) fn convert_value(
                     diags,
                 )
             } else {
-                Some(PropValue::Float(f))
+                Value::decimal(f).ok().map(|v| Lowered::scalar(v, span))
             }
         }
-        "boolean_literal" => Some(PropValue::Bool(text == "true")),
-        "symbol" => Some(PropValue::Str(text.to_string())),
-        "string_literal" => Some(PropValue::Str(string_value(syn, node))),
+        "boolean_literal" => Some(Lowered::scalar(Value::boolean(text == "true"), span)),
+        "symbol" => Some(Lowered::scalar(Value::string(text), span)),
+        "string_literal" => Some(Lowered::scalar(Value::string(string_value(syn, node)), span)),
         "tagged_string" => {
             let tag = node.child_by_field_name("tag").map(|t| syn.text(t)).unwrap_or("");
             let raw = content(syn, node);
@@ -182,11 +188,9 @@ pub(crate) fn convert_value(
             // (ADR-011 sections 2.2 and 2.3).
             if let Some(recognized) = Tag::from_name(tag) {
                 return match recognized.validate(&body) {
-                    Ok(content) => Some(PropValue::Typed(TypedValue {
-                        tag: recognized,
-                        content,
-                        span: syn.span(node),
-                    })),
+                    Ok(content) => Value::tagged(tag, content)
+                        .ok()
+                        .map(|v| Lowered::scalar(v, span)),
                     Err(fault) => reject(
                         syn,
                         node,
@@ -209,10 +213,10 @@ pub(crate) fn convert_value(
                 ),
             };
             diags.push(diag);
-            Some(PropValue::Str(body))
+            Some(Lowered::scalar(Value::string(body), span))
         }
         "array" => {
-            let mut items: Vec<(PropValue, Node<'_>)> = Vec::new();
+            let mut items: Vec<(Lowered, Node<'_>)> = Vec::new();
             let mut ok = true;
             let mut cursor = node.walk();
             for child in node.named_children(&mut cursor) {
@@ -228,22 +232,30 @@ pub(crate) fn convert_value(
                 return None;
             }
             if let Some((first, _)) = items.first() {
-                let want = kind_name(first);
-                if let Some((v, at)) = items.iter().find(|(v, _)| kind_name(v) != want) {
+                let want = kind_name(&first.value);
+                if let Some((v, at)) = items
+                    .iter()
+                    .find(|(v, _)| kind_name(&v.value) != want)
+                {
                     return reject(
                         syn,
                         *at,
                         code::VALUE_ARRAY_MIXED,
                         format!(
                             "an array holds one kind of value; found a {} after {} value(s)",
-                            kind_name(v),
+                            kind_name(&v.value),
                             want
                         ),
                         diags,
                     );
                 }
             }
-            Some(PropValue::List(items.into_iter().map(|(v, _)| v).collect()))
+            let spans: Vec<Span> = items.iter().map(|(_, n)| syn.span(*n)).collect();
+            Some(Lowered {
+                value: Value::array(items.into_iter().map(|(v, _)| v.value)),
+                span,
+                items: spans,
+            })
         }
         "range" => reject(
             syn,
@@ -283,6 +295,29 @@ pub(crate) fn convert_value(
     }
 }
 
+/// The integer a decimal-integer literal denotes, or `None` when it does not fit in 64 bits.
+/// The grammar accepts `-0`, which `gram-value` does not spell, so it is read as 0 here.
+fn integer_value(text: &str) -> Option<Value> {
+    if text == "-0" {
+        return Some(Value::integer(0));
+    }
+    match Value::integer_from_digits(text) {
+        Ok(v @ Value::Integer(_)) => Some(v),
+        _ => None,
+    }
+}
+
+/// The 64-bit float nearest a decimal literal. `gram-value` reports a literal that a float
+/// cannot hold exactly as a big decimal, whose digits are parsed here (ADR-013 section 2.2);
+/// a result that is not finite, or zero for a non-zero literal, is checked by the caller.
+fn decimal_float(text: &str) -> f64 {
+    match Value::decimal_from_text(text) {
+        Ok(Value::Decimal(d)) => d.get(),
+        Ok(Value::BigDecimal(b)) => b.as_str().parse().unwrap_or(f64::INFINITY),
+        _ => f64::INFINITY,
+    }
+}
+
 /// Shorten long literal text for messages.
 fn abbreviate(text: &str) -> String {
     const MAX: usize = 24;
@@ -302,8 +337,8 @@ pub(crate) fn convert_record(
     record: Node<'_>,
     tags: TagPolicy,
     diags: &mut Vec<Diagnostic>,
-) -> Vec<(String, PropValue)> {
-    let mut out: Vec<(String, PropValue)> = Vec::new();
+) -> Vec<(String, Lowered)> {
+    let mut out: Vec<(String, Lowered)> = Vec::new();
     let mut seen: Vec<(String, crate::diagnostics::Span)> = Vec::new();
     let mut cursor = record.walk();
     for prop in record.named_children(&mut cursor) {
