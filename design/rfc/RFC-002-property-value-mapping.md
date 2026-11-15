@@ -3,7 +3,7 @@ id: RFC-002
 title: Property Value Mapping Between Gram and Cypher
 status: review
 created: 2026-11-06
-adrs: [ADR-006, ADR-007, ADR-011]
+adrs: [ADR-006, ADR-007, ADR-011, ADR-012, ADR-013]
 ---
 
 # RFC-002: Property Value Mapping Between Gram and Cypher
@@ -116,5 +116,7 @@ The mapping applies equally to node properties, relationship properties and the 
 - ADR-006: Property Value Mapping (first phase; resolves questions 7.1, 7.2, 7.5, 7.6 and 7.10)
 - ADR-007: Parsing Through the tree-sitter-gram Syntax Tree
 - ADR-011: Typed Tags, Typed Lists and Empty Lists (resolves questions 7.3 and 7.4, and the empty-list part of 7.5)
+- ADR-012: Known Tags Come from gram-value
+- ADR-013: gram-value Is the Value Model for Load and Export (the canonical spelling of question 7.2)
 
 _(populated automatically as `/adr-create` links ADRs to this RFC)_
