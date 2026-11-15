@@ -22,7 +22,7 @@ relate = { version = "~1.0", default-features = false }
 tree-sitter = "0.25"
 tree-sitter-gram = "=0.7.0"
 thiserror = "2"
-gram-value = "0.1"
+gram-value = "0.2"
 
 [dev-dependencies]
 proptest = "1"

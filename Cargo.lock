@@ -321,9 +321,9 @@ dependencies = [
 
 [[package]]
 name = "gram-value"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "930c13bc4cd897bd84638d8d55eb81a1a12f20521753a7d7dc7268942b29aa8d"
+checksum = "faf2134344aad0faf01907d11bd34a1810b7201df7171b20059a1d3b88931dea"
 
 [[package]]
 name = "hash32"
