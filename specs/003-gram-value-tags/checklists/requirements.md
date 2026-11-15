@@ -30,5 +30,5 @@
 
 ## Notes
 
-- SC-004 (1.2 times) needs a baseline taken before the change; the plan must record it.
-- The Expected Differences table is provisional until the comparison of FR-009 runs.
+- SC-004 baseline recorded in tasks.md and met.
+- The Expected Differences table now records the comparison's results.

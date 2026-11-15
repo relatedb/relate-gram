@@ -486,3 +486,12 @@ fn a_bad_typed_value_has_no_fix_and_is_annotated_once() {
     let text2 = String::from_utf8(second.text).unwrap();
     assert_eq!(text2.matches("relate-gram: error").count(), 1);
 }
+
+#[test]
+fn a_point_in_extended_well_known_text_is_left_alone_and_reported() {
+    // ADR-012 section 2.4: no fix is offered for the old spelling.
+    let src = "(a {g: point`SRID=4326;POINT(1 2)`})";
+    let out = run(src, &LoadSettings::default(), &opts());
+    assert_eq!(String::from_utf8(out.text).unwrap(), src);
+    assert!(out.remaining.iter().any(|d| d.code == "value.tag-content"));
+}

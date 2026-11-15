@@ -157,16 +157,16 @@ A maintainer wants to know that replacing about 700 lines of validators changed 
 
 ## Expected Differences
 
-These are what ADR-012 section 2.7 expects from reading both validators; the comparison confirms or corrects them, and the final list replaces this one before the old validators are removed.
+Recorded by the comparison of FR-009 (task T010): the old validators and `Tag::validate` ran over 238 string literals (every literal in the old validators' unit tests and every typed fixture) under each of the eight tags; 66 were accepted by at least one. These are all the differences; each is explained by ADR-012.
 
 | Input | Before | After | Reason |
 |---|---|---|---|
-| ``point`SRID=4326;POINT(1 2)` `` | loads | rejected | The point form is gram-value's (ADR-012 section 2.4). |
-| ``point`SRID=4326;1 2` `` | rejected | loads | Same. |
-| ``point`30 10` `` | rejected (form) | rejected (profile) | No SRID; the message differs (ADR-012 section 2.3). |
-| ``time`10:30Z` `` and the other times without seconds | rejected | loads | Seconds are spelling (ADR-012 section 2.3). |
-| A point coordinate in exponent form | rejected | rejected | Same outcome; the message is gram-value's. |
-| An offset `+00:00`, a fraction `.50`, a coordinate `30.0` | loads as written | loads in normal form | Same value (ADR-012 section 2.2). |
+| ``time`10:30Z` ``, ``localtime`10:30` ``, ``datetime`2024-01-15T10:30Z` ``, ``localdatetime`2024-01-15T10:30` `` | rejected | loads | Seconds are spelling (ADR-012 section 2.3). |
+| ``point`SRID=4326;POINT(-74.0 40.7)` `` and the other nine extended well-known text points (SRIDs 4326, 7203, 4979, 9157; latitude -90 and 90) | loads | rejected | The point form is gram-value's (ADR-012 section 2.4). |
+| ``point`SRID=4326;1 2` `` and its kind (not among the old tests' literals; known from the forms) | rejected | loads | Same. |
+| ``point`30 10` `` | rejected (form) | rejected (profile) | Same outcome; the message says Relate needs an SRID (ADR-012 section 2.3). |
+
+No other input changed outcome. Differences in value, not outcome (an offset `+00:00`, a fraction `.50`, a coordinate `30.0`, an upper-case UUID) are covered by unit tests of `Tag::validate`: the loader passes the normal form, which denotes the same value (ADR-012 section 2.2).
 
 ## Assumptions
 

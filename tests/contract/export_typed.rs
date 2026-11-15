@@ -45,18 +45,9 @@ fn points_are_written_with_their_srid_and_longitude_first() {
     let (_db, mut c) = fresh_db();
     build(&mut c);
     let text = export_str(&mut c).unwrap();
-    assert!(
-        text.contains("p: point`SRID=4326;POINT(-74.0 40.7)`"),
-        "{text}"
-    );
-    assert!(
-        text.contains("c: point`SRID=9157;POINT Z(1.0 2.0 3.0)`"),
-        "{text}"
-    );
-    assert!(
-        text.contains("at: point`SRID=7203;POINT(1.5 2.5)`"),
-        "{text}"
-    );
+    assert!(text.contains("p: point`SRID=4326;-74 40.7`"), "{text}");
+    assert!(text.contains("c: point`SRID=9157;1 2 3`"), "{text}");
+    assert!(text.contains("at: point`SRID=7203;1.5 2.5`"), "{text}");
 }
 
 #[test]
@@ -98,7 +89,7 @@ fn a_list_of_one_typed_kind_is_written_as_an_array_of_tagged_strings() {
     for want in [
         "dates: [date`2024-01-01`, date`2024-02-02`]",
         "spans: [duration`P1D`, duration`PT1H`]",
-        "places: [point`SRID=7203;POINT(1.0 2.0)`, point`SRID=9157;POINT Z(1.0 2.0 3.0)`]",
+        "places: [point`SRID=7203;1 2`, point`SRID=9157;1 2 3`]",
         "ids: [uuid`123e4567-e89b-12d3-a456-426614174000`]",
     ] {
         assert!(text.contains(want), "missing {want} in:\n{text}");
@@ -125,4 +116,15 @@ fn a_list_that_mixes_temporal_kinds_fails_the_export_and_is_listed() {
         "{}",
         f.diagnostics[0].message
     );
+}
+
+#[test]
+fn point_coordinates_are_the_shortest_decimals_and_negative_zero_is_zero() {
+    let (_db, mut c) = fresh_db();
+    run(
+        &mut c,
+        "CREATE (n:P {g: point({longitude: -0.0, latitude: 0.5})})",
+    );
+    let text = export_str(&mut c).unwrap();
+    assert!(text.contains("g: point`SRID=4326;0 0.5`"), "{text}");
 }

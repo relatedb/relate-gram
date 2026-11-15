@@ -12,19 +12,23 @@ command line or the library interface.
 - Typed tags (ADR-011): a tagged string with the tag `date`, `time`, `localtime`, `datetime`,
   `localdatetime`, `duration`, `point` or `uuid` loads as a value of the matching Relate type, an array of one
   such tag loads as a list of that type, and typed values export as tagged strings, so a database holding them
-  can be exported and read back with equal values. The content forms are in `docs/supported-gram.md`.
+  can be exported and read back with equal values. The content forms are in `docs/supported-gram.md`. Their validation comes from the
+  `gram-value` crate (ADR-012), narrowed by a Relate profile: a time or datetime needs an offset, and a point needs
+  an SRID of 4326, 7203, 4979 or 9157. Seconds are optional. A point is written ``point`SRID=4326;12.5 55.7` ``
+  (three numbers for 4979 and 9157), the form other gram tools use.
 - The diagnostic code `value.tag-content`: the content of a recognized tag does not follow its form. `check`
   finds it without a database, except whether a zone name exists and matches its offset, which only a load can
   tell.
-- Library: `values::PropValue` has a new `Typed` variant, and the new `typed` module holds the tags and their
-  validators.
+- Library: `values::PropValue` has a new `Typed` variant, and the new `typed` module holds the tags and the
+  profile; the crate now depends on `gram-value` 0.1.
 
 ### Changed
 
 - A file that wrote one of those eight tags on a string used to load the content as a string with a warning. It
   now loads a typed value, or fails with `value.tag-content` if the content does not follow the form. To keep a
   plain string, remove the tag or use another one. The tree-sitter-gram corpus itself writes ``time`17:35` `` and
-  ``point`30 10` ``; neither is accepted (a time needs seconds and an offset, a point needs an SRID).
+  ``point`30 10` ``; neither is accepted (a time needs an offset, a point needs an SRID), but ``time`17:35Z` `` loads.
+  Extended well-known text (``point`SRID=4326;POINT(1 2)` ``) is not accepted either; write ``point`SRID=4326;1 2` ``.
 - Vectors still cannot be exported; the error now names the vector.
 
 ### Known limits

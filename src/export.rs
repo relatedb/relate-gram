@@ -277,17 +277,27 @@ fn point_text(srid: i32, x: f64, y: f64, z: Option<f64>) -> Result<String, Strin
     }
     match (srid, z) {
         (4326 | 7203, None) => Ok(format!(
-            "point`SRID={srid};POINT({} {})`",
-            float_text(x),
-            float_text(y)
+            "point`SRID={srid};{} {}`",
+            coordinate_text(x),
+            coordinate_text(y)
         )),
         (4979 | 9157, Some(z)) => Ok(format!(
-            "point`SRID={srid};POINT Z({} {} {})`",
-            float_text(x),
-            float_text(y),
-            float_text(z)
+            "point`SRID={srid};{} {} {}`",
+            coordinate_text(x),
+            coordinate_text(y),
+            coordinate_text(z)
         )),
         _ => Err(format!("a point with SRID {srid} has no gram form")),
+    }
+}
+
+/// A point coordinate as the shortest decimal that reads back as the same number, with no
+/// exponent and no `.0` (ADR-012 section 2.6); `-0` is written `0`.
+fn coordinate_text(v: f64) -> String {
+    if v == 0.0 {
+        "0".to_string()
+    } else {
+        format!("{v}")
     }
 }
 

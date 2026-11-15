@@ -78,7 +78,7 @@ fn typed_gram(nodes: usize, typed: bool) -> String {
             (
                 format!("date`2024-01-{:02}`", i % 28 + 1),
                 format!("duration`PT{}S`", i % 1000 + 1),
-                format!("point`SRID=7203;POINT({}.5 {}.5)`", i % 90, i % 45),
+                format!("point`SRID=7203;{}.5 {}.5`", i % 90, i % 45),
             )
         } else {
             (

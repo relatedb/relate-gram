@@ -4,9 +4,7 @@
 //! without one. The loader turns a validated [`TypedValue`] into a Relate value with a
 //! Cypher constructor (ADR-011 section 2.7), and the exporter writes one back.
 
-pub mod point;
-pub mod temporal;
-pub mod uuid;
+mod profile;
 
 use crate::diagnostics::Span;
 
@@ -55,19 +53,30 @@ impl Tag {
         }
     }
 
-    /// Check `text` against the content form of this tag (ADR-011 section 2.2).
-    /// The error is a short description of the fault, for a `value.tag-content` message.
+    /// Check `text` against the content form of this tag: gram-value's interpretation, then the
+    /// Relate profile (ADR-012 sections 2.2 and 2.3). The error is a short description of the
+    /// fault, for a `value.tag-content` message.
     pub fn validate(self, text: &str) -> Result<TypedContent, String> {
-        match self {
-            Tag::Date => temporal::date(text),
-            Tag::Time => temporal::time(text),
-            Tag::LocalTime => temporal::local_time(text),
-            Tag::DateTime => temporal::date_time(text),
-            Tag::LocalDateTime => temporal::local_date_time(text),
-            Tag::Duration => temporal::duration(text),
-            Tag::Point => point::point(text).map(TypedContent::Point),
-            Tag::Uuid => uuid::uuid(text),
-        }
+        let name = self.name();
+        let interpretation = gram_value::tags::interpret_tag(name, text)
+            .map_err(|d| {
+                let prefix = format!("{name}: ");
+                d.message
+                    .strip_prefix(&prefix)
+                    .unwrap_or(&d.message)
+                    .to_string()
+            })?
+            .ok_or_else(|| format!("`{name}` is not a known tag"))?;
+        profile::check(&interpretation)?;
+        Ok(match interpretation.typed {
+            gram_value::tags::Typed::Point(p) => TypedContent::Point(PointContent {
+                srid: p.srid.map_or(0, |s| s as i64),
+                x: p.x,
+                y: p.y,
+                z: p.z,
+            }),
+            _ => TypedContent::Text(interpretation.normal_content),
+        })
     }
 }
 
@@ -94,4 +103,62 @@ pub struct TypedValue {
     pub tag: Tag,
     pub content: TypedContent,
     pub span: Span,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn text(tag: Tag, s: &str) -> String {
+        match tag.validate(s).unwrap() {
+            TypedContent::Text(t) => t,
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn faults_do_not_repeat_the_tag() {
+        for (tag, bad) in [
+            (Tag::Date, "2024-13-45"),
+            (Tag::Duration, "P1W"),
+            (Tag::Uuid, "xyz"),
+        ] {
+            let e = tag.validate(bad).unwrap_err();
+            assert!(!e.starts_with(&format!("{}: ", tag.name())), "{e}");
+        }
+    }
+
+    #[test]
+    fn text_tags_carry_the_normal_content() {
+        assert_eq!(text(Tag::Time, "17:35Z"), "17:35:00Z");
+        assert_eq!(text(Tag::Time, "10:30:00+00:00"), "10:30:00Z");
+        assert_eq!(text(Tag::LocalTime, "10:30:00.50"), "10:30:00.5");
+        assert_eq!(
+            text(Tag::Uuid, "123E4567-E89B-12D3-A456-426614174000"),
+            "123e4567-e89b-12d3-a456-426614174000"
+        );
+        assert!(
+            text(Tag::DateTime, "2024-01-15T10:30+01:00[Europe/Paris]").contains("[Europe/Paris]")
+        );
+    }
+
+    #[test]
+    fn a_point_carries_its_numbers() {
+        let c = Tag::Point.validate("SRID=4979;1.5 -2 3").unwrap();
+        assert_eq!(
+            c,
+            TypedContent::Point(PointContent {
+                srid: 4979,
+                x: 1.5,
+                y: -2.0,
+                z: Some(3.0)
+            })
+        );
+    }
+
+    #[test]
+    fn the_profile_is_applied() {
+        assert!(Tag::Time.validate("17:35").unwrap_err().contains("offset"));
+        assert!(Tag::Point.validate("30 10").unwrap_err().contains("SRID"));
+    }
 }

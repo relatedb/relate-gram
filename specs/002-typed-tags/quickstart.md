@@ -7,7 +7,7 @@ Prerequisites: `cargo build`, and `git submodule update --init external/tree-sit
    ```bash
    cat > /tmp/typed.gram <<'GRAM'
    (ada:Person {born: date`1815-12-10`, id: uuid`123e4567-e89b-12d3-a456-426614174000`,
-                loc: point`SRID=4326;POINT(-0.1278 51.5074)`, span: duration`P1Y2M`})
+                loc: point`SRID=4326;-0.1278 51.5074`, span: duration`P1Y2M`})
    GRAM
    target/debug/relate-gram load /tmp/typed.gram --db /tmp/typed-db
    relate query --database /tmp/typed-db "MATCH (n:Person) RETURN valueType(n.born), valueType(n.loc), n.span"
