@@ -7,6 +7,11 @@ command line or the library interface.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-15
+
+Typed tags, and `gram-value` as the value model. A breaking minor version for library users and a visible
+change for exported strings; see Changed.
+
 ### Added
 
 - Typed tags (ADR-011): a tagged string with the tag `date`, `time`, `localtime`, `datetime`,
@@ -39,6 +44,8 @@ command line or the library interface.
 
 ### Known limits
 
+- `week` and `weekDate`, which `gram-value` knows, are not recognized: they are dropped like any other unrecognized
+  tag, because Relate has no type for them.
 - A UUID loaded into a persisted database reads back as a string after the database is reopened, because this
   crate builds Relate without its default `parquet` snapshot codec (SPIKE-005 notes). Dates, times, datetimes,
   durations and points survive a reopen.

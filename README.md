@@ -80,7 +80,8 @@ bidirectional relationships are errors.
 
 ## Status and limits
 
-Version 0.1 is the first release: phase 1 of the plan, one graph space with no named graphs.
+Version 0.2 is phase 1 of the plan, one graph space with no named graphs, with typed tags (dates, times,
+durations, points and UUIDs).
 [`CHANGELOG.md`](CHANGELOG.md) lists what it contains. Known limits:
 
 - Concurrent writers, WebAssembly and Windows are not tested; loading is tested up to 50,000 elements.
