@@ -22,7 +22,7 @@ Implement ADR-014. `embedding` becomes a ninth `typed::Tag`; its content is vali
 
 **Project Type**: library plus the `relate-gram` command; no new option
 
-**Performance Goals**: SC-006: 1,000 vectors of dimension 1,536 loaded and exported within 1.2 times a baseline measured in task T001; SC-005: the typed 10,000-element load stays within its existing ceiling
+**Performance Goals**: SC-006: 1,000 vectors of dimension 1,536 loaded and exported, first measured when the feature is complete and held to 1.2 times that figure afterwards; SC-005: the typed 10,000-element load stays within its existing ceiling
 
 **Constraints**: public Relate interfaces only (Constitution V); loads complete or change nothing; no `unsafe`; export of everything but a float vector unchanged (FR-012)
 

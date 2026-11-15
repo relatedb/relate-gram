@@ -150,7 +150,7 @@ A developer reading the user documents, the changelog and the earlier decisions 
 - **SC-003**: With the preview flag on, the exhaustive test covers all 65,536 bit patterns of each 16-bit format and the round trip is exact for every finite pattern.
 - **SC-004**: A flag-off load of a file with 16-bit embeddings stops before any write: the database is unchanged and each affected value has one error.
 - **SC-005**: Existing fixtures and golden strings are unchanged except those that used `embedding` or `vector` as an example of an unrecognized tag, and loading 10,000 typed elements stays within the ceiling of the previous release's SC-004.
-- **SC-006**: Loading and exporting 1,000 vectors of dimension 1,536 stays within a ceiling set at 1.2 times the figure measured before the implementation, recorded in `tasks.md`, in a release build on the same machine.
+- **SC-006**: Loading and exporting 1,000 vectors of dimension 1,536 is measured in a release build when the feature is first complete and recorded in `tasks.md`; later changes stay within 1.2 times that figure on the same machine.
 - **SC-007**: The crate adds no dependency beyond `gram-value` 0.2 (`cargo tree` differs only by that bump), and `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `scripts/check-public-api.sh` and `cargo test` pass.
 
 ## Assumptions

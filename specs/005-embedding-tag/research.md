@@ -8,7 +8,7 @@
 
 ## R2. An array of embeddings
 
-- **Decision**: in the lowering of an `array` node in `src/values.rs`, before the elements are converted, look at each named child; if any is a `tagged_string` whose tag is `embedding`, push one `value.tag-content` error at the array node and return `None`. A mixed array with an embedding in it gets the same error, because the embedding is detected first; the spec scenario that expects `value.array-mixed` for a mix is therefore checked against the real order in test T0xx and, if the error differs, the ADR text is amended (see tasks).
+- **Decision**: in the lowering of an `array` node in `src/values.rs`, before the elements are converted, look at the named children. If every child is a `tagged_string` whose tag is `embedding`, push one `value.tag-content` error at the array node and return `None`. Otherwise the elements are converted as today: an embedding mixed with other values converts to a tagged value of tag `embedding`, which differs in kind from its neighbours, so the existing homogeneity check reports `value.array-mixed` at the first differing element (a bad embedding element reports its own `value.tag-content` first, as for other tags).
 - **Rationale**: ADR-014 section 2.2 says the array is decided before the elements' own content; the reviewer found that `Tag::ALL` growing would otherwise make a bad element report `value.tag-content` first.
 - **Alternatives**: a new code (rejected in the ADR: no new code).
 
@@ -53,5 +53,5 @@
 
 ## R10. Performance baseline
 
-- **Decision**: T001 measures, in a release build, loading and exporting 1,000 vectors of dimension 1,536 with a throwaway `perf` case (the case is kept as a new `#[ignore]` test in `tests/perf.rs`), and re-runs the typed 10,000-element load. The ceilings are 1.2 times those figures.
-- **Rationale**: SC-005 and SC-006 are relative; there is no baseline before the feature, so the first measurement of the new test on the unchanged export is not possible (export refuses vectors): the baseline for load is taken from the first implementation that passes, recorded as a note in tasks, and the ceiling applies to later changes.
+- **Decision**: there is no baseline before the feature, because export refuses vectors today. A new `#[ignore]` case in `tests/perf.rs` loads and exports 1,000 vectors of dimension 1,536; its first measurement on the finished feature is recorded in `tasks.md`, and the ceiling is 1.2 times that figure for later changes. T001 re-measures only the typed 10,000-element load, whose ceiling already exists (SC-005).
+- **Rationale**: SC-005 is relative to the previous release; SC-006 can only be relative to the feature's own first measurement.

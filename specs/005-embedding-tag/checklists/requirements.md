@@ -31,5 +31,5 @@
 
 ## Notes
 
-- SC-006 sets its ceiling from a baseline taken before implementation, which `tasks.md` records, as SC-004 of spec 004 did.
+- SC-006 has no earlier baseline (export refused vectors), so `tasks.md` records the first measurement of the finished feature.
 - The spec needs `gram-value` 0.2 (PR 10 merged) before implementation.
