@@ -14,12 +14,12 @@ relate-gram's behavior is defined by its Rust tests. The invalid cases are files
 
 Four properties of the behavior shape any shared form:
 
-- Positions are bytes. A diagnostic's `column` counts bytes from the start of the line, and its offset is a byte offset (ADR-007), so an implementation whose strings are UTF-16 or code points has to convert.
-- The cases are about gram text. A reader of the collection that parses gram with the parser under test would hide that parser's faults from the very cases meant to catch them.
-- Expected graphs hold Relate's value types: integers and floats that must stay distinct, dates, points, UUIDs and, since `embedding`, vectors. Plain JSON cannot tell `1` from `1.0`, nor a date from a string.
+- Positions are bytes. A diagnostic's `column` counts bytes from the start of the line, and its offset is a byte offset (ADR-007), so the text under test must be kept as exact bytes, and an implementation whose strings are UTF-16 or code points has to convert.
+- The expected results are graphs and records, which gram writes natively. Relate's value types appear in them: integers and decimals that stay distinct, dates, points, UUIDs and, since `embedding`, vectors. Gram's literals and tags already express these, and the full grammar adds a top-level record that can hold arrays and shallow maps, doc comments (`/** … */`), and annotations (`@key(value)`, whose value may be any value).
+- relate-gram loads a strict subset of that grammar. It rejects annotations (`construct.annotation`), maps (`value.map`) and a record `kind` other than `property-graph`, so a file that uses them is not loadable by relate-gram. A collection file is read by a test runner, never loaded.
 - A Relate package cannot always express a case. Relate's browser package has no explicit transactions and takes JSON parameters only, and a package may lack a value type.
 
-`gram-value` runs its languages against one corpus, with a list of skipped cases per package and a parity table generated from the results. Its corpus is written in gram, and describes values without a database.
+`gram-value` runs its languages against one corpus written in gram, read by each package with its own tree-sitter-gram binding, with a list of skipped cases per package and a parity table generated from the results.
 
 ## 2. Decision
 
@@ -27,20 +27,28 @@ Four properties of the behavior shape any shared form:
 
 The cases live in a `conformance/` directory in this repository, with a `conformance/VERSION` file. The Rust tests read it directly. An implementation in another repository takes a pinned copy, a git submodule or a vendored directory, at a released version of the collection. Behavior changes land here first, together with the Rust change that makes them true.
 
-### 2.2 A case is a directory of plain files
+### 2.2 A case is a directory, and its description is gram
 
-A case is a directory `conformance/<kind>/<id>/`. Its `case.json` states the case, and the gram text, expected text or other bulky inputs are files beside it. The identifier is the directory name, is stable, and is never reused. JSON is the format because every target language reads it without a library. The kinds are:
+A case is a directory `conformance/<kind>/<id>/`. The identifier is the directory name, is stable, and is never reused. The directory holds:
 
-- **`reject`**: a gram text that must fail. `case.json` lists the expected errors, each with `code`, `line`, `column` and `offset`, and nothing else may be reported as an error. The runner loads the text into a database that holds the standard starting graph (two nodes and a relationship, defined once in the collection) and requires that graph to be unchanged afterwards. It also checks the text without a database and requires the same errors.
-- **`load`**: a gram text that must load. `case.json` gives the settings (default: none), an optional starting graph (default: empty), and the expected graph, the expected warnings (code and position) and the expected counts. A `load` case may also give the text that the resulting database exports to. The runner then loads that text into an empty database and requires an equal graph.
-- **`export`**: a graph, settings, and either the expected text or the expected failures. An export failure is compared by its multiset of codes (2.5).
-- **`fix`**: a gram text, the options, the expected output text, the counts of applied corrections by code, and the codes that remain.
+- `case.gram`, the description of the case, in gram. Its top-level record gives the `kind`, the `requires` list of capabilities (2.6) and the case's settings, with maps and arrays as the grammar allows. A doc comment explains why the case exists and cites the decision it tests; the runner passes it to the results and otherwise ignores it. Each expected diagnostic, warning or count is a node: `(:Error {code: "rel.no-type", line: 2, column: 8, offset: 73})`. An annotation decorates a pattern, and an expectation has no pattern to decorate, so expectations are nodes and annotations are not used.
+- `input.gram`, the text under test, kept as exact bytes in its own file, since a position is an offset into those bytes and the text may itself use constructs that a case file would not.
+- `start.cypher`, where a case needs a starting database, and `expected.gram` or `exported.gram` where it needs an expected graph or expected text (below).
 
-### 2.3 Graphs are described in JSON with explicit value types
+The collection is checked with `gram lint --strict`. The kinds are:
 
-A graph is a list of nodes and a list of relationships. A node has `labels` and `properties`; a relationship has `type`, `from`, `to` and `properties`, where `from` and `to` name a node by its position in the list. A property value is a JSON string (a string), a JSON integer (an integer), a JSON boolean (a boolean), or an object with one key that names the type: `float`, `date`, `time`, `localtime`, `datetime`, `localdatetime`, `duration`, `point`, `uuid`, `vector`, or `list`. The `float` and temporal keys hold the same text a gram file would, `vector` holds the vector kind and its elements, and `list` holds an array of values. A float is written as text, so `1` and `1.0` cannot be confused.
+- **`reject`**: a text that must fail. `case.gram` holds one `Error` node per expected error with `code`, `line`, `column` and `offset`, and nothing else may be reported as an error. The runner loads the text into a database made by `start.cypher`, which is the standard starting graph kept once at `conformance/start.cypher` unless the case has its own, and requires that graph to be unchanged afterwards. It also checks the text without a database and requires the same errors.
+- **`load`**: a text that must load. `case.gram` holds the settings, `Warning` nodes for the expected warnings, and a `Counts` node. `expected.gram` is the expected graph. A `load` case may also have `exported.gram`, the text the resulting database exports to; the runner then loads that text into an empty database and requires an equal graph.
+- **`export`**: a database made by `start.cypher`, the settings, and either `exported.gram` (the expected text, compared byte for byte) or `Error` nodes naming the expected failures by code (2.5).
+- **`fix`**: a text, the options in the record, `fixed.gram` (the expected output text), `Applied` nodes with a `code` and a `count` for each correction, and `Remaining` nodes with the codes of the errors that remain.
 
-Two graphs are equal when they have the same multiset of nodes and the same multiset of relationships, where a node is its sorted labels and properties, and a relationship is its type, its properties and the nodes at its ends. Property values compare by gram-value's canonical text, which every language package already has. The comparison depends on no internal identifier and not on order. It is the comparison the Rust tests make today with a database dump.
+### 2.3 Graphs are gram, and databases are made with Cypher
+
+An expected graph is an ordinary gram file. A runner reads it with its tree-sitter-gram binding and its gram-value package, so the types come from gram itself: an integer or a decimal literal, a tagged string for a date, point, UUID or embedding. An identifier written in `expected.gram` stands for the stored `@id` property, as the loader stores it, and an element without an identifier has none. The expected graph holds no maps or annotations, because Relate stores neither.
+
+Two graphs are equal when they have the same multiset of nodes and the same multiset of relationships, where a node is its sorted labels and properties, and a relationship is its type, its properties and the nodes at its ends. Property values compare by gram-value's canonical text. The comparison depends on no internal identifier and not on order. It is the comparison the Rust tests make today with a database dump.
+
+A starting database, and the database of an `export` case, is made by running `start.cypher` through the Relate package under test. Building it with the loader would let a loader fault change the starting state of every case it is used in, and Cypher can create states that gram cannot write, such as an integer vector.
 
 ### 2.4 What a case compares, and what it does not
 
@@ -48,11 +56,11 @@ A case compares codes, severities, lines, columns and byte offsets, the loaded g
 
 ### 2.5 Export failures are compared by code
 
-An export failure names an element by an internal identifier and a property key, and the identifier differs between databases. The `export` case lists the expected codes, in any order, and the runner compares them as a multiset. A case that must show which key is named includes the key in the failing graph's description and checks that the message contains it only in the implementation's own tests.
+An export failure names an element by an internal identifier and a property key, and the identifier differs between databases. An `export` case lists the expected codes as `Error` nodes, and the runner compares them as a multiset. A case that must show which key is named checks that the message contains it only in the implementation's own tests.
 
 ### 2.6 Capabilities decide skips, and known failures are separate
 
-A case may list `requires`, drawn from a fixed vocabulary kept in the collection: `explicit-transactions`, `vectors`, `vector-16-bit`, `typed-parameters`, `in-memory`. Each implementation states the capabilities of its Relate package in a small file. The runner skips a case whose requirements are not met and reports it as skipped with the missing capability, with no hand-written list. A case that an implementation fails for any other reason goes in that implementation's `known-failures` file with a reason and an issue, and the runner reports it separately and treats an unexpected pass as an error. Each run writes a `results` file recording, for every case, passed, failed, skipped or known-failing, and the collection version.
+`requires` draws on a fixed vocabulary kept in the collection: `explicit-transactions`, `vectors`, `vector-16-bit`, `typed-parameters`, `in-memory`. Each implementation states the capabilities of its Relate package in a small file. The runner skips a case whose requirements are not met and reports it as skipped with the missing capability, with no hand-written list. A case that an implementation fails for any other reason goes in that implementation's `known-failures` file with a reason and an issue; the runner reports it separately and treats an unexpected pass as an error. Each run writes a `results` file recording, for every case, passed, failed, skipped or known-failing, and the collection version.
 
 ### 2.7 Versions
 
@@ -64,31 +72,37 @@ A runner for the Rust library (`tests/conformance.rs`) reads the collection. The
 
 ## 3. Alternatives Considered
 
-3.1. **Write the cases in gram, as `gram-value` does.** Rejected: the collection's input is gram, so reading it with a gram parser makes the parser under test part of the harness, and a parser fault could hide a case. Expected graphs of Relate's value types need an encoding of their own in either form.
+3.1. **JSON case files.** Rejected: gram is the notation this tool exists for, and it already carries what the collection needs, so JSON would add a second encoding for each Relate value type (a `float` key, a `date` key, a `vector` key) beside gram's own literals and tags. Every implementation already has the tree-sitter-gram binding, because it parses gram input, and a gram-value package, so reading gram adds no dependency. A first draft chose JSON out of caution that a runner reading gram would share a parser with the code under test. That concern covers the input under test, which stays a separate file read as bytes. It does not apply to expectations, which the loader and exporter never read, and tree-sitter-gram has its own corpus for parsing.
 
-3.2. **One TOML manifest.** Rejected: Node.js has no TOML reader in its standard library, and JSON is read natively by Rust, Python and TypeScript.
+3.2. **One TOML manifest.** Rejected: Node.js has no TOML reader in its standard library, and the manifest would hold what gram already holds.
 
 3.3. **A repository of its own.** Rejected: a behavior change would need two coordinated pull requests, and today every change originates in this repository. It can move when the collection has owners besides this crate.
 
 3.4. **Inside the `gram-value` corpus.** Rejected: that corpus is about values and needs no database, and its cases and runners are not about loading, rejecting or exporting.
 
-3.5. **Use exported gram text as the expected graph.** Rejected: a fault in the loader and a fault in the exporter could cancel, and the case would pass.
+3.5. **Use exported gram text as the expected graph.** Rejected: the expected graph would then come out of the exporter under test, and a fault in the loader and a fault in the exporter could cancel. `expected.gram` is written by hand and read by the runner, not produced by the implementation.
 
 3.6. **Compare messages.** Rejected: the wording is for people and varies with each language's idiom, and a change of phrasing would fail every implementation.
 
 3.7. **Hand-written skip lists only.** Rejected: whether a Relate package can express a case is a property of the package, and stating it once as capabilities keeps every skip explained by the same vocabulary. A list is still needed for real failures, which is the known-failures file.
 
+3.8. **Annotations for the expectations.** Rejected: an annotation decorates a pattern, and an expectation such as an error at a position has no pattern in the case file to decorate, so an anchor node would have to be invented. A node per expectation is plain gram and needs no anchor.
+
+3.9. **Build starting graphs by loading gram.** Rejected: a fault in the loader would change the starting state of every case that uses it, and gram cannot write every state a database can hold.
+
 ## 4. Consequences
 
-- Expected graphs for the valid fixtures and the golden exports have to be written out; the rejected cases convert mechanically. The Rust tests that assert the same content inline are replaced by the runner, so the checking is not duplicated.
+- Expected graphs for the valid fixtures and the golden exports have to be written out as gram; the rejected cases convert mechanically. The Rust tests that assert the same content inline are replaced by the runner, so the checking is not duplicated.
+- Each implementation needs a small reader over the syntax tree for the record, labeled nodes and gram values. `gram-value`'s test runners already lower gram this way, and sharing that logic is the first thing to look at. This is more work in each language than reading JSON, and it is paid once.
+- A collection file is not loadable by relate-gram (`file.kind`, `value.map`), and `relate-gram check` reports errors on a `case.gram`. The collection's documentation says so, and `gram lint --strict` is the check that applies.
 - An implementation whose strings are not UTF-8 has to convert positions to bytes. This is the cost of positions that mean the same thing everywhere.
-- The graph encoding must grow with Relate's value types. A new type needs a key in 2.3, and implementations that cannot express it declare the capability.
+- The vocabulary of node labels in `case.gram` (`Error`, `Warning`, `Counts`, `Applied`, `Remaining`) and of capabilities must grow with the behavior, and the collection's documentation has to state both exactly.
 - Export failures are compared by code only, so a mistaken element or key in an export message is not caught by the collection.
-- The capability vocabulary, the results format and the table of results per implementation are conventions that the collection's documentation has to state exactly, and a script has to merge results from implementations kept in other repositories.
-- Follow-up work: a spec for the extraction and the Rust runner; the standard starting graph; the vocabulary and results formats; the table generation. RFC-005 open questions 7.6 and 7.7 (versions of the implementations, and which operations come first) remain open.
+- Integer vectors cannot appear in an expected graph, because gram has no tag for them; they are tested through the `export` kind, whose starting database is Cypher.
+- Follow-up work: a spec for the extraction and the Rust runner; the standard starting graph; the label and capability vocabularies and the results format; the table generation across implementations kept in other repositories. RFC-005 open questions 7.6 and 7.7 (versions of the implementations, and which operations come first) remain open.
 
 ## 5. Related
 
 - RFC-005 (resolves questions 7.4 and 7.5, and the recording of skipped cases in 3.5).
-- ADR-007 (positions are bytes), ADR-006 and ADR-011 to ADR-014 (the values the graph description carries), ADR-010 (the fixer).
-- `gram-value`'s conformance corpus and its ADR-001 (the precedent for a shared corpus, per-package skips and a generated parity table).
+- ADR-007 (positions are bytes), ADR-006 and ADR-011 to ADR-014 (the values an expected graph carries), ADR-010 (the fixer).
+- `gram-value`'s conformance corpus and its ADR-001 (the precedent for a shared corpus written in gram, per-package skips and a generated parity table).
