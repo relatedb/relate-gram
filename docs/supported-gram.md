@@ -17,7 +17,8 @@ Run `relate-gram check FILE` to find every problem in a file at once.
 - **Identifiers** `a`, `42`, `` `my id` ``: name an element so other parts of the file can refer to it.
   Each is stored as the property `@id`, and a later load matches by it.
 - **Property values**: strings (double-quoted, single-quoted, backticked or fenced), integers (decimal
-  or `0x` hexadecimal, 64 bits), decimals, `true` and `false`, bare words (`active` is the string
+  or `0x` hexadecimal, 64 bits), decimals (stored as 64-bit floats; a literal with more digits than a
+  float holds loads as the nearest float and gets a `value.decimal-precision` warning), `true` and `false`, bare words (`active` is the string
   `"active"`), and arrays of one kind (`[1, 2, 3]`).
 - **Typed values**: a tagged string whose tag is one of eight names becomes a value of that Relate type
   (see the table below), and an array of strings with one such tag becomes a list of that type.

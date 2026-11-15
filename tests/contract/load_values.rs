@@ -154,6 +154,33 @@ fn a_decimal_a_float_cannot_hold_exactly_loads_as_the_nearest_float() {
 }
 
 #[test]
+fn a_decimal_that_loses_digits_in_a_float_loads_with_a_precision_warning() {
+    let (_db, mut c) = fresh_db();
+    let src = "(a {d: 0.1000000000000000055511151231257827, l: [1.5, 0.30000000000000004441]})";
+    let r = load_str(&mut c, src).unwrap();
+    let warnings: Vec<_> = r
+        .diagnostics
+        .iter()
+        .filter(|d| d.code == "value.decimal-precision")
+        .collect();
+    assert_eq!(warnings.len(), 2, "{:?}", r.diagnostics);
+    assert!(warnings.iter().all(|d| !d.is_error()));
+    let first = warnings[0].span.expect("located");
+    assert_eq!(
+        &src[first.start..first.end],
+        "0.1000000000000000055511151231257827"
+    );
+    assert_eq!(node_prop(&mut c, "a", "d"), Value::Float(0.1));
+}
+
+#[test]
+fn a_decimal_a_float_holds_exactly_gives_no_precision_warning() {
+    let (_db, mut c) = fresh_db();
+    let r = load_str(&mut c, "(a {x: 0.1, y: 1.50, z: -0.0, w: 3.14})").unwrap();
+    assert!(!codes(&r.diagnostics).contains(&"value.decimal-precision"));
+}
+
+#[test]
 fn a_decimal_that_overflows_or_underflows_is_rejected() {
     let (_db, mut c) = fresh_db();
     let huge = format!("(a {{d: 1{}.5}})", "0".repeat(400));

@@ -157,6 +157,7 @@ pub mod code {
     pub const VALUE_OCTAL: &str = "value.octal";
     pub const VALUE_INTEGER_RANGE: &str = "value.integer-range";
     pub const VALUE_DECIMAL: &str = "value.decimal";
+    pub const VALUE_DECIMAL_PRECISION: &str = "value.decimal-precision";
     pub const VALUE_ARRAY_MIXED: &str = "value.array-mixed";
     pub const VALUE_TAG_DROPPED: &str = "value.tag-dropped";
     pub const VALUE_TAG: &str = "value.tag";
@@ -206,6 +207,7 @@ pub mod code {
         VALUE_OCTAL,
         VALUE_INTEGER_RANGE,
         VALUE_DECIMAL,
+        VALUE_DECIMAL_PRECISION,
         VALUE_ARRAY_MIXED,
         VALUE_TAG_DROPPED,
         VALUE_TAG,

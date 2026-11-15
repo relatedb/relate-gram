@@ -151,7 +151,7 @@ pub(crate) fn convert_value(
             ),
         },
         "decimal" => {
-            let f = decimal_float(text);
+            let (f, lossy) = decimal_float(text);
             let nonzero_digits = text.chars().any(|c| ('1'..='9').contains(&c));
             if !f.is_finite() {
                 reject(
@@ -170,6 +170,17 @@ pub(crate) fn convert_value(
                     diags,
                 )
             } else {
+                if lossy {
+                    diags.push(Diagnostic::warning(
+                        code::VALUE_DECIMAL_PRECISION,
+                        span,
+                        format!(
+                            "the decimal `{}` is stored as the nearest 64-bit float, `{}`",
+                            abbreviate(text),
+                            abbreviate(&f.to_string())
+                        ),
+                    ));
+                }
                 Value::decimal(f).ok().map(|v| Lowered::scalar(v, span))
             }
         }
@@ -310,11 +321,13 @@ fn integer_value(text: &str) -> Option<Value> {
 /// The 64-bit float nearest a decimal literal. `gram-value` reports a literal that a float
 /// cannot hold exactly as a big decimal, whose digits are parsed here (ADR-013 section 2.2);
 /// a result that is not finite, or zero for a non-zero literal, is checked by the caller.
-fn decimal_float(text: &str) -> f64 {
+/// The second result is true when the float differs from the literal (gram-value's
+/// big decimal), which the caller reports as a `precision` loss (RFC-002 of gram-value).
+fn decimal_float(text: &str) -> (f64, bool) {
     match Value::decimal_from_text(text) {
-        Ok(Value::Decimal(d)) => d.get(),
-        Ok(Value::BigDecimal(b)) => b.as_str().parse().unwrap_or(f64::INFINITY),
-        _ => f64::INFINITY,
+        Ok(Value::Decimal(d)) => (d.get(), false),
+        Ok(Value::BigDecimal(b)) => (b.as_str().parse().unwrap_or(f64::INFINITY), true),
+        _ => (f64::INFINITY, false),
     }
 }
 

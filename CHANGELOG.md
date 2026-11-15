@@ -7,6 +7,12 @@ command line or the library interface.
 
 ## [Unreleased]
 
+### Changed
+
+- A decimal that a 64-bit float cannot hold exactly (`0.1000000000000000055511151231257827`) still loads as the
+  nearest float, and now reports the warning `value.decimal-precision` with its position, so the loss is
+  visible. Decimals a float holds exactly (`0.1`, `1.50`) give no warning. Nothing is rejected that loaded before.
+
 ## [0.2.0] - 2026-11-15
 
 Typed tags, and `gram-value` as the value model. A breaking minor version for library users and a visible
