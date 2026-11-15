@@ -1,7 +1,7 @@
 ---
 id: ADR-014
 title: The embedding Tag Carries Relate Vectors
-status: proposed
+status: accepted
 rfcs: [RFC-002]
 created: 2026-11-15
 ---
