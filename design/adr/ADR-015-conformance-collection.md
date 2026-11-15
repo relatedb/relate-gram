@@ -21,6 +21,8 @@ Four properties of the behavior shape any shared form:
 
 `gram-value` runs its languages against one corpus written in gram, read by each package with its own tree-sitter-gram binding, with a list of skipped cases per package and a parity table generated from the results.
 
+Gram has libraries that read it into data. The pattern-rs project publishes `relateby-gram` for Rust, `@relateby/gram` for npm and `relateby.gram` for Python. Each parses gram into `Pattern<Subject>` values, and each has a parse that returns the top-level record separately from the patterns (`parse_gram_with_header`, `parseWithHeader`, `parse_with_header`). A subject's property values keep integers, decimals, tagged strings, arrays and maps. ADR-007 declined this path for the loader, because it drops what the loader must check (positions, repeated keys, integers beyond 64 bits). A runner that reads hand-written case files needs none of that.
+
 ## 2. Decision
 
 ### 2.1 One collection, in this repository
@@ -31,7 +33,7 @@ The cases live in a `conformance/` directory in this repository, with a `conform
 
 A case is a directory `conformance/<kind>/<id>/`. The identifier is the directory name, is stable, and is never reused. The directory holds:
 
-- `case.gram`, the description of the case, in gram. Its top-level record gives the `kind`, the `requires` list of capabilities (2.6) and the case's settings, with maps and arrays as the grammar allows. A doc comment explains why the case exists and cites the decision it tests; the runner passes it to the results and otherwise ignores it. Each expected diagnostic, warning or count is a node: `(:Error {code: "rel.no-type", line: 2, column: 8, offset: 73})`. An annotation decorates a pattern, and an expectation has no pattern to decorate, so expectations are nodes and annotations are not used.
+- `case.gram`, the description of the case, in gram. Its top-level record gives the `kind`, the `requires` list of capabilities (2.6) and the case's settings, with maps and arrays as the grammar allows. A doc comment explains why the case exists and cites the decision it tests; it is for readers of the file, and the runner does not read it. Each expected diagnostic, warning or count is a node: `(:Error {code: "rel.no-type", line: 2, column: 8, offset: 73})`. An annotation decorates a pattern, and an expectation has no pattern to decorate, so expectations are nodes and annotations are not used.
 - `input.gram`, the text under test, kept as exact bytes in its own file, since a position is an offset into those bytes and the text may itself use constructs that a case file would not.
 - `start.cypher`, where a case needs a starting database, and `expected.gram` or `exported.gram` where it needs an expected graph or expected text (below).
 
@@ -44,9 +46,9 @@ The collection is checked with `gram lint --strict`. The kinds are:
 
 ### 2.3 Graphs are gram, and databases are made with Cypher
 
-An expected graph is an ordinary gram file. A runner reads it with its tree-sitter-gram binding and its gram-value package, so the types come from gram itself: an integer or a decimal literal, a tagged string for a date, point, UUID or embedding. An identifier written in `expected.gram` stands for the stored `@id` property, as the loader stores it, and an element without an identifier has none. The expected graph holds no maps or annotations, because Relate stores neither.
+An expected graph is an ordinary gram file. A runner reads `case.gram`, `expected.gram`, `exported.gram` and `fixed.gram` with the pattern-rs gram library of its language, which returns the record and the patterns as data, so the types come from gram itself: an integer or a decimal literal, a tagged string for a date, point, UUID or embedding. The implementations under test read gram through tree-sitter-gram directly (ADR-007), so the files that state the expectations and the code that is checked against them take different parse paths, and a fault in one does not hide behind the same fault in the other. An identifier written in `expected.gram` stands for the stored `@id` property, as the loader stores it, and an element without an identifier has none. The expected graph holds no maps or annotations, because Relate stores neither.
 
-Two graphs are equal when they have the same multiset of nodes and the same multiset of relationships, where a node is its sorted labels and properties, and a relationship is its type, its properties and the nodes at its ends. Property values compare by gram-value's canonical text. The comparison depends on no internal identifier and not on order. It is the comparison the Rust tests make today with a database dump.
+Two graphs are equal when they have the same multiset of nodes and the same multiset of relationships, where a node is its sorted labels and properties, and a relationship is its type, its properties and the nodes at its ends. Property values compare by gram-value's canonical text: the runner maps the codec's values to gram values on the expected side, and a database's values as the exporter does on the other. The comparison depends on no internal identifier and not on order. It is the comparison the Rust tests make today with a database dump.
 
 A starting database, and the database of an `export` case, is made by running `start.cypher` through the Relate package under test. Building it with the loader would let a loader fault change the starting state of every case it is used in, and Cypher can create states that gram cannot write, such as an integer vector.
 
@@ -72,7 +74,7 @@ A runner for the Rust library (`tests/conformance.rs`) reads the collection. The
 
 ## 3. Alternatives Considered
 
-3.1. **JSON case files.** Rejected: gram is the notation this tool exists for, and it already carries what the collection needs, so JSON would add a second encoding for each Relate value type (a `float` key, a `date` key, a `vector` key) beside gram's own literals and tags. Every implementation already has the tree-sitter-gram binding, because it parses gram input, and a gram-value package, so reading gram adds no dependency. A first draft chose JSON out of caution that a runner reading gram would share a parser with the code under test. That concern covers the input under test, which stays a separate file read as bytes. It does not apply to expectations, which the loader and exporter never read, and tree-sitter-gram has its own corpus for parsing.
+3.1. **JSON case files.** Rejected: gram is the notation this tool exists for, and it already carries what the collection needs, so JSON would add a second encoding for each Relate value type (a `float` key, a `date` key, a `vector` key) beside gram's own literals and tags. Gram has libraries in all three first languages that return a file's record and patterns as data, so reading gram is a library call, as reading JSON would be. The cost is one dependency per language (the pattern-rs package), which JSON does not have. A first draft chose JSON out of caution that a runner reading gram would share a parser with the code under test. The implementations read gram through tree-sitter-gram, and the runner through the pattern-rs libraries, so the paths differ; the text under test stays a separate file read as bytes.
 
 3.2. **One TOML manifest.** Rejected: Node.js has no TOML reader in its standard library, and the manifest would hold what gram already holds.
 
@@ -93,7 +95,7 @@ A runner for the Rust library (`tests/conformance.rs`) reads the collection. The
 ## 4. Consequences
 
 - Expected graphs for the valid fixtures and the golden exports have to be written out as gram; the rejected cases convert mechanically. The Rust tests that assert the same content inline are replaced by the runner, so the checking is not duplicated.
-- Each implementation needs a small reader over the syntax tree for the record, labeled nodes and gram values. `gram-value`'s test runners already lower gram this way, and sharing that logic is the first thing to look at. This is more work in each language than reading JSON, and it is paid once.
+- Each runner depends on the pattern-rs gram library of its language (`relateby-gram`, `@relateby/gram`, `relateby.gram`). In Rust it is a dev-dependency used only to read the collection; ADR-007 and the constitution's parser constraint concern the loader, and the spec's constitution check confirms that test-only use is covered. The npm package is backed by WebAssembly and has to be initialized before use.
 - A collection file is not loadable by relate-gram (`file.kind`, `value.map`), and `relate-gram check` reports errors on a `case.gram`. The collection's documentation says so, and `gram lint --strict` is the check that applies.
 - An implementation whose strings are not UTF-8 has to convert positions to bytes. This is the cost of positions that mean the same thing everywhere.
 - The vocabulary of node labels in `case.gram` (`Error`, `Warning`, `Counts`, `Applied`, `Remaining`) and of capabilities must grow with the behavior, and the collection's documentation has to state both exactly.
