@@ -1,7 +1,7 @@
 ---
 id: ADR-013
 title: gram-value Is the Value Model for Load and Export
-status: proposed
+status: accepted
 rfcs: [RFC-002]
 created: 2026-11-15
 ---
