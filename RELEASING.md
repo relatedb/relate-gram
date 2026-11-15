@@ -3,7 +3,7 @@
 ## Launch day
 
 Done: Relate and this repository are public, and this crate builds against the published Relate 1.0.1.
-Releases 0.1.0 and 0.2.0 followed the steps below.
+Releases 0.1.0, 0.2.0 and 0.3.0 followed the steps below.
 
 ## A release (binaries on GitHub)
 
@@ -24,11 +24,11 @@ nothing.
 
 ## Publishing to crates.io
 
-`relate-gram` 0.1.0 and 0.2.0 are on crates.io. The `publish` workflow uploads the crate with the repository
+`relate-gram` 0.1.0, 0.2.0 and 0.3.0 are on crates.io. The `publish` workflow uploads the crate with the repository
 secret `CARGO_REGISTRY_TOKEN`, and it is run by hand after the `release` workflow has created the GitHub release:
 Actions, publish, Run workflow, turn "dry run" off. (It also has a `release: published` trigger, guarded by the
 repository variable `CRATES_IO_PUBLISH`, but a release that the `release` workflow creates with `GITHUB_TOKEN`
-does not start other workflows, so that trigger does not fire for these releases; 0.2.0 was published by hand.)
+does not start other workflows, so that trigger does not fire for these releases; 0.2.0 and 0.3.0 were published by hand.)
 To rehearse, leave "dry run" on. The tag, `Cargo.toml` version and changelog must agree first (the `release`
 workflow checks this). A published version cannot be replaced, only yanked. After publishing, check that
 `https://crates.io/crates/relate-gram` shows the version.
