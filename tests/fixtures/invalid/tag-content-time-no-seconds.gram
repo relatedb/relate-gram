@@ -1,2 +1,0 @@
-// time with content that breaks its form (time-no-seconds)
-(a {when: time`10:30Z`})

@@ -1,5 +1,7 @@
 # Feature Specification: Typed Tags for Gram Values
 
+> **Amended by ADR-012 (spec 003-gram-value-tags):** points are written `SRID=n;x y [z]`, not extended well-known text; seconds are optional on times; validation comes from `gram-value`. Where this document shows the old forms, ADR-012 wins.
+
 **Feature Branch**: `typed-tags-spec`
 
 **Created**: 2026-11-13

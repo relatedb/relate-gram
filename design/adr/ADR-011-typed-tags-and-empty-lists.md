@@ -9,6 +9,8 @@ created: 2026-11-13
 # ADR-011: Typed Tags, Typed Lists and Empty Lists
 
 > Amends ADR-006 sections 2.3 (tags), 2.5 and 2.6 (export), and resolves its deferred alternatives 3.2 and 3.3.
+>
+> Amended 2026-11-14 (section 2.9): the forms of 2.2 are relate-gram's profile of the general known-tag forms that the `gram-value` project defines, not the definition of the tags. Amended again by ADR-012 (accepted with it): the tags are validated by `gram-value` plus a smaller profile, seconds are no longer required, and a point is written `SRID=n;x y` (or `x y z`) instead of extended well-known text. Typed tags were unreleased, so no released behavior changes.
 
 ## 1. Context
 
@@ -40,23 +42,23 @@ A tagged string whose tag is one of the following, written in lower case, become
 | Tag | Relate type | Content form |
 |---|---|---|
 | `date` | DATE | `YYYY-MM-DD`; the year has at least four digits and may be negative |
-| `time` | ZONED TIME | `hh:mm:ss`, optional fraction of 1 to 9 digits, then `Z` or `+hh:mm` or `-hh:mm` |
-| `localtime` | LOCAL TIME | `hh:mm:ss` with the optional fraction, no offset |
+| `time` | ZONED TIME | `hh:mm`, optionally `:ss` and a fraction of 1 to 9 digits, then `Z` or `+hh:mm` or `-hh:mm` (the offset is required) |
+| `localtime` | LOCAL TIME | `hh:mm`, optionally `:ss` and the fraction, no offset |
 | `datetime` | ZONED DATETIME | a `date`, `T`, a `time` (offset required), and optionally a zone name in square brackets, as in `2024-01-15T10:30:00+01:00[Europe/Paris]`; the offset must be the zone's offset at that instant |
 | `localdatetime` | LOCAL DATETIME | a `date`, `T`, a `localtime` |
 | `duration` | DURATION | the ISO 8601 duration form, with the sign extension below, as Relate prints it: an upper-case `P`, then optional `nY`, `nM`, `nD`, then optionally `T` with `nH`, `nM`, `nS`, with at least one component; each number may carry a leading `-`; only the seconds may have a fraction, of up to 9 digits |
-| `point` | POINT | extended well-known text, `SRID=n;POINT(x y)` for SRIDs 4326 and 7203, and `SRID=n;POINT Z(x y z)` for 4979 and 9157 (a 2D SRID with `POINT Z`, or the reverse, is an error); coordinates are decimal numbers without an exponent; for the geographic SRIDs `x` is longitude and `y` latitude |
+| `point` | POINT | `SRID=n;x y` for SRIDs 4326 and 7203, and `SRID=n;x y z` for 4979 and 9157 (a 2D SRID with three numbers, or the reverse, is an error); each number is `-?digits` with an optional fraction and no exponent; for the geographic SRIDs `x` is longitude and `y` latitude (this is `gram-value`'s `point` form, with an SRID required; amended by ADR-012) |
 | `uuid` | UUID | 32 hexadecimal digits in 8-4-4-4-12 groups, either case |
 
-**Relation to ISO 8601.** The date, time, local time, local datetime and datetime forms are the extended-format ISO 8601 representations, restricted: seconds are required, second 60 and `24:00:00` are not accepted, and an offset is written `Z` or `±hh:mm`. Three forms go beyond ISO 8601, each because Relate stores or prints it that way:
+**Relation to ISO 8601.** The date, time, local time, local datetime and datetime forms are the extended-format ISO 8601 representations, restricted: seconds are optional (ADR-012), second 60 and `24:00:00` are not accepted, and an offset is written `Z` or `±hh:mm`. Three forms go beyond ISO 8601, each because Relate stores or prints it that way:
 
 - A year with a leading `-` (`-0044-03-15`) is an expanded year, which ISO 8601 allows only by prior agreement between the parties.
 - A zone name in square brackets after a datetime's offset (`[Europe/Paris]`) is not ISO 8601; it is the notation of RFC 9557, the IETF extension of RFC 3339.
 - A sign on each number of a duration (`P-1DT-2H`, or `P1DT-2H`) is not ISO 8601-1, which has no negative components. A duration holds months, days and nanoseconds separately, and their signs can differ, which a single leading minus cannot write. ISO 8601-2 allows that single leading minus on the whole duration; it is rejected here, since Relate prints the per-number form and one spelling is enough. The restrictions that remain, no weeks and a fraction on the seconds only, are narrower than ISO 8601, which allows both.
 
-A point is extended well-known text, and a UUID is its canonical text; neither is covered by ISO 8601.
+A point is an SRID and two or three numbers, and a UUID is its canonical text; neither is covered by ISO 8601.
 
-The loader accepts only these forms. The week, ordinal and basic (`20240115`) date spellings, a time without seconds, a time or datetime without an offset, a datetime written as a bare date, a duration in weeks or with a leading `-` before the `P`, and a point without an SRID are load errors, because Relate would either fill in a missing part or normalize the text, and a file that reads back different from what it wrote should not load silently. Hours are 0 to 23, minutes and seconds 0 to 59, months 1 to 12, a day exists in its month (leap years included), a geographic latitude is within [-90, 90], and coordinates are finite. A zone name must be non-empty and use only letters, digits and `/ _ + -`, which `check` verifies. `check` has no time-zone database, so whether the name is a known zone, and whether the offset is that zone's, is left to Relate, which rejects an unknown zone or an offset that is not the zone's when the value is built; the load reports that as in 2.3. Typed tags in the top-level record are validated like any value but are not stored, as for every record value (ADR-003, ADR-006 2.7).
+The loader accepts only these forms. The week, ordinal and basic (`20240115`) date spellings, a time or datetime without an offset, a datetime written as a bare date, a duration in weeks or with a leading `-` before the `P`, and a point without an SRID are load errors, because Relate would either fill in a missing part or normalize the text, and a file that reads back different from what it wrote should not load silently. Hours are 0 to 23, minutes and seconds 0 to 59, months 1 to 12, a day exists in its month (leap years included), a geographic latitude is within [-90, 90], and coordinates are finite. A zone name must be non-empty and use only letters, digits and `/ _ + -`, which `check` verifies. `check` has no time-zone database, so whether the name is a known zone, and whether the offset is that zone's, is left to Relate, which rejects an unknown zone or an offset that is not the zone's when the value is built; the load reports that as in 2.3. Typed tags in the top-level record are validated like any value but are not stored, as for every record value (ADR-003, ADR-006 2.7).
 
 ### 2.3 Bad content is an error
 
@@ -84,6 +86,14 @@ The loader writes typed values with a follow-up statement per (key, tag) pair in
 
 Gram text does not write vectors, in any form. A vector property is an export error that names the element and key (ADR-006 2.6 already lists it among values Relate may store but gram cannot hold), and no tag exists for it. A gram file cannot load one, so a round trip through gram never produces or drops a vector without saying so.
 
+### 2.9 The forms are a profile of gram-value's known tags (amendment, 2026-11-14)
+
+`gram-value` (github.com/gram-data/gram-value, RFC-001 7.6 and 7.17) is the shared model of gram's data values. It defines ten known tags, the eight of 2.2 plus `week` and `weekDate`, with general content forms that are wider than those of 2.2: the offset of `time` and `datetime` is optional, seconds are optional, and a `point` may have no SRID, with two or three coordinates. It leaves stricter rules to each consumer.
+
+The table and rules of 2.2 are therefore relate-gram's profile: the narrowing that Relate's types need (a required offset, the four SRIDs with a point's SRID required, a zone name in the datetime, no vectors; ADR-012 dropped the required seconds and the extended well-known text). A value outside the profile but inside the general form is still a `value.tag-content` error here, with a message that says the general tag accepts it and Relate does not. The tag names of 2.2 are the general ones. `week` and `weekDate` are known to `gram-value` but not supported by Relate, so relate-gram treats them as unrecognized tags (dropped and reported, as ADR-006 2.3). Behavior, diagnostics and exports of 2.2 to 2.8 do not change.
+
+`gram-value`'s specification is now written and published (`spec/tags.md`, ADR-004). ADR-012 adopts the `gram-value` crate in place of `src/typed/` and aligns the point form, replacing the earlier plan to align it by a later amendment of this ADR.
+
 ## 3. Alternatives Considered
 
 3.1. **Pass typed values to Relate as parameters instead of constructing them in Cypher.** Rejected: `PointValue` is not exported by `relate`, so points cannot be built that way, and one route for every typed value is simpler than a mix.
@@ -107,13 +117,13 @@ Gram text does not write vectors, in any form. A vector property is an export er
 - A database holding any of the eight types, or an empty list, can now be exported once the work is built, and a gram file can state a date, a time, a duration, a point or a UUID. A file that already used one of these tags will change meaning: strings that were dropped-and-reported now become typed values, or fail with `value.tag-content`. The changelog says so.
 - `check` cannot find an unknown zone name or an offset that is not the zone's: the load reports it, at the tagged string's position, only when a database is written to.
 - The loader owns a validator for each form of 2.2. Relate's constructors still run, so an inconsistency between the two is a possible but rare load error; tests cover each form against Relate.
-- Points exist only as extended well-known text and only for Relate's four SRIDs; a point in any other reference system cannot be written.
+- Points exist only with an SRID, for Relate's four SRIDs; a point in any other reference system cannot be written.
 - The write path gains one statement per (key, tag) pair per batch. The cost is small for the usual file and grows with the number of distinct typed keys in a batch.
 - A mixed-kind list, a map, null, a node, a relationship, a path and a byte array remain unwritable. A result conversion must report them rather than skip them.
 - A database with vector properties still cannot be exported while those properties are present. A person can remove them or move them elsewhere, and the error lists each one.
 - The fixer (ADR-010) has no fix for a bad typed value, since it cannot know the intended value, and `--tags error` makes no difference to recognized tags: they are always typed.
 - The empty-list behavior (2.5) was implemented, with the grammar bump, before the typed tags; the typed tags, `value.tag-content` and the follow-up statements are not yet built.
-- Follow-up work: the new diagnostic codes (`value.tag-content`, and `value.array-mixed` for tags) go in the diagnostics contract and `docs/supported-gram.md`; the tag vocabulary is a candidate for the gram specification, and RFC-002 questions 7.3 and 7.4 are resolved by this decision, except that vectors and byte arrays, which 7.3 lists, get no tag (2.1, 2.8).
+- Follow-up work: the new diagnostic codes (`value.tag-content`, and `value.array-mixed` for tags) go in the diagnostics contract and `docs/supported-gram.md`; the tag vocabulary is now defined generally by `gram-value` (2.9), and RFC-002 questions 7.3 and 7.4 are resolved by this decision, except that vectors and byte arrays, which 7.3 lists, get no tag (2.1, 2.8).
 
 ## 5. Related
 
@@ -121,3 +131,4 @@ Gram text does not write vectors, in any form. A vector property is an export er
 - ADR-006 is amended as stated above; ADR-007 (the syntax tree the tags are read from) is unchanged.
 - SPIKE-005 records how Relate 1.0.1 stores, prints and round-trips each type.
 - Upstream: gram-data/tree-sitter-gram#38 (allowed `[]`; released in 0.7.0).
+- `gram-value` RFC-001 (7.6 and 7.17): the general known-tag forms that 2.9 relates this profile to.

@@ -21,10 +21,10 @@ A `PropValue` is now an integer, a float, a boolean, a string, a typed value, or
 | Tag | Accepted | Rejected with `value.tag-content` |
 |---|---|---|
 | `date` | `YYYY-MM-DD`, year of 4 or more digits, optional `-` | week, ordinal, basic and `+year` forms; month or day out of range, including 29 February in a common year |
-| `time`, `datetime` | seconds present; offset `Z` or `+hh:mm`; datetime may add `[zone]` | no offset; no seconds; second 60; a bare date as a datetime; an empty or malformed zone name |
-| `localtime`, `localdatetime` | seconds present; no offset | an offset; no seconds |
+| `time`, `datetime` | offset `Z` or `+hh:mm` (required); seconds optional (ADR-012); datetime may add `[zone]` | no offset; second 60; a bare date as a datetime; an empty or malformed zone name |
+| `localtime`, `localdatetime` | seconds optional (ADR-012); no offset | an offset |
 | `duration` | upper-case `P`, at least one component, sign per number, fraction on seconds only | `P` or `PT` alone; weeks; a leading `-` before `P`; fraction on other components; lower case |
-| `point` | `SRID=n;POINT(x y)` for 4326 and 7203, `SRID=n;POINT Z(x y z)` for 4979 and 9157 | other SRIDs; a missing SRID; dimension and SRID disagreeing; exponent form; non-finite values; latitude outside [-90, 90] |
+| `point` | `SRID=n;x y` for 4326 and 7203, `SRID=n;x y z` for 4979 and 9157 (ADR-012; formerly extended well-known text) | other SRIDs; a missing SRID; dimension and SRID disagreeing; exponent form; non-finite values; latitude outside [-90, 90] |
 | `uuid` | 8-4-4-4-12 hexadecimal digits, either case | any other grouping, braces or no hyphens |
 
 A fraction of seconds has 1 to 9 digits; more is rejected.
