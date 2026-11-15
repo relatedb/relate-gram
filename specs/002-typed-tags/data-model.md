@@ -14,7 +14,7 @@ A property value that carries its tag and its validated content:
 | content | the normalized text passed to the constructor, or for a point the parsed SRID and coordinates (x, y and an optional z) |
 | position | the tagged string's source span, kept for errors raised later |
 
-A `PropValue` is now an integer, a float, a boolean, a string, a typed value, or a list of one of those (a list holds one kind; a typed list holds one tag).
+(Superseded by ADR-013: the loader holds `gram_value::Value` with positions.) A `PropValue` is now an integer, a float, a boolean, a string, a typed value, or a list of one of those (a list holds one kind; a typed list holds one tag).
 
 ## Validation (per tag; the forms and ranges are ADR-011 section 2.2)
 

@@ -86,5 +86,7 @@ Diagnostic codes are stable across releases within a major version; messages are
 
 ## Typed values (ADR-011)
 
+> Amended by ADR-012 and ADR-013: `PropValue`, `TypedValue`, `TypedContent` and `PointContent` no longer exist. The loader's value is `values::Lowered` (a `gram_value::Value` with positions); a typed value is a `Value::Tagged` holding the tag and the normal content; `Tag::validate` returns that content. The text below is the ADR-011 design.
+
 `values::PropValue` has a `Typed(typed::TypedValue)` variant: a tagged string with a recognized tag, validated, holding its `typed::Tag`, its content and its source span. The `typed` module holds `Tag` (`from_name`, `name`, `validate`), `TypedContent`, `PointContent` and `TypedValue`. Adding the variant changes the library interface, which a pre-1.0 minor version may do.
 

@@ -172,6 +172,6 @@ No other input changed outcome. Differences in value, not outcome (an offset `+0
 
 - gram-value 0.1.x behaves as its conformance corpus states; a minor version that changes a form needs a deliberate bump and a look at the profile (ADR-012 section 4).
 - Relate 1.0.x constructors behave as SPIKE-005 recorded.
-- `PropValue` and the lowering of tree-sitter nodes stay; adopting `gram_value::Value` is a later ADR (ADR-012 section 3.4).
+- `PropValue` and the lowering of tree-sitter nodes stay; adopting `gram_value::Value` is a later ADR (ADR-012 section 3.4). (Done in ADR-013.)
 - Typed tags have not been released, so no released behavior changes; the first release that contains them is 0.2.0.
 - The fixer gains no new fix.

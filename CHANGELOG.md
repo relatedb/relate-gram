@@ -19,11 +19,17 @@ command line or the library interface.
 - The diagnostic code `value.tag-content`: the content of a recognized tag does not follow its form. `check`
   finds it without a database, except whether a zone name exists and matches its offset, which only a load can
   tell.
-- Library: `values::PropValue` has a new `Typed` variant, and the new `typed` module holds the tags and the
-  profile; the crate now depends on `gram-value` 0.1.
+- Library: the new `typed` module holds the tags and the profile; the crate now depends on `gram-value` 0.1
+  (ADR-012). Property values are held as `gram_value::Value` (ADR-013, below).
 
 ### Changed
 
+- Property values are held and written through `gram-value` (ADR-013). A string property that is a symbol is
+  now exported bare (`status: active`, not `status: "active"`); any other string stays double-quoted, and a
+  leading `/` in a string value is no longer escaped. Integers, floats, booleans, lists, points and the other typed
+  values are written as before. Library items removed or changed against 0.1.0: `values::PropValue` is replaced
+  by `values::Lowered` (a `gram_value::Value` with positions), `plan::PlannedNode.props`,
+  `plan::PlannedRel.props` and `plan::value_text` use it, and `names::string_literal` is removed.
 - A file that wrote one of those eight tags on a string used to load the content as a string with a warning. It
   now loads a typed value, or fails with `value.tag-content` if the content does not follow the form. To keep a
   plain string, remove the tag or use another one. The tree-sitter-gram corpus itself writes ``time`17:35` `` and

@@ -1,8 +1,9 @@
 //! Typed values: the eight tags of ADR-011 section 2.2 and the content forms they accept.
 //!
 //! Everything here works on text, with no database, so `check` can find a bad value
-//! without one. The loader turns a validated [`TypedValue`] into a Relate value with a
-//! Cypher constructor (ADR-011 section 2.7), and the exporter writes one back.
+//! without one. The loader keeps a validated value as a `gram_value::Value::tagged` holding the normal
+//! content, turns it into a Relate value with a Cypher constructor (ADR-011 section 2.7,
+//! ADR-013 section 2.3), and the exporter writes one back.
 
 mod profile;
 
