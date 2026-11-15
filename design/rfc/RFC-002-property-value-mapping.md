@@ -3,7 +3,7 @@ id: RFC-002
 title: Property Value Mapping Between Gram and Cypher
 status: review
 created: 2026-11-06
-adrs: [ADR-006, ADR-007, ADR-011, ADR-012, ADR-013]
+adrs: [ADR-006, ADR-007, ADR-011, ADR-012, ADR-013, ADR-014]
 ---
 
 # RFC-002: Property Value Mapping Between Gram and Cypher
@@ -120,3 +120,4 @@ The mapping applies equally to node properties, relationship properties and the 
 - ADR-013: gram-value Is the Value Model for Load and Export (the canonical spelling of question 7.2)
 
 _(populated automatically as `/adr-create` links ADRs to this RFC)_
+- ADR-014: The embedding Tag Carries Relate Vectors (the vectors that ADR-011 left unwritten)
