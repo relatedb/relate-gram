@@ -20,7 +20,7 @@ Run `relate-gram check FILE` to find every problem in a file at once.
   or `0x` hexadecimal, 64 bits), decimals (stored as 64-bit floats; a literal with more digits than a
   float holds loads as the nearest float and gets a `value.decimal-precision` warning), `true` and `false`, bare words (`active` is the string
   `"active"`), and arrays of one kind (`[1, 2, 3]`).
-- **Typed values**: a tagged string whose tag is one of eight names becomes a value of that Relate type
+- **Typed values**: a tagged string whose tag is one of nine names becomes a value of that Relate type
   (see the table below), and an array of strings with one such tag becomes a list of that type.
 - **The top-level record** `{kind: "property-graph", name: "roster"}`: checked, and its properties are
   reported as not stored.
@@ -38,8 +38,9 @@ Run `relate-gram check FILE` to find every problem in a file at once.
 | `duration` | DURATION | an ISO 8601 duration with an upper-case `P`; a number may have a leading `-`; only seconds may have a fraction | ``duration`P1Y2M3DT4H5M6.789S` `` |
 | `point` | POINT | `SRID=n;x y` for 4326 or 7203, `SRID=n;x y z` for 4979 or 9157; geographic points are longitude then latitude, with latitude between -90 and 90; the SRID is required | ``point`SRID=4326;-74 40.7` `` |
 | `uuid` | UUID | 32 hexadecimal digits in 8-4-4-4-12 groups | ``uuid`123e4567-e89b-12d3-a456-426614174000` `` |
+| `embedding` | VECTOR | Base64 of a SafeTensors buffer holding one vector of `F32`, `F64` (and `F16`, `BF16`, see below) with 1 to 4096 finite elements | ``embedding`QAAAAAAAAAB7ImVtYmVkZGluZyI6eyJkdHlwZSI6IkYzMiIsInNoYXBlIjpbMl0sImRhdGFfb2Zmc2V0cyI6WzAsOF19fSAgAACAPwAAAMA=` `` |
 
-Tags are lower case and matched exactly; any other tag (`md`, `Date`, `vector`) is dropped and reported as
+Tags are lower case and matched exactly; any other tag (`md`, `Date`) is dropped and reported as
 before. A recognized tag with content that does not follow its form is an error, never a plain string.
 
 The forms are the known tags of [gram-value](https://github.com/gram-data/gram-value) (ADR-012), narrowed for Relate:
@@ -53,8 +54,22 @@ a duration, weeks, and a fraction on anything but seconds are not accepted. `che
 and the ranges of every typed value without a database; whether a zone name exists, and whether the offset
 is that zone's, is only known when the file is loaded.
 
-Vectors cannot be written in gram, in any form: exporting a database with a vector property fails and
-names it.
+### Vectors
+
+The `embedding` tag carries a Relate vector of floats: `F32` is `FLOAT32` and `F64` is `FLOAT64`, and the
+content is the format of [gram-value](https://github.com/gram-data/gram-value)'s `embedding` tag, which is
+machine output (nothing here asks you to write one by hand). Export writes every float vector this way, and
+the text loads back to the same vector. Three limits are Relate's, not the tag's, and `check` finds them without
+a database: a vector has at most 4096 elements, no element may be NaN or an infinity, and a property holds one
+vector, not a list of them.
+
+`F16` and `BF16` (`FLOAT16` and `BFLOAT16`) load only when the process was started with
+`RELATE_PREVIEW=float16-coordinate-types`. `relate-gram` never sets that flag. Without it, a load that holds
+such an embedding stops before writing anything and reports every one of them; `check` cannot know the flag
+and passes the file.
+
+A vector of an integer kind (`INTEGER8` to `INTEGER64`) cannot be written in gram: exporting a database that
+holds one fails and names it, and says that `embedding` carries float vectors only.
 
 ## Rejected, and what to write instead
 
@@ -76,6 +91,9 @@ names it.
 | `{xs: [1, "a"]}`, `{xs: [1, 2.5]}` | `value.array-mixed` | An array holds one kind of value; write every element as that kind (`[1.0, 2.5]`) |
 | ``{xs: [date`2024-01-01`, "x"]}`` | `value.array-mixed` | An array of typed values uses one tag throughout |
 | ``{when: date`2024-13-45`}``, ``{t: time`10:30`}`` (no offset), ``{g: point`SRID=4326;POINT(1 2)`}`` | `value.tag-content` | Write the content in the form the tag takes (see Typed values above); the message says what is wrong |
+| ``{e: embedding`...`}`` with 4097 elements, or an element that is NaN or infinite | `value.tag-content` | Relate stores at most 4096 finite elements; the message names the dimension or the index |
+| ``{es: [embedding`...`, embedding`...`]}`` | `value.tag-content` | Write one property per vector; a list of vectors has no Relate type |
+| ``{e: embedding`...`}`` of dtype `F16` or `BF16`, in a process without the preview flag | `value.tag-content` | Start the process with `RELATE_PREVIEW=float16-coordinate-types` (found at load time, not by `check`) |
 | `{k: 1, k: 2}` | `key.duplicate` | Write the key once |
 | `{"": 1}` | `key.empty` | Give the property a name |
 | `{"@k": 1}` | `key.reserved` | Keys that start with `@` are written by the loader; rename it |

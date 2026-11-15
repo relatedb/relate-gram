@@ -42,9 +42,31 @@ pub(super) fn check(i: &Interpretation) -> Result<(), String> {
             }
             Ok(())
         }
+        (Typed::Embedding(e), _) => {
+            if e.dimension() > MAX_VECTOR_DIMENSION {
+                return Err(format!(
+                    "the dimension {} is above Relate's limit of {MAX_VECTOR_DIMENSION}; \
+                     the general tag allows more, Relate does not",
+                    e.dimension()
+                ));
+            }
+            match super::elements::widen(e.dtype(), e.bytes())
+                .iter()
+                .position(|v| !v.is_finite())
+            {
+                Some(index) => Err(format!(
+                    "the element at index {index} is not finite; Relate cannot store a vector \
+                     with a NaN or an infinity, though the general tag carries one"
+                )),
+                None => Ok(()),
+            }
+        }
         _ => Ok(()),
     }
 }
+
+/// The largest vector dimension Relate stores (ADR-014 section 1).
+const MAX_VECTOR_DIMENSION: usize = 4096;
 
 fn needs(tag: &str, what: &str) -> String {
     format!("a `{tag}` needs {what}; the general tag accepts this text, Relate does not")

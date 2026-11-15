@@ -115,3 +115,33 @@ fn typed_values_cost_no_more_than_ten_times_plain_strings_to_load() {
     assert!(ratio < 10.0, "typed load took {ratio:.1} times as long");
     assert!(times[1].0 < LIMIT && times[1].1 < LIMIT);
 }
+
+/// SC-006 of spec 005: 1,000 vectors of dimension 1,536 (a common embedding size), loaded from
+/// gram text and exported again. The first measurement is recorded in the spec's tasks; later
+/// changes stay within 1.2 times that figure.
+#[test]
+#[ignore = "performance check; run with --ignored"]
+fn a_thousand_embeddings_load_and_export() {
+    use gram_value::tags::{Embedding, EmbeddingDtype};
+    let dim = 1_536;
+    let mut text = String::new();
+    for i in 0..1_000usize {
+        let bytes: Vec<u8> = (0..dim)
+            .flat_map(|j| (((i * 31 + j) % 977) as f32 * 0.001 - 0.4).to_le_bytes())
+            .collect();
+        let content = Embedding::new(EmbeddingDtype::F32, dim, bytes)
+            .unwrap()
+            .to_normal_content();
+        text.push_str(&format!("(:Doc {{k: {i}, e: embedding`{content}`}})\n"));
+    }
+    let db = Database::open(":memory:").unwrap();
+    let mut conn = db.connect().unwrap();
+    let t = Instant::now();
+    relate_gram::load(&mut conn, text.as_bytes(), &Default::default()).expect("load");
+    let load = t.elapsed();
+    let t = Instant::now();
+    let out = relate_gram::export(&mut conn, &Default::default()).expect("export");
+    let export = t.elapsed();
+    assert_eq!(out.matches("embedding`").count(), 1_000);
+    println!("1,000 embeddings of dimension {dim}: load {load:?}, export {export:?}");
+}

@@ -6,6 +6,8 @@
 
 **Status**: Draft
 
+> Amended by ADR-014 (spec 005): `embedding` is a ninth recognized tag; this specification's eight are unchanged.
+
 **Input**: User description: "adopt gram-value for the typed tags: implement ADR-012 (validate the eight tags through gram-value's known-tag interpretation plus a Relate profile; points as `SRID=n;x y [z]`; remove the hand-written validators)."
 
 This specification implements ADR-012 (accepted). It names the sections of ADR-012, ADR-011 and ADR-006 that decide each behavior and does not restate them; where they differ, the ADR wins, and ADR-012 wins over ADR-011 where it amends it. It changes how the typed tags of `specs/002-typed-tags/` are validated and how points are spelled. It adds no tag, no storage type and no command.

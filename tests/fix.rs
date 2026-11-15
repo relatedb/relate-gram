@@ -495,3 +495,13 @@ fn a_point_in_extended_well_known_text_is_left_alone_and_reported() {
     assert_eq!(String::from_utf8(out.text).unwrap(), src);
     assert!(out.remaining.iter().any(|d| d.code == "value.tag-content"));
 }
+
+#[test]
+fn a_rejected_embedding_has_no_fix_and_the_tag_is_not_removed() {
+    // ADR-014 section 2.5: the intended numbers are unknown, so the file is left as written.
+    let src = "(a {e: embedding`QAAA!`})";
+    let out = run(src, &LoadSettings::default(), &opts());
+    assert!(out.applied.is_empty());
+    assert_eq!(errors(&out), vec!["value.tag-content"]);
+    assert_eq!(String::from_utf8(out.text).unwrap(), src);
+}

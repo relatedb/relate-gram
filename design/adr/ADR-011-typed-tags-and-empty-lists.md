@@ -10,6 +10,8 @@ created: 2026-11-13
 
 > Amends ADR-006 sections 2.3 (tags), 2.5 and 2.6 (export), and resolves its deferred alternatives 3.2 and 3.3.
 >
+> Amended by ADR-014 (2026-11-15): vectors of the float kinds are written and loaded with the `embedding` tag, so 2.8 and 3.6 and every other statement here that vectors cannot be written hold for integer vectors only.
+>
 > Amended 2026-11-14 (section 2.9): the forms of 2.2 are relate-gram's profile of the general known-tag forms that the `gram-value` project defines, not the definition of the tags. Amended again by ADR-012 (accepted with it): the tags are validated by `gram-value` plus a smaller profile, seconds are no longer required, and a point is written `SRID=n;x y` (or `x y z`) instead of extended well-known text. Typed tags were unreleased, so no released behavior changes.
 
 ## 1. Context
@@ -120,7 +122,7 @@ The table and rules of 2.2 are therefore relate-gram's profile: the narrowing th
 - Points exist only with an SRID, for Relate's four SRIDs; a point in any other reference system cannot be written.
 - The write path gains one statement per (key, tag) pair per batch. The cost is small for the usual file and grows with the number of distinct typed keys in a batch.
 - A mixed-kind list, a map, null, a node, a relationship, a path and a byte array remain unwritable. A result conversion must report them rather than skip them.
-- A database with vector properties still cannot be exported while those properties are present. A person can remove them or move them elsewhere, and the error lists each one.
+- A database with integer vector properties still cannot be exported while those properties are present (float vectors are written, ADR-014). A person can remove them or move them elsewhere, and the error lists each one.
 - The fixer (ADR-010) has no fix for a bad typed value, since it cannot know the intended value, and `--tags error` makes no difference to recognized tags: they are always typed.
 - The empty-list behavior (2.5) was implemented, with the grammar bump, before the typed tags; the typed tags, `value.tag-content` and the follow-up statements are not yet built.
 - Follow-up work: the new diagnostic codes (`value.tag-content`, and `value.array-mixed` for tags) go in the diagnostics contract and `docs/supported-gram.md`; the tag vocabulary is now defined generally by `gram-value` (2.9), and RFC-002 questions 7.3 and 7.4 are resolved by this decision, except that vectors and byte arrays, which 7.3 lists, get no tag (2.1, 2.8).

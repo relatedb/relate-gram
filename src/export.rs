@@ -8,6 +8,7 @@ use crate::diagnostics::{code, Diagnostic};
 use crate::names;
 use crate::settings::{ExportSettings, IdentityMode};
 use crate::typed::Tag;
+use gram_value::tags::{Embedding, EmbeddingDtype};
 use gram_value::Value as GramValue;
 use relate::{Connection, Value};
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -341,8 +342,41 @@ fn value_text(v: &Value) -> Result<String, String> {
             }
             canonical(&GramValue::array(parts))
         }
+        Value::Vector { coord, values } => canonical(&vector_value(&format!("{coord:?}"), values)?),
         other => canonical(&scalar_value(other)?),
     }
+}
+
+/// A float vector as an `embedding` tagged value (ADR-014 section 2.3).
+///
+/// `relate` does not export its vector kind type, so the kind is read from its `Debug` name; a
+/// test creates one vector of each kind, so a renamed variant fails there. An integer kind, or a
+/// name not known here, has no gram form.
+fn vector_value(kind: &str, values: &[Value]) -> Result<GramValue, String> {
+    let dtype = match kind {
+        "Float16" => EmbeddingDtype::F16,
+        "BFloat16" => EmbeddingDtype::BF16,
+        "Float32" => EmbeddingDtype::F32,
+        "Float64" => EmbeddingDtype::F64,
+        other => {
+            return Err(format!(
+                "a vector of kind {other} has no gram form; the embedding tag carries float vectors only"
+            ))
+        }
+    };
+    let floats = values
+        .iter()
+        .map(|v| match v {
+            Value::Float(f) => Ok(*f),
+            other => Err(format!(
+                "a {kind} vector holds a {} element",
+                kind_name(other)
+            )),
+        })
+        .collect::<Result<Vec<f64>, String>>()?;
+    let bytes = crate::typed::elements::narrow(dtype, &floats);
+    let embedding = Embedding::new(dtype, floats.len(), bytes).map_err(|d| d.message)?;
+    Ok(embedding.to_value())
 }
 
 #[derive(Clone, Copy)]

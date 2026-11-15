@@ -133,7 +133,7 @@ fn every_value_with_no_gram_form_is_listed_before_any_output() {
     );
     run(
         &mut c,
-        "CREATE (:Bad {embedding: vector([1.0, 2.0], 2, FLOAT32), \
+        "CREATE (:Bad {embedding: vector([1, 2], 2, INTEGER16), \
          mixed: [date('2020-01-01'), datetime('2020-01-01T00:00:00Z')]})",
     );
     let f = export_str(&mut c).unwrap_err();
@@ -160,7 +160,7 @@ fn relationship_values_are_checked_too() {
     let (_db, mut c) = fresh_db();
     run(
         &mut c,
-        "CREATE (:A)-[:R {embedding: vector([1.0, 2.0], 2, FLOAT32)}]->(:B)",
+        "CREATE (:A)-[:R {embedding: vector([1, 2], 2, INTEGER16)}]->(:B)",
     );
     let f = export_str(&mut c).unwrap_err();
     assert_eq!(codes_of(&f), vec!["export.value"]);

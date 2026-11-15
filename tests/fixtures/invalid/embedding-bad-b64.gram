@@ -1,0 +1,2 @@
+// gram-value 0.2.0 conformance case tag-embedding-b64-bad-char (conformance/tags.gram)
+(a {e: embedding`QAAA!`})
