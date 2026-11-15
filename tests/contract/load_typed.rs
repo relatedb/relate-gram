@@ -349,3 +349,12 @@ fn week_and_weekdate_are_unrecognized_tags() {
     let f = relate_gram::load(&mut c, b"(a {w: week`2024-W05`})", &strict).unwrap_err();
     assert!(f.diagnostics.iter().any(|d| d.code == code::VALUE_TAG));
 }
+
+#[test]
+fn a_rejected_typed_list_element_is_reported_at_that_element() {
+    let (_db, mut c) = fresh_db();
+    let src = "(a {when: [datetime`2024-01-15T10:30+01:00[Europe/Paris]`, datetime`2024-01-15T10:30+01:00[No/Such_Zone]`]})";
+    let f = relate_gram::load(&mut c, src.as_bytes(), &LoadSettings::default()).unwrap_err();
+    let d = f.diagnostics.iter().find(|d| d.code == code::VALUE_TAG_CONTENT).unwrap();
+    assert_eq!(d.span.unwrap().column, src.find("datetime`2024-01-15T10:30+01:00[No").unwrap() + 1);
+}

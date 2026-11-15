@@ -5,7 +5,8 @@
 use crate::diagnostics::{code, Diagnostic, Span};
 use crate::settings::LoadSettings;
 use crate::syntax::Syntax;
-use crate::values::{convert_record, name_text, string_value, PropValue};
+use crate::values::{convert_record, name_text, string_value, Lowered};
+use gram_value::Value as GramValue;
 use std::collections::HashMap;
 use tree_sitter::Node;
 
@@ -17,7 +18,7 @@ pub struct PlannedNode {
     /// The identifier text, or `None` for an anonymous node.
     pub key: Option<String>,
     pub labels: Vec<String>,
-    pub props: Vec<(String, PropValue)>,
+    pub props: Vec<(String, Lowered)>,
     /// The definition's span, or the first reference's if it is never defined.
     pub span: Span,
     pub defined: bool,
@@ -47,7 +48,7 @@ pub struct PlannedRel {
     /// Indexes into `LoadPlan::nodes`.
     pub start: usize,
     pub end: usize,
-    pub props: Vec<(String, PropValue)>,
+    pub props: Vec<(String, Lowered)>,
     pub span: Span,
     pub defined: bool,
     def_ident: Option<Span>,
@@ -69,15 +70,15 @@ impl LoadPlan {
 
 /// The text of an identity value: a string as written, an integer in decimal.
 /// Other values are not usable as an identity (ADR-001 section 2.1).
-pub fn value_text(v: &PropValue) -> Option<String> {
-    match v {
-        PropValue::Str(s) => Some(s.clone()),
-        PropValue::Int(i) => Some(i.to_string()),
+pub fn value_text(v: &Lowered) -> Option<String> {
+    match &v.value {
+        GramValue::String(s) => Some(s.clone()),
+        GramValue::Integer(i) => Some(i.to_string()),
         _ => None,
     }
 }
 
-fn property_identity(props: &[(String, PropValue)], property: &str) -> Option<String> {
+fn property_identity(props: &[(String, Lowered)], property: &str) -> Option<String> {
     props
         .iter()
         .find(|(k, _)| k == property)

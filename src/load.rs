@@ -6,8 +6,9 @@ use crate::diagnostics::{code, Diagnostic};
 use crate::names::cypher_name;
 use crate::plan::{node_identity, rel_identity, LoadPlan, PlannedNode, PlannedRel};
 use crate::settings::LoadSettings;
-use crate::typed::{Tag, TypedContent, TypedValue};
-use crate::values::PropValue;
+use crate::typed::Tag;
+use crate::values::Lowered;
+use gram_value::Value as GramValue;
 use relate::{Connection, Value};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
@@ -29,15 +30,21 @@ fn db_error(e: impl std::fmt::Display) -> Diagnostic {
     Diagnostic::error_without_span(code::LOAD_DATABASE_ERROR, e.to_string())
 }
 
-fn to_value(v: &PropValue) -> Value {
+/// The Relate value for a lowered value that is not typed: the one conversion of ADR-013
+/// section 2.4. A kind the lowering excludes is an error, not a silent null.
+fn to_value(v: &GramValue) -> Result<Value, Diagnostic> {
     match v {
-        PropValue::Int(i) => Value::Int(*i),
-        PropValue::Float(f) => Value::Float(*f),
-        PropValue::Bool(b) => Value::Bool(*b),
-        PropValue::Str(s) => Value::String(Arc::from(s.as_str())),
-        // Typed values are written by their own statements and never reach this conversion.
-        PropValue::Typed(_) => Value::Null,
-        PropValue::List(items) => Value::List(Arc::new(items.iter().map(to_value).collect())),
+        GramValue::Integer(i) => Ok(Value::Int(*i)),
+        GramValue::Decimal(d) => Ok(Value::Float(d.get())),
+        GramValue::Boolean(b) => Ok(Value::Bool(*b)),
+        GramValue::String(s) => Ok(Value::String(Arc::from(s.as_str()))),
+        GramValue::Array(items) => Ok(Value::List(Arc::new(
+            items.iter().map(to_value).collect::<Result<Vec<_>, _>>()?,
+        ))),
+        other => Err(db_error(format!(
+            "a {} value cannot be stored as a property",
+            other.kind().name()
+        ))),
     }
 }
 
@@ -47,15 +54,18 @@ fn map_value(map: BTreeMap<String, Value>) -> Value {
 
 /// The properties to write for an element. `identity` is the gram identifier to
 /// store as `@id`, or `None` when identity comes from a property.
-fn props_value(identity: Option<&str>, props: &[(String, PropValue)]) -> Value {
+fn props_value(
+    identity: Option<&str>,
+    props: &[(String, Lowered)],
+) -> Result<Value, Diagnostic> {
     let mut map: BTreeMap<String, Value> = BTreeMap::new();
     if let Some(id) = identity {
         map.insert("@id".to_string(), Value::String(Arc::from(id)));
     }
     for (k, v) in props.iter().filter(|(_, v)| !v.is_typed()) {
-        map.insert(k.clone(), to_value(v));
+        map.insert(k.clone(), to_value(&v.value)?);
     }
-    map_value(map)
+    Ok(map_value(map))
 }
 
 fn int_value(v: &Value) -> Option<i64> {
@@ -304,7 +314,7 @@ struct TypedWrite<'a> {
     node: bool,
     id: i64,
     key: &'a str,
-    value: &'a PropValue,
+    value: &'a Lowered,
 }
 
 /// The statement group a typed write belongs to: all writes of one kind of element, key and
@@ -317,30 +327,35 @@ struct TypedGroup {
     list: bool,
 }
 
-fn typed_tag(v: &PropValue) -> Option<Tag> {
-    match v {
-        PropValue::Typed(t) => Some(t.tag),
-        PropValue::List(items) => items.first().and_then(typed_tag),
+fn typed_tag(v: &Lowered) -> Option<Tag> {
+    match &v.value {
+        GramValue::Tagged(t) => Tag::from_name(t.tag()),
+        GramValue::Array(items) => match items.first() {
+            Some(GramValue::Tagged(t)) => Tag::from_name(t.tag()),
+            _ => None,
+        },
         _ => None,
     }
 }
 
-/// The parameter value for one typed value: its text, or for a point its numbers.
-fn typed_param(v: &PropValue) -> Value {
-    let PropValue::Typed(t) = v else {
+/// The parameter value for one typed value: its normal content, or for a point its numbers.
+fn typed_param(v: &GramValue) -> Value {
+    let GramValue::Tagged(t) = v else {
         return Value::Null;
     };
-    match &t.content {
-        TypedContent::Text(s) => Value::String(Arc::from(s.as_str())),
-        TypedContent::Point(p) => {
-            let mut m = BTreeMap::new();
-            m.insert("x".to_string(), Value::Float(p.x));
-            m.insert("y".to_string(), Value::Float(p.y));
-            m.insert("z".to_string(), p.z.map_or(Value::Null, Value::Float));
-            m.insert("srid".to_string(), Value::Int(p.srid));
-            map_value(m)
+    if t.tag() == "point" {
+        if let Ok(Some(i)) = gram_value::tags::interpret_tag("point", t.content()) {
+            if let gram_value::tags::Typed::Point(p) = i.typed {
+                let mut m = BTreeMap::new();
+                m.insert("x".to_string(), Value::Float(p.x));
+                m.insert("y".to_string(), Value::Float(p.y));
+                m.insert("z".to_string(), p.z.map_or(Value::Null, Value::Float));
+                m.insert("srid".to_string(), Value::Int(p.srid.unwrap_or(0) as i64));
+                return map_value(m);
+            }
         }
     }
+    Value::String(Arc::from(t.content()))
 }
 
 /// The Cypher expression that builds a typed value from `var` (a row's `v`, or a list element).
@@ -354,16 +369,23 @@ fn typed_expr(tag: Tag, var: &str) -> String {
     }
 }
 
-/// The spans of every value in a group, for reporting.
-fn group_spans(values: &[&PropValue]) -> Vec<(Tag, Span, String)> {
+/// The spans of every typed value in a group, for reporting, with the content each was
+/// written as.
+fn group_spans(values: &[&Lowered]) -> Vec<(Tag, Span, String)> {
     let mut out = Vec::new();
     for v in values {
-        match v {
-            PropValue::Typed(t) => out.push((t.tag, t.span, typed_text(t))),
-            PropValue::List(items) => {
-                for item in items {
-                    if let PropValue::Typed(t) = item {
-                        out.push((t.tag, t.span, typed_text(t)));
+        match &v.value {
+            GramValue::Tagged(t) => {
+                if let Some(tag) = Tag::from_name(t.tag()) {
+                    out.push((tag, v.span, t.content().to_string()));
+                }
+            }
+            GramValue::Array(items) => {
+                for (item, span) in items.iter().zip(&v.items) {
+                    if let GramValue::Tagged(t) = item {
+                        if let Some(tag) = Tag::from_name(t.tag()) {
+                            out.push((tag, *span, t.content().to_string()));
+                        }
                     }
                 }
             }
@@ -371,14 +393,6 @@ fn group_spans(values: &[&PropValue]) -> Vec<(Tag, Span, String)> {
         }
     }
     out
-}
-
-/// The text a typed value was written as, for matching against a database message.
-fn typed_text(t: &TypedValue) -> String {
-    match &t.content {
-        TypedContent::Text(s) => s.clone(),
-        TypedContent::Point(_) => String::new(),
-    }
 }
 
 /// The zone name inside the brackets of a datetime text, if any.
@@ -390,7 +404,7 @@ fn zone_of(text: &str) -> Option<&str> {
 /// Report a database rejection of one group as `value.tag-content` at the values it names.
 /// A failed statement poisons the transaction, so rows cannot be retried one by one; the
 /// values are found by matching the text the message quotes (ADR-011 section 2.3).
-fn typed_failure(message: &str, values: &[&PropValue]) -> Vec<Diagnostic> {
+fn typed_failure(message: &str, values: &[&Lowered]) -> Vec<Diagnostic> {
     let spans = group_spans(values);
     let mut hits: Vec<&(Tag, Span, String)> = spans
         .iter()
@@ -455,7 +469,7 @@ fn write_typed(
             node: w.node,
             key: w.key.to_string(),
             tag,
-            list: matches!(w.value, PropValue::List(_)),
+            list: matches!(w.value.value, GramValue::Array(_)),
         };
         groups.entry(group).or_default().push(w);
     }
@@ -476,8 +490,8 @@ fn write_typed(
                 .map(|w| {
                     let mut row = BTreeMap::new();
                     row.insert("id".to_string(), Value::Int(w.id));
-                    let v = match w.value {
-                        PropValue::List(items) => {
+                    let v = match &w.value.value {
+                        GramValue::Array(items) => {
                             Value::List(Arc::new(items.iter().map(typed_param).collect()))
                         }
                         single => typed_param(single),
@@ -487,7 +501,7 @@ fn write_typed(
                 })
                 .collect();
             if let Err(e) = conn.query_with_params(&cypher, batch_params(rows)) {
-                let values: Vec<&PropValue> = chunk.iter().map(|w| w.value).collect();
+                let values: Vec<&Lowered> = chunk.iter().map(|w| w.value).collect();
                 return Err(typed_failure(&e.to_string(), &values));
             }
         }
@@ -534,7 +548,7 @@ fn write_plan(
             j += 1;
         }
         let pattern = label_pattern("n", &set)?;
-        let rows: Vec<Value> = to_create[i..j]
+        let rows = to_create[i..j]
             .iter()
             .map(|&k| {
                 let n = &plan.nodes[k];
@@ -542,11 +556,11 @@ fn write_plan(
                 row.insert("i".to_string(), Value::Int(k as i64));
                 row.insert(
                     "props".to_string(),
-                    props_value(node_stored_id(n, settings), &n.props),
+                    props_value(node_stored_id(n, settings), &n.props)?,
                 );
-                map_value(row)
+                Ok(map_value(row))
             })
-            .collect();
+            .collect::<Result<Vec<Value>, Diagnostic>>()?;
         let cypher =
             format!("UNWIND $rows AS r CREATE ({pattern}) SET n = r.props RETURN r.i, id(n)");
         let result = conn
@@ -573,16 +587,16 @@ fn write_plan(
         .filter(|&i| res.node[i].is_some() && plan.nodes[i].defined)
         .collect();
     for chunk in matched_defined.chunks(BATCH) {
-        let rows: Vec<Value> = chunk
+        let rows = chunk
             .iter()
             .map(|&k| {
                 let n = &plan.nodes[k];
                 let mut row = BTreeMap::new();
                 row.insert("id".to_string(), Value::Int(ids[k]));
-                row.insert("props".to_string(), props_value(None, &n.props));
-                map_value(row)
+                row.insert("props".to_string(), props_value(None, &n.props)?);
+                Ok(map_value(row))
             })
-            .collect();
+            .collect::<Result<Vec<Value>, Diagnostic>>()?;
         conn.query_with_params(
             "UNWIND $rows AS r MATCH (n) WHERE id(n) = r.id SET n += r.props",
             batch_params(rows),
@@ -615,16 +629,16 @@ fn write_plan(
         .filter(|&i| res.rel[i].is_some())
         .collect();
     for chunk in matched_rels.chunks(BATCH) {
-        let rows: Vec<Value> = chunk
+        let rows = chunk
             .iter()
             .map(|&k| {
                 let r = &plan.rels[k];
                 let mut row = BTreeMap::new();
                 row.insert("id".to_string(), Value::Int(res.rel[k].unwrap_or_default()));
-                row.insert("props".to_string(), props_value(None, &r.props));
-                map_value(row)
+                row.insert("props".to_string(), props_value(None, &r.props)?);
+                Ok(map_value(row))
             })
-            .collect();
+            .collect::<Result<Vec<Value>, Diagnostic>>()?;
         conn.query_with_params(
             "UNWIND $rows AS r MATCH ()-[x]->() WHERE id(x) = r.id SET x += r.props",
             batch_params(rows),
@@ -647,7 +661,7 @@ fn write_plan(
             j += 1;
         }
         let name = cypher_name(ty).map_err(|_| db_error("a type contains a NUL"))?;
-        let rows: Vec<Value> = rel_create[i..j]
+        let rows = rel_create[i..j]
             .iter()
             .map(|&k| {
                 let r = &plan.rels[k];
@@ -657,11 +671,11 @@ fn write_plan(
                 row.insert("e".to_string(), Value::Int(ids[r.end]));
                 row.insert(
                     "props".to_string(),
-                    props_value(rel_stored_id(r, settings), &r.props),
+                    props_value(rel_stored_id(r, settings), &r.props)?,
                 );
-                map_value(row)
+                Ok(map_value(row))
             })
-            .collect();
+            .collect::<Result<Vec<Value>, Diagnostic>>()?;
         let cypher = format!(
             "UNWIND $rows AS r MATCH (a) WHERE id(a) = r.s MATCH (b) WHERE id(b) = r.e \
              CREATE (a)-[x:{name}]->(b) SET x = r.props RETURN r.i, id(x)"
