@@ -433,3 +433,206 @@ mod graph_lines {
         );
     }
 }
+
+// --- T010: the expected-graph rules ----------------------------------------------------------
+
+mod expected_rules {
+    use super::conformance::expected::{read_expected, Identity};
+
+    fn read(text: &str) -> Result<super::conformance::graph::Graph, String> {
+        read_expected(text, &Identity::default())
+    }
+
+    #[test]
+    fn nodes_and_single_hop_relationships_read_as_lines_with_the_identifier_as_the_id() {
+        let g = read("(ada:Person {name: \"Ada\", born: 1815})\n(bob:Person)\n(ada)-[:KNOWS {since: 1.5}]->(bob)\n(:Doc {t: \"x\"})\n").unwrap();
+        assert_eq!(
+            g.nodes,
+            [
+                ":Doc {t: x}",
+                ":Person {@id: ada, born: 1815, name: Ada}",
+                ":Person {@id: bob}"
+            ]
+        );
+        assert_eq!(
+            g.relationships,
+            ["(:Person {@id: ada, born: 1815, name: Ada}) -[KNOWS {since: 1.5}]-> (:Person {@id: bob})"]
+        );
+    }
+
+    #[test]
+    fn an_identity_property_makes_identifiers_handles_with_no_id_expected() {
+        let id = Identity {
+            node_property: Some("key".into()),
+            relationship_property: None,
+        };
+        let g = read_expected(
+            "(a:N {key: \"a\"})\n(b:N {key: \"b\"})\n(a)-[:R]->(b)\n",
+            &id,
+        )
+        .unwrap();
+        assert_eq!(g.nodes, [":N {key: a}", ":N {key: b}"]);
+        assert_eq!(g.relationships, ["(:N {key: a}) -[R {}]-> (:N {key: b})"]);
+    }
+
+    fn breaks(text: &str, needle: &str) {
+        let e = read(text).unwrap_err();
+        assert!(
+            e.contains(needle),
+            "wanted `{needle}` in `{e}` for {text:?}"
+        );
+    }
+
+    #[test]
+    fn each_rule_breach_fails_naming_the_rule() {
+        breaks("(a)-[:R]->(b)-[:S]->(c)\n", "path");
+        breaks("(a)-[:R]->(b)\n(a)\n(b)\n", "forward reference");
+        breaks("@k(1) (a)\n", "annotation");
+        breaks("(a {m: {x: 1}})\n", "map");
+        breaks("(a)\n(a:N)\n", "defined more than once");
+        breaks("(a)\n(a)-[:R]->(b)\n", "not defined");
+        breaks("(a)\n(a:N)-[:R]->(b)\n", "identifier alone");
+        breaks("(a)\n(b)\n(c)\n[s | a, b, c]\n", "at most two");
+        breaks("{kind: \"x\"}\n(a)\n", "header");
+        breaks("(a)\n(b)\n(:N)-[:R]->(b)\n", "identifier alone");
+    }
+
+    #[test]
+    fn a_relationship_with_its_own_identifier_has_an_id() {
+        let g = read("(a)\n(b)\n(a)-[r:R]->(b)\n").unwrap();
+        assert_eq!(g.relationships, ["({@id: a}) -[R {@id: r}]-> ({@id: b})"]);
+    }
+}
+
+// --- T013: diagnostics and counts ------------------------------------------------------------
+
+mod diagnostics_matching {
+    use super::conformance::case::Diag;
+    use super::conformance::expect::{compare_counts, compare_diagnostics, split};
+    use relate_gram::diagnostics::{Diagnostic, Span};
+    use relate_gram::LoadCounts;
+    use std::collections::BTreeMap;
+
+    fn span(line: usize, column: usize, start: usize) -> Span {
+        Span {
+            start,
+            end: start + 1,
+            line,
+            column,
+        }
+    }
+
+    fn d(code: &str, p: Option<(usize, usize, usize)>) -> Diag {
+        Diag {
+            code: code.into(),
+            position: p,
+        }
+    }
+
+    fn lib_error(code: &'static str, line: usize, column: usize, offset: usize) -> Diagnostic {
+        Diagnostic::error(code, span(line, column, offset), "m")
+    }
+
+    #[test]
+    fn matching_diagnostics_pass_in_any_order() {
+        let got = [lib_error("b.x", 3, 1, 10), lib_error("a.y", 2, 4, 5)];
+        let (errors, warnings) = split(&got);
+        assert!(warnings.is_empty());
+        compare_diagnostics(
+            "Error",
+            &[d("a.y", Some((2, 4, 5))), d("b.x", Some((3, 1, 10)))],
+            &errors,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn a_different_code_line_column_or_offset_fails_naming_the_part() {
+        let (errors, _) = split(&[lib_error("a.y", 2, 4, 5)]);
+        let e = compare_diagnostics("Error", &[d("a.z", Some((2, 4, 5)))], &errors).unwrap_err();
+        assert!(e.contains("a.z") && e.contains("a.y"), "{e}");
+        for (want, part) in [
+            ((3, 4, 5), "line"),
+            ((2, 9, 5), "column"),
+            ((2, 4, 9), "offset"),
+        ] {
+            let e = compare_diagnostics("Error", &[d("a.y", Some(want))], &errors).unwrap_err();
+            assert!(e.contains(part), "{part}: {e}");
+        }
+    }
+
+    #[test]
+    fn an_extra_or_a_missing_diagnostic_fails() {
+        let (errors, _) = split(&[lib_error("a.y", 2, 4, 5), lib_error("b.x", 3, 1, 10)]);
+        let e = compare_diagnostics("Error", &[d("a.y", Some((2, 4, 5)))], &errors).unwrap_err();
+        assert!(e.contains("unexpected") && e.contains("b.x"), "{e}");
+        let e = compare_diagnostics(
+            "Error",
+            &[d("a.y", Some((2, 4, 5))), d("c.z", Some((1, 1, 0)))],
+            &split(&[lib_error("a.y", 2, 4, 5)]).0,
+        )
+        .unwrap_err();
+        assert!(e.contains("missing") && e.contains("c.z"), "{e}");
+    }
+
+    #[test]
+    fn a_diagnostic_with_no_position_matches_by_code_alone() {
+        let got = [Diagnostic::warning_without_span("load.anonymous", "m")];
+        let (_, warnings) = split(&got);
+        compare_diagnostics("Warning", &[d("load.anonymous", None)], &warnings).unwrap();
+        assert!(compare_diagnostics(
+            "Warning",
+            &[d("load.anonymous", Some((1, 1, 0)))],
+            &warnings
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn errors_and_warnings_are_split_by_severity() {
+        let got = [
+            lib_error("a.y", 1, 1, 0),
+            Diagnostic::warning("w.z", span(2, 1, 7), "m"),
+        ];
+        let (errors, warnings) = split(&got);
+        assert_eq!((errors.len(), warnings.len()), (1, 1));
+    }
+
+    #[test]
+    fn counts_compare_exactly_the_keys_listed() {
+        let got = LoadCounts {
+            nodes_created: 2,
+            nodes_updated: 1,
+            relationships_created: 3,
+            relationships_updated: 0,
+            elements_without_identifier: 4,
+            reference_only_nodes: 0,
+            tags_dropped: 5,
+        };
+        let want = |pairs: &[(&str, i64)]| {
+            pairs
+                .iter()
+                .map(|(k, v)| (k.to_string(), *v))
+                .collect::<BTreeMap<_, _>>()
+        };
+        compare_counts(
+            &want(&[("nodesCreated", 2), ("tagsDropped", 5)]),
+            &got,
+            None,
+        )
+        .unwrap();
+        // keys that are not listed are not checked
+        compare_counts(&want(&[("nodesUpdated", 1)]), &got, None).unwrap();
+        let e = compare_counts(&want(&[("nodesCreated", 9)]), &got, None).unwrap_err();
+        assert!(
+            e.contains("nodesCreated") && e.contains('9') && e.contains('2'),
+            "{e}"
+        );
+        compare_counts(&want(&[("total", 7)]), &got, Some(7)).unwrap();
+        assert!(compare_counts(&want(&[("total", 7)]), &got, Some(8)).is_err());
+        assert!(
+            compare_counts(&want(&[("total", 7)]), &got, None).is_err(),
+            "no total available"
+        );
+    }
+}
