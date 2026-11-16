@@ -14,7 +14,7 @@ Relate is an embedded Cypher graph database, used from Rust, Python, Node.js, th
 
 What has to be shared across languages is behavior, not code: which files are accepted, which are rejected and with what error at what position, what graph a file loads to, and what text a database exports to. Behavior can be written down as cases that any implementation runs.
 
-Five ways to serve other languages are compared: wrap the command, bind the Rust library, write native packages, split the work at the statement boundary, and package the tool as a Relate command extension. The preferred direction is to write down the shared cases first (a proposed decision, ADR-015, does so) and then build native packages, Python first and TypeScript next, each tested against those cases. A native package needs a reader of gram that reports typed values and positions; no library provides one in any language yet, and the gram ecosystem is heading toward a shared semantic layer that would (5.5). Seven questions remain open, and two others are decided in the proposed ADR.
+Five ways to serve other languages are compared: wrap the command, bind the Rust library, write native packages, split the work at the statement boundary, and package the tool as a Relate command extension. The preferred direction is to write down the shared cases first (a proposed decision, ADR-015, does so) and then build native packages, Python first and TypeScript next, each tested against those cases. A native package needs a reader of gram that reports typed values and positions. The libraries tried so far, from the pattern-rs family of gram libraries for Rust, npm and Python, do not, and a shared reader that would is being designed for the gram ecosystem (5.5). Seven questions remain open, and two others are answered in the proposed ADR.
 
 ## 2. Problem / Motivation
 
@@ -48,9 +48,11 @@ Language bindings were deferred from the first phase of the project, and the pro
 
 4.3. A requirement that every implementation offers every operation. Which operations come first is open (7.7).
 
-4.4. Changing the Rust library's interface or bringing relate-gram into the Relate repository, though 5.3.2 and 5.3.5 note where either would change the options.
+4.4. Changing the Rust library's interface or bringing relate-gram into the Relate repository, though 5.3.2 notes where either would change the options.
 
 4.5. Matching the Rust implementation's speed. Each implementation measures itself.
+
+4.6. Designing or building the shared gram reader. This RFC consumes it (5.5, 7.9).
 
 ## 5. Proposed Approach (high-level)
 
@@ -72,7 +74,7 @@ Parsing, diagnostics and value spelling need no database. Loading and exporting 
 
 The cases exist as Rust fixtures and expectations, with the expected exports embedded in test code. They can be collected in a form that is not tied to Rust: gram files with the expected outcome (the loaded graph, or the diagnostics with positions), databases described by their contents with the expected exported text, and the table of diagnostic codes. Every implementation reads the same collection and reports the cases it fails. The Rust library's own tests would read it too, so the collection has one owner and Rust is one consumer among several.
 
-`gram-value` runs its languages this way: one corpus of cases, a list of skipped cases per package with reasons, and a table of results per language generated in continuous integration. The same mechanism answers how skipped cases are recorded (3.5). ADR-015 (proposed) settles the form: a case is a directory whose description and expected graphs are gram files, databases are made with Cypher, and the capabilities of an implementation's environment decide which cases it skips. Extracting the cases is also the cheapest step in this RFC: it needs no code in another language and it removes the golden strings from the Rust test code.
+`gram-value`, a library of gram's property values with one canonical text in each language, runs its languages this way: one corpus of cases, a list of skipped cases per package with reasons, and a table of results per language generated in continuous integration. The same mechanism answers how skipped cases are recorded (3.5). ADR-015 (proposed) settles where the cases live and in what form. Extracting the cases is also the cheapest step in this RFC: it needs no code in another language and it removes the golden strings from the Rust test code.
 
 ### 5.3 Candidate strategies
 
@@ -87,11 +89,11 @@ The strategies are compared on the same axes in the table that follows 5.3.5.
 
 A fourth route is a connection interface implemented over Relate's C interface, which the Node, Go, Java and Swift clients already use. A library written against such an interface would serve those languages at once.
 
-**5.3.3 Native packages.** A package for each language written in that language, built on the language's `gram-value` package, a reader of gram, and the language's Relate package, sharing only the cases of 5.2 with the Rust library. The reader today is a tree-sitter-gram binding plus a lowering written in the package, as relate-gram does; a shared semantic layer (5.5) would provide that lowering as a library instead. The logic is written again for each language, about 5,000 lines in Rust today. The port is smaller than that figure suggests: the known-tag content rules come from `gram-value`, which every language has, and a prototype of the typed lowering (about 950 lines, SPIKE-007) is the part a semantic layer would supply. What stays per language is Relate's policy, the Cypher loader and exporter, and the command.
+**5.3.3 Native packages.** A package for each language written in that language, built on the language's `gram-value` package, a reader of gram, and the language's Relate package, sharing only the cases of 5.2 with the Rust library. The reader today is a binding of tree-sitter-gram (the grammar of gram, written for the tree-sitter parser generator) plus a lowering written in the package, as relate-gram does; a shared reader (5.5) would provide that lowering as a library instead. The logic is written again for each language, about 5,000 lines in Rust today. The port is smaller than that figure suggests: the known-tag content rules come from `gram-value`, which every language has. A prototype of the typed lowering is about 950 lines of Rust (SPIKE-007); a shared reader would supply that part, and until it exists each port writes its own (7.9). What stays per language is Relate's policy, the Cypher loader and exporter, and the command.
 
 **5.3.4 A Relate command extension.** Relate's command line can run a child process that emits batches of parameterized statements; the host owns the database and executes them (Relate's extension decisions, ADR-0429 and ADR-0447). That fits `load`. It cannot offer `export` or the identity scan, which read the store, because the child has no access to it. It serves people who use the Relate command and not programs holding a connection.
 
-**5.3.5 Split at the statement boundary.** One implementation does the parsing, diagnostics and planning, and emits the Cypher batches as data; a thin executor in each language runs them on the connection the program holds. The extension protocol already works this way for loading. It keeps one parser and one planner and needs no connection hand-off. The obstacles are that the scan and resolve step of a load reads the database, and so does export, so each needs a round trip between the planner and the executor, and the planner still has to run somewhere that every language can reach. A flat table of classified elements keyed by identity, the frame of the semantic layer (5.5), is what such a planner would consume, because it forces the identity reconciliation that the planner does today. With a frame at the boundary this strategy and 5.3.3 meet: a parser of the package's choice produces the frame, and a per-language executor turns it into Cypher batches.
+**5.3.5 Split at the statement boundary.** One implementation does the parsing, diagnostics and planning, and emits the Cypher batches as data; a thin executor in each language runs them on the connection the program holds. The extension protocol already works this way for loading. It keeps one parser and one planner and needs no connection hand-off. The obstacles are that the scan and resolve step of a load reads the database, and so does export, so each needs a round trip between the planner and the executor, and the planner still has to run somewhere that every language can reach. If a shared reader produced a flat table of elements keyed by identity (a frame, 5.5), the planner would consume that table instead of a syntax tree; 7.8 asks what that would remove.
 
 | | Reuses the program's connection | In-memory database | Atomic load | Browser | Logic written per language | Native build burden |
 |---|---|---|---|---|---|---|
@@ -103,21 +105,21 @@ A fourth route is a connection interface implemented over Relate's C interface, 
 
 ### 5.4 Preferred direction
 
-Write the shared cases first (5.2), then build native packages (5.3.3), Python first and TypeScript next, each tested against the cases from its first commit. Python is first because its Relate package is mature (1.0.2), exposes transactions and has a vector type, which is the hardest value type to carry. TypeScript follows and starts with Node.js. The split at the statement boundary (5.3.5) is the strongest alternative, because it keeps one parser and planner; a short spike should show whether its round trips are manageable before the native packages are committed to (7.8). Packages start on the tree-sitter-gram bindings and move to the semantic layer's reader when it exists (7.9); the case files are gram, so they do not change when the reader does. Wrapping the command (5.3.1) remains available to a program that accepts its limits.
+Write the shared cases first (5.2), then build native packages (5.3.3), Python first and TypeScript next, each tested against the cases from its first commit. Python is first because its Relate package is mature (1.0.2), exposes transactions and has a vector type, which is the hardest value type to carry. TypeScript follows and starts with Node.js. The split at the statement boundary (5.3.5) is the strongest alternative, because it keeps one parser and planner; a short spike should show whether its round trips are manageable before the native packages are committed to (7.8). A candidate for the reader is to start the packages on the tree-sitter-gram bindings and move them to the shared reader when it exists (7.9); the case files are gram, so they do not change when the reader does. Wrapping the command (5.3.1) remains available to a program that accepts its limits.
 
 ### 5.5 Cross-cutting concerns
 
 - **Value types.** Each Relate package represents values differently, and an implementation can only store or return what its package can. A case it cannot express is skipped with a reason (3.5).
 - **Versions.** The implementations and the Rust library describe the same behavior; whether they share version numbers is open (7.6).
 - **Generated code.** Generating the diagnostics table, the tag profile and the case reader from one description is likely to help in each language. It is a tool choice for the decisions that follow.
-- **The gram reader.** A faithful reader, with typed values, positions and diagnostics, is the part of a port that the ecosystem does not provide. SPIKE-006 found that pattern-rs's libraries (Rust, npm, Python) read the shape of a case file but lose repeated keys, fenced tags and arrow kinds and give no positions. SPIKE-007 prototyped a typed layer over the tree-sitter-gram syntax tree that closes those gaps, and a policy of about 190 lines over it reproduces 67 of relate-gram's 71 rejections. The direction agreed for the ecosystem is layered: tree-sitter-gram as the syntactic authority; a semantic layer (continuing pattern-rs's CST parser work) that adds typed values, positions and diagnostics; and a frame, a flat table of elements with an explicit class column, which direct-to-frame parsers must conform to and may support in part. That work lives in the `gram-frame` repository. This RFC depends on its direction and not on its schedule.
-- **Distribution.** A native package contains no compiled code of its own, but it depends on the tree-sitter and tree-sitter-gram bindings (or the semantic layer's reader) and on Relate's package, which are compiled for each platform. The pattern-rs Python distribution declares Python below 3.14, and its npm package is WebAssembly-backed and needs an initialization step. Whether prebuilt binaries exist for each platform an implementation targets is open (7.3).
+- **The gram reader.** No library tried so far reads gram faithfully into typed values with positions. SPIKE-006 found that pattern-rs's libraries read the shape of a case file but lose repeated keys, fenced tags and arrow kinds and give no positions. SPIKE-007 prototyped a typed layer over the tree-sitter-gram syntax tree that closes those gaps: a policy of about 190 lines over it reproduces 67 of the 71 invalid fixtures, and the other four need a graph-level identity resolver (three) or byte input (one, invalid UTF-8). The gram ecosystem is designing a shared reader for this gap: a semantic layer over the tree-sitter-gram syntax tree that adds typed values, positions and diagnostics, and a flat table of elements, the frame, that it produces (a design note in the `gram-frame` repository, not yet a decision). This RFC depends on the direction and not on the schedule (7.9).
+- **Distribution.** A native package contains no compiled code of its own, but it depends on the tree-sitter and tree-sitter-gram bindings (or the shared reader) and on Relate's package, which are compiled for each platform. A runner that reads the case files with pattern-rs's libraries inherits their limits: the Python distribution declares Python below 3.14, and the npm package is WebAssembly-backed and needs an initialization step (ADR-015). Whether prebuilt binaries exist for each platform an implementation targets is open (7.3).
 
 ## 6. Alternatives Considered
 
 6.1. **Stay Rust-only and document the command.** Rejected: the costs of section 2 remain for every program outside Rust.
 
-6.2. **One Rust core compiled to WebAssembly and loaded from every language.** Rejected: the core needs a database connection on the other side of the boundary, so the connection problem of 5.3.2 returns. A parser also has to be built for WebAssembly, which tree-sitter-gram has no browser binding for today; every strategy that reaches the browser needs that build, so it does not tell the options apart.
+6.2. **One Rust core compiled to WebAssembly and loaded from every language.** Rejected: the core needs a database connection on the other side of the boundary, so the connection problem of 5.3.2 returns. A parser also has to be built for WebAssembly: tree-sitter-gram's repository ships bindings for C, Go, Node, Python, Rust and Swift and none for the browser. Every strategy that reaches the browser needs that build, so it does not tell the options apart.
 
 ## 7. Open Questions
 
@@ -127,9 +129,9 @@ Write the shared cases first (5.2), then build native packages (5.3.3), Python f
 
 7.3. Do tree-sitter and tree-sitter-gram publish prebuilt binaries for every platform the implementations target, for Python and Node.js? SPIKE-006 looked at pattern-rs's packages, not at the tree-sitter bindings, so this stays open.
 
-7.4. Where does the shared collection of cases live: in this repository, in a repository of its own, or alongside the `gram-value` corpus? It needs one owner and must be readable from every language's test suite. Decided in ADR-015 (proposed): in this repository, in a `conformance/` directory with a version, which other repositories vendor at a pinned version.
+7.4. Where does the shared collection of cases live: in this repository, in a repository of its own, or alongside the `gram-value` corpus? It needs one owner and must be readable from every language's test suite. Resolved by ADR-015 (proposed; open until it is accepted).
 
-7.5. In what form is a case written, and how is a loaded graph or a database's contents compared? The Rust tests compare database dumps and golden strings, and the form must express both. Decided in ADR-015 (proposed): case descriptions and expected graphs are gram files, databases are made with Cypher, and two graphs are equal when they have the same multisets of nodes and relationships.
+7.5. In what form is a case written, and how is a loaded graph or a database's contents compared? The Rust tests compare database dumps and golden strings, and the form must express both. Resolved by ADR-015 (proposed; open until it is accepted).
 
 7.6. Do the implementations share version numbers with the Rust library, or version independently against the behavior they pass?
 
@@ -137,7 +139,7 @@ Write the shared cases first (5.2), then build native packages (5.3.3), Python f
 
 7.8. What would a spike of the split at the statement boundary (5.3.5), with a frame at the boundary, have to show: the number of round trips for a scan and an export, whether the planner can run where every language can call it, and how much of the planner a frame removes?
 
-7.9. Do the ports start on the tree-sitter-gram bindings, porting relate-gram's lowering, or wait for the semantic layer? Starting now costs a lowering per language that the semantic layer would replace; waiting delays the ports on a project whose schedule this RFC does not control. 5.4 leans toward starting now.
+7.9. Do the ports start on the tree-sitter-gram bindings, porting relate-gram's lowering, or wait for the semantic layer? Starting now costs a lowering per language that the semantic layer would replace; waiting delays the ports on a project whose schedule this RFC does not control. 5.4 states a candidate.
 
 ## 8. ADRs
 
