@@ -10,15 +10,15 @@
 
 Recorded as tasks complete.
 
-- `cargo test` wall time, debug, before the conversion (T001): _not yet measured_.
-- Position test, `tests/contract/check.rs` and the contract tests, wall time (T001): _not yet measured_.
-- Number of Rust tests before (T001): _not yet counted_.
+- `cargo test`, debug, warm build, before the conversion (T001): per-target test time 2.9 s in total (cli 1.26 s, roundtrip 0.53 s, embedding16 0.29 s, positions 0.16 s, corpus 0.17 s, contract 0.10 s, coverage 0.05 s, lib 0.04 s, the rest under 0.02 s).
+- Position test 0.16 s; contract tests 0.10 s (148 tests); what the collection replaces is therefore about 0.3 s of test time, so the limit of SC-006 (twice that) is about 0.6 s plus the cost of reading files.
+- Number of Rust tests before (T001): 256 `#[test]` in `tests/` (148 contract, 31 fix, 28 cli, 14 roundtrip, 9 render, 9 syntax, 7 corpus, 3 + 3 embedding16, 2 positions, 1 coverage) and 40 unit tests in `src/`.
 - Runner wall time after the conversion (T038): _not yet measured_ (limit: twice the time of what it replaced, SC-006).
 - Tests removed, by task (SC-007): _none yet_.
 
 ## Phase 1: Setup
 
-- [ ] T001 Record the baselines above in `specs/006-conformance-collection/tasks.md`: `cargo test` wall time, the time of `--test positions` and `--test contract`, and the count of `#[test]` per file (the list of research R10)
+- [x] T001 Record the baselines above in `specs/006-conformance-collection/tasks.md`: `cargo test` wall time, the time of `--test positions` and `--test contract`, and the count of `#[test]` per file (the list of research R10)
 - [ ] T002 Add `relateby-gram = "0.7"` to `[dev-dependencies]` in `Cargo.toml` and write a smoke test `tests/conformance_smoke.rs` that parses a one-line case file with `parse_gram_with_header` and reads its header and a labeled node; run `cargo test --test conformance_smoke` (compiles the dependency, ADR-015 section 2.10)
 - [ ] T003 [P] Create the skeleton under `conformance/`: `VERSION` (`0.1.0`), `GRAMMAR_VERSION` (the `tree-sitter-gram` version of `Cargo.toml` and the `gram-data` version installed), `vocabulary.gram` (the labels `Error`, `Warning`, `Counts`, `Applied`, `Remaining`, `Result`, `KnownFailure` and the capability names of ADR-015 section 2.6), `capabilities.gram` (the probes of research R8), `start.cypher` (`CREATE (:Existing {k: 1})-[:R]->(:Existing {k: 2});` from `tests/positions/main.rs`), an empty `known-failures.gram`, and `.gitattributes` with `conformance/**/*.txt -text` and `conformance/**/*.bin -text`
 - [ ] T004 [P] Add a step to `.github/workflows/ci.yml` that installs the `gram` tool (`cargo install gram-data --locked`) and sets `CONFORMANCE_REQUIRE_LINT=1` for the test step (research R2)
