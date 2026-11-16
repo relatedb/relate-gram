@@ -1,0 +1,3 @@
+/** A point in extended well-known text is left alone and reported (ADR-012 section 2.4). */
+{requires: []}
+(:Remaining {code: "value.tag-content", line: 1, column: 8, offset: 7})

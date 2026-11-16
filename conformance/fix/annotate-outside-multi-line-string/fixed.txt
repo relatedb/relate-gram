@@ -1,0 +1,4 @@
+// relate-gram: error[value.octal]: the octal literal `010` is ambiguous; write the value in decimal or hexadecimal
+(a {s: ```
+text
+```, o: 010})

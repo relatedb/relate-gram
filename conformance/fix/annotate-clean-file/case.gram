@@ -1,0 +1,2 @@
+/** A clean file gets no markers. */
+{requires: [], settings: {annotate: true}}

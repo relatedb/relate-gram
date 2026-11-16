@@ -1,0 +1,3 @@
+/** A wavy arrow becomes a thin one. */
+{requires: []}
+(:Applied {code: "rel.arrow-family", count: 1})

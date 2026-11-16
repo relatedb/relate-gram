@@ -1,0 +1,3 @@
+/** Without the option the error is left alone. */
+{requires: []}
+(:Remaining {code: "rel.no-type", line: 1, column: 6, offset: 5})

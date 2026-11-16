@@ -8,6 +8,7 @@ pub mod db;
 pub mod expect;
 pub mod expected;
 pub mod export;
+pub mod fix;
 pub mod graph;
 pub mod load;
 pub mod reject;

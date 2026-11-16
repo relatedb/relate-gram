@@ -1,0 +1,3 @@
+/** 00 reads as 0 as octal. */
+{requires: [], settings: {octal: "octal"}}
+(:Applied {code: "value.octal", count: 1})

@@ -1,0 +1,3 @@
+/** A negative integer becomes a negative decimal. */
+{requires: []}
+(:Applied {code: "value.array-mixed", count: 1})

@@ -1,0 +1,3 @@
+/** The marker of an error that is now fixed is removed. */
+{requires: [], settings: {annotate: true, relType: "K"}}
+(:Applied {code: "rel.no-type", count: 1})

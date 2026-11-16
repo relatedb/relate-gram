@@ -1,0 +1,4 @@
+/** The same two rounds facing left. */
+{requires: [], settings: {relType: "K", direction: "left"}}
+(:Applied {code: "rel.undirected", count: 1})
+(:Applied {code: "rel.no-type", count: 1})

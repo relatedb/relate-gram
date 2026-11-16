@@ -1,0 +1,3 @@
+/** A syntax error is not fixed and is reported. */
+{requires: [], settings: {relType: "K"}}
+(:Remaining {code: "parse.missing", line: 2, column: 7, offset: 16})

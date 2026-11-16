@@ -1,0 +1,1 @@
+(a:N)-[:KNOWS {since: 1}]->(b:N)

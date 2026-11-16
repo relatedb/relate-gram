@@ -1,0 +1,2 @@
+/** A warning is not annotated. */
+{requires: [], settings: {annotate: true}}

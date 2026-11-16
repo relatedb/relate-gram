@@ -1,0 +1,3 @@
+/** A marker keeps the byte order mark first. */
+{requires: [], settings: {annotate: true}}
+(:Remaining {code: "value.range", line: 2, column: 8, offset: 123})

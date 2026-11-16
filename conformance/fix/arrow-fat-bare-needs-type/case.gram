@@ -1,0 +1,4 @@
+/** A bare fat arrow still needs a type, which takes a second round. */
+{requires: [], settings: {relType: "K"}}
+(:Applied {code: "rel.arrow-family", count: 1})
+(:Applied {code: "rel.no-type", count: 1})

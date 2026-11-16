@@ -1,0 +1,3 @@
+/** A marker goes above the first line of the statement, never inside a multi-line string. */
+{requires: [], settings: {annotate: true}}
+(:Remaining {code: "value.octal", line: 4, column: 9, offset: 140})

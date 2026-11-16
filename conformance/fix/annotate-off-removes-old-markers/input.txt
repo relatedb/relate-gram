@@ -1,0 +1,2 @@
+// relate-gram: error[value.range]: old
+(c {r: 1..2})

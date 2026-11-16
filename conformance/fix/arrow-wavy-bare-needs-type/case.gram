@@ -1,0 +1,4 @@
+/** A bare wavy arrow takes a type in a second round. */
+{requires: [], settings: {relType: "K"}}
+(:Applied {code: "rel.arrow-family", count: 1})
+(:Applied {code: "rel.no-type", count: 1})

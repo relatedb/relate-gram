@@ -1,0 +1,7 @@
+// a looser style
+(a:P {o: 10, xs: [1.0, 2.5]})
+(b:P)
+(a)-[:KNOWS]->(b)
+(b)-[:KNOWS]->(a)
+(a)-[:L]->(b)
+(b)-[:L]->(a)

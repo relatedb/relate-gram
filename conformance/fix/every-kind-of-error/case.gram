@@ -1,0 +1,9 @@
+/** A file with every kind of error loads after fixing. */
+{requires: [], settings: {relType: "KNOWS", direction: "right", octal: "decimal"}}
+(:Applied {code: "construct.double-colon", count: 1})
+(:Applied {code: "value.octal", count: 1})
+(:Applied {code: "value.array-mixed", count: 1})
+(:Applied {code: "rel.no-type", count: 2})
+(:Applied {code: "rel.undirected", count: 1})
+(:Applied {code: "rel.arrow-family", count: 1})
+(:Applied {code: "rel.bidirectional", count: 1})

@@ -1,0 +1,3 @@
+/** With no reading chosen the literal is left alone. */
+{requires: []}
+(:Remaining {code: "value.octal", line: 1, column: 8, offset: 7})

@@ -6,7 +6,7 @@
 mod conformance;
 
 use conformance::case::{read_case, Case, Kind};
-use conformance::{collection, export, load, reject};
+use conformance::{collection, export, fix, load, reject};
 
 fn run_kind(kind: Kind, run: impl Fn(&Case) -> Result<(), String>) {
     std::env::remove_var("RELATE_PREVIEW");
@@ -46,4 +46,14 @@ fn load_cases() {
 #[test]
 fn export_cases() {
     run_kind(Kind::Export, export::run_export);
+}
+
+#[test]
+fn fix_cases() {
+    run_kind(Kind::Fix, fix::run_fix);
+}
+
+#[test]
+fn fixed_text_is_a_fixed_point() {
+    run_kind(Kind::Fix, fix::run_fix_is_a_fixed_point);
 }

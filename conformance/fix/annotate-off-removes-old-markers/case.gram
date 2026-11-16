@@ -1,0 +1,3 @@
+/** Without annotate, old markers are still removed and none are added. */
+{requires: []}
+(:Remaining {code: "value.range", line: 1, column: 8, offset: 7})

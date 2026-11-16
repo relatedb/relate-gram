@@ -1,0 +1,2 @@
+/** With the default policy a tag is only a warning, and the file loads: nothing to fix. */
+{requires: []}

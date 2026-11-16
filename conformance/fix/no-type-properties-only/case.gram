@@ -1,0 +1,3 @@
+/** The type goes before the properties. */
+{requires: [], settings: {relType: "KNOWS"}}
+(:Applied {code: "rel.no-type", count: 1})

@@ -1,0 +1,3 @@
+/** An undirected arrow gets the chosen direction. */
+{requires: [], settings: {direction: "right"}}
+(:Applied {code: "rel.undirected", count: 1})

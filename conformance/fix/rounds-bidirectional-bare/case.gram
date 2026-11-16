@@ -1,0 +1,4 @@
+/** A bare bidirectional arrow needs a direction, then a type. */
+{requires: [], settings: {relType: "K", direction: "right"}}
+(:Applied {code: "rel.bidirectional", count: 1})
+(:Applied {code: "rel.no-type", count: 1})

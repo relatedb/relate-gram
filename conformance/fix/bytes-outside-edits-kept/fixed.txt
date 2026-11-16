@@ -1,0 +1,5 @@
+﻿// keep me
+(a:N)-[:K]->(b:N) // and me
+
+/** docs */
+(c {s: "x  y"})

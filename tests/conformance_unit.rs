@@ -887,3 +887,66 @@ mod export_runner {
         assert!(e.contains("byte"), "{e}");
     }
 }
+
+mod fix_runner {
+    use super::conformance::case::{parse_case, Case, Kind};
+    use super::conformance::fix::run_fix_text;
+
+    fn fix(body: &str) -> Case {
+        parse_case(Kind::Fix, "t", body).unwrap()
+    }
+
+    const INPUT: &[u8] = b"(a:N)-->(b:N)\n(c {r: 1..2})\n";
+    const FIXED: &[u8] = b"(a:N)-[:K]->(b:N)\n(c {r: 1..2})\n";
+    const CASE: &str = "{requires: [], settings: {relType: \"K\"}}\n\
+        (:Applied {code: \"rel.no-type\", count: 1})\n\
+        (:Remaining {code: \"value.range\", line: 2, column: 8, offset: 25})\n";
+
+    #[test]
+    fn a_correct_case_passes() {
+        run_fix_text(&fix(CASE), INPUT, FIXED).unwrap();
+    }
+
+    #[test]
+    fn the_text_is_compared_byte_for_byte() {
+        let e = run_fix_text(&fix(CASE), INPUT, b"(a:N)-[:K]->(b:N)\n(c {r: 1..2})").unwrap_err();
+        assert!(e.contains("byte"), "{e}");
+    }
+
+    #[test]
+    fn applied_counts_and_remaining_errors_are_compared() {
+        let wrong_count = CASE.replace("count: 1", "count: 2");
+        assert!(run_fix_text(&fix(&wrong_count), INPUT, FIXED)
+            .unwrap_err()
+            .contains("rel.no-type"));
+        let missing = CASE.replace("(:Applied {code: \"rel.no-type\", count: 1})\n", "");
+        assert!(run_fix_text(&fix(&missing), INPUT, FIXED).is_err());
+        let moved = CASE.replace("offset: 25", "offset: 24");
+        assert!(run_fix_text(&fix(&moved), INPUT, FIXED)
+            .unwrap_err()
+            .contains("offset"));
+        let none = "{requires: [], settings: {relType: \"K\"}}\n(:Applied {code: \"rel.no-type\", count: 1})\n";
+        assert!(run_fix_text(&fix(none), INPUT, FIXED)
+            .unwrap_err()
+            .contains("value.range"));
+    }
+
+    #[test]
+    fn without_the_option_the_text_is_left_as_it_was() {
+        let c = fix("{requires: []}\n(:Remaining {code: \"rel.no-type\", line: 1, column: 6, offset: 5})\n(:Remaining {code: \"value.range\", line: 2, column: 8, offset: 21})\n");
+        run_fix_text(&c, INPUT, INPUT).unwrap();
+    }
+
+    #[test]
+    fn annotations_are_part_of_the_fixed_text() {
+        let c = fix("{requires: [], settings: {annotate: true}}\n(:Remaining {code: \"value.range\", line: 2, column: 7, offset: 0})\n");
+        let e = run_fix_text(&c, b"(c {r: 1..2})\n", b"(c {r: 1..2})\n").unwrap_err();
+        assert!(e.contains("byte"), "{e}");
+    }
+
+    #[test]
+    fn a_tag_policy_setting_reaches_the_loader() {
+        let c = fix("{requires: [], settings: {tags: \"error\"}}\n(:Applied {code: \"value.tag\", count: 1})\n");
+        run_fix_text(&c, b"(a {s: md`x`})", b"(a {s: `x`})").unwrap();
+    }
+}
