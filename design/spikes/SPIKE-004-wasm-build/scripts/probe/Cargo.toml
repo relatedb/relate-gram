@@ -1,0 +1,21 @@
+[package]
+name = "wasm-probe"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+tree-sitter = { package = "tree-sitter-c2rust", version = "0.25" }
+tree-sitter-gram = "=0.6.2"
+wasm-bindgen = "=0.2.128"
+
+[workspace]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
