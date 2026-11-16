@@ -1,7 +1,7 @@
 ---
 id: ADR-015
 title: A Language-Neutral Conformance Collection
-status: proposed
+status: accepted
 rfcs: [RFC-005]
 created: 2026-11-15
 ---
@@ -106,7 +106,7 @@ The collection states what relate-gram accepts, rejects and writes. What gram it
 
 ### 2.10 The runner's parser dependency
 
-This ADR is the ADR that the constitution's Rust Constraints require for a second parser. `relateby-gram` is a dev-dependency of the crate, used only by `tests/conformance.rs` to read the collection; the loader does not use it, and it resolves beside `relate`, `tree-sitter` 0.25 and `gram-value`. On acceptance the first bullet of the Rust Constraints gains "and, in tests, on `relateby-gram` to read the conformance collection", which raises the constitution by a minor version.
+This ADR is the ADR that the constitution's Rust Constraints require for a second parser. `relateby-gram` is a dev-dependency of the crate, used only by `tests/conformance.rs` to read the collection; the loader does not use it, and it resolves beside `relate`, `tree-sitter` 0.25 and `gram-value`. On acceptance the first bullet of the Rust Constraints gains "and, in tests only, on a gram reader to read the conformance collection, currently `relateby-gram`", which raises the constitution by a minor version. The wording names the role and not only the crate because the pattern-rs libraries may move to another organization under other names, and a change of the crate should not need another amendment.
 
 ## 3. Alternatives Considered
 
