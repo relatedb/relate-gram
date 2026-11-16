@@ -14,7 +14,7 @@ Can a conformance runner (ADR-015) read case files and expected graphs with the 
 
 ## 2. Method
 
-Eighteen small inputs, then thirty with later additions, in `inputs/`: `ok-*` files that `gram lint --strict` (the reference grammar, tree-sitter-gram) accepts, and `bad-*` files that it rejects. Each language has a probe (`rust/`, `ts/`, `py/`) that reads every input with the library's header-aware parse and prints a canonical description (the record, then each pattern with identity, labels and typed property values). The outputs are `output-rust.txt`, `output-ts.txt` and `output-py.txt`. The probes use the published packages from crates.io, npm and PyPI, and Python 3.11.
+Eighteen small inputs, then 34 with later additions, in `inputs/`: `ok-*` files that `gram lint --strict` (the reference grammar, tree-sitter-gram) accepts, and `bad-*` files that it rejects. Each language has a probe (`rust/`, `ts/`, `py/`) that reads every input with the library's header-aware parse and prints a canonical description (the record, then each pattern with identity, labels and typed property values). The outputs are `output-rust.txt`, `output-ts.txt` and `output-py.txt`. The probes use the published packages from crates.io, npm and PyPI, and Python 3.11.
 
 ## 3. Time-box
 
