@@ -4,6 +4,7 @@
 
 pub mod capabilities;
 pub mod case;
+pub mod checks;
 pub mod collection;
 pub mod db;
 pub mod expect;

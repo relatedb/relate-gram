@@ -1,0 +1,3 @@
+/** With tags set to errors, a tag that names no Cypher type is an error instead of a dropped warning (ADR-006). */
+{requires: [], settings: {tags: "error"}}
+(:Error {code: "value.tag", line: 1, column: 8, offset: 7})

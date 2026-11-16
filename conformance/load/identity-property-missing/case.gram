@@ -1,0 +1,5 @@
+/** With an identity property named, a definition without it is anonymous, and the load says so (ADR-004). */
+{requires: [], settings: {nodeIdProperty: "email"}}
+(:Warning {code: "id.property-missing", line: 1, column: 1, offset: 0})
+(:Warning {code: "load.anonymous"})
+(:Counts {nodesCreated: 1, relationshipsCreated: 0, elementsWithoutIdentifier: 1})

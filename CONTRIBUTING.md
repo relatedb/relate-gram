@@ -15,8 +15,8 @@ cargo fmt --check && cargo clippy --all-targets -- -D warnings
 scripts/check-public-api.sh         # only Relate's public interface is used
 ```
 
-- Write the test first and watch it fail (Constitution VI). A rejection comes with a fixture and its
-  expected position (`tests/fixtures/invalid/`), and a new error code with a row in
+- Write the test first and watch it fail (Constitution VI). A rejection comes with a `reject` case and its
+  expected position (`conformance/`, see `conformance/README.md`), and a new error code with a row in
   `docs/supported-gram.md` and a decision whether it has a fix (ADR-010).
 - Cite the ADR a change implements in the commit message.
 - `CLAUDE.md` has the project conventions in more detail.
