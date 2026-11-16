@@ -69,3 +69,4 @@ Use `/rfc-review` before moving a draft to `review`/`accepted`.
 | [RFC-003](RFC-003-named-graphs-and-reloading.md) | Named Graphs and Reloading Changed Files | draft | ADR-001, ADR-002, ADR-003, ADR-004, ADR-005 |
 | [RFC-004](RFC-004-fixing-rejected-gram-files.md) | Fixing Rejected Gram Files | review | ADR-010 |
 | [RFC-005](RFC-005-other-language-implementations.md) | relate-gram in Other Languages | review | ADR-015 |
+| [RFC-006](RFC-006-relate-result-graphs-and-gram.md) | Relate Result Graphs and Gram | draft | |
