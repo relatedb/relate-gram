@@ -1,0 +1,2 @@
+// a nested map
+(a {m: {k: 1}})

@@ -3,8 +3,11 @@
 #![allow(dead_code)]
 
 pub mod case;
+pub mod collection;
+pub mod db;
 pub mod expect;
 pub mod expected;
 pub mod graph;
+pub mod reject;
 pub mod settings;
 pub mod value;

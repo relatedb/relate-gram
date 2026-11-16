@@ -1,0 +1,3 @@
+/** localtime with content that breaks its form (fraction-ten-digits) */
+{requires: []}
+(:Error {code: "value.tag-content", line: 2, column: 11, offset: 79})

@@ -1,0 +1,2 @@
+// duration with content that breaks its form (duration-lowercase)
+(a {when: duration`p1d`})

@@ -1,0 +1,2 @@
+// Relate does not store a list of vectors (ADR-014 section 2.2)
+(a {es: [embedding`QAAAAAAAAAB7ImVtYmVkZGluZyI6eyJkdHlwZSI6IkYzMiIsInNoYXBlIjpbMl0sImRhdGFfb2Zmc2V0cyI6WzAsOF19fSAgAACAPwAAAMA=`, embedding`QAAAAAAAAAB7ImVtYmVkZGluZyI6eyJkdHlwZSI6IkYzMiIsInNoYXBlIjpbMl0sImRhdGFfb2Zmc2V0cyI6WzAsOF19fSAgAACAPwAAAMA=`]})

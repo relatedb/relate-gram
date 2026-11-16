@@ -1,0 +1,2 @@
+// an embedding mixed with another kind is an ordinary mixed array
+(a {es: [embedding`QAAAAAAAAAB7ImVtYmVkZGluZyI6eyJkdHlwZSI6IkYzMiIsInNoYXBlIjpbMl0sImRhdGFfb2Zmc2V0cyI6WzAsOF19fSAgAACAPwAAAMA=`, "x"]})

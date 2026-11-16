@@ -1,0 +1,3 @@
+// the record names another kind
+{kind: "schema"}
+(a)

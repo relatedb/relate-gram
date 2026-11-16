@@ -1,0 +1,3 @@
+/** an empty key */
+{requires: []}
+(:Error {code: "key.empty", line: 2, column: 5, offset: 20})

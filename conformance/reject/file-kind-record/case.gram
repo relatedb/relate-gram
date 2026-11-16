@@ -1,0 +1,3 @@
+/** the record names another kind */
+{requires: []}
+(:Error {code: "file.kind", line: 2, column: 8, offset: 40})

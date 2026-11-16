@@ -1,0 +1,3 @@
+/** Rejected: input.encoding. */
+{requires: []}
+(:Error {code: "input.encoding", line: 2, column: 2, offset: 5})

@@ -1,0 +1,3 @@
+/** a definition with a record and no type */
+{requires: []}
+(:Error {code: "rel.no-type", line: 2, column: 4, offset: 45})

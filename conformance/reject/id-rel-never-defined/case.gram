@@ -1,0 +1,3 @@
+/** a relationship identifier only referenced */
+{requires: []}
+(:Error {code: "id.rel-never-defined", line: 2, column: 6, offset: 50})

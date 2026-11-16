@@ -1,0 +1,2 @@
+// a recognized tag and a plain string in one array
+(a {xs: [date`2024-01-01`, "2024-01-02"]})

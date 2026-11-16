@@ -1,0 +1,3 @@
+/** an octal literal */
+{requires: []}
+(:Error {code: "value.octal", line: 2, column: 8, offset: 27})

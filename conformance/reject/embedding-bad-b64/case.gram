@@ -1,0 +1,3 @@
+/** gram-value 0.2.0 conformance case tag-embedding-b64-bad-char (conformance/tags.gram) */
+{requires: []}
+(:Error {code: "value.tag-content", line: 2, column: 8, offset: 95})

@@ -1,0 +1,3 @@
+/** a key starting with @ */
+{requires: []}
+(:Error {code: "key.reserved", line: 2, column: 5, offset: 29})

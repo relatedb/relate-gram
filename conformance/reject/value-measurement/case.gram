@@ -1,0 +1,3 @@
+/** a measurement */
+{requires: []}
+(:Error {code: "value.measurement", line: 2, column: 8, offset: 24})

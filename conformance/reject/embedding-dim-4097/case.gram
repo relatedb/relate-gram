@@ -1,0 +1,3 @@
+/** Relate stores at most 4096 coordinates (ADR-014 section 2.2) */
+{requires: []}
+(:Error {code: "value.tag-content", line: 2, column: 8, offset: 71})

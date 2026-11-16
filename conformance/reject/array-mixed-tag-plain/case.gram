@@ -1,0 +1,3 @@
+/** a recognized tag and a plain string in one array */
+{requires: []}
+(:Error {code: "value.array-mixed", line: 2, column: 28, offset: 79})

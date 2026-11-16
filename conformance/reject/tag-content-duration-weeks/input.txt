@@ -1,0 +1,2 @@
+// duration with content that breaks its form (duration-weeks)
+(a {when: duration`P2W`})

@@ -1,0 +1,2 @@
+// one identifier used as a node and a relationship
+(a)-[a:R]->(b)

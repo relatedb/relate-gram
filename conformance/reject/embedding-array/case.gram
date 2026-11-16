@@ -1,0 +1,3 @@
+/** Relate does not store a list of vectors (ADR-014 section 2.2) */
+{requires: []}
+(:Error {code: "value.tag-content", line: 2, column: 9, offset: 73})

@@ -1,0 +1,3 @@
+/** a decimal that is not finite as a 64-bit float */
+{requires: []}
+(:Error {code: "value.decimal", line: 2, column: 8, offset: 57})

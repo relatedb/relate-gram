@@ -1,0 +1,2 @@
+// date with content that breaks its form (date-basic)
+(a {when: date`20240115`})

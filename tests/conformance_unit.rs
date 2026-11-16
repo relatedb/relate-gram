@@ -636,3 +636,74 @@ mod diagnostics_matching {
         );
     }
 }
+
+// --- T016: the reject runner ----------------------------------------------------------------
+
+mod reject_runner {
+    use super::conformance::case::{parse_case, Kind};
+    use super::conformance::reject::run_reject_text;
+
+    const START: &str = "CREATE (:Existing {k: 1})-[:R]->(:Existing {k: 2});\n";
+    const TEXT: &[u8] = b"// a bare arrow has no type\n(a)-->(b)\n";
+
+    fn case(expectations: &str) -> super::conformance::case::Case {
+        parse_case(Kind::Reject, "t", &format!("{{requires: []}}\n{expectations}")).unwrap()
+    }
+
+    const GOOD: &str = "(:Error {code: \"rel.no-type\", line: 2, column: 4, offset: 31})\n";
+
+    #[test]
+    fn a_correct_case_passes() {
+        run_reject_text(&case(GOOD), TEXT, START).unwrap();
+    }
+
+    #[test]
+    fn a_wrong_code_line_column_or_offset_fails_naming_the_part() {
+        for (bad, part) in [
+            ("(:Error {code: \"rel.undirected\", line: 2, column: 4, offset: 31})\n", "rel.undirected"),
+            ("(:Error {code: \"rel.no-type\", line: 3, column: 4, offset: 31})\n", "line"),
+            ("(:Error {code: \"rel.no-type\", line: 2, column: 5, offset: 31})\n", "column"),
+            ("(:Error {code: \"rel.no-type\", line: 2, column: 4, offset: 32})\n", "offset"),
+        ] {
+            let e = run_reject_text(&case(bad), TEXT, START).unwrap_err();
+            assert!(e.contains(part), "{part}: {e}");
+        }
+    }
+
+    #[test]
+    fn an_extra_or_a_missing_error_fails() {
+        let e = run_reject_text(&case(""), TEXT, START).unwrap_err();
+        assert!(e.contains("unexpected") && e.contains("rel.no-type"), "{e}");
+        let two = format!("{GOOD}(:Error {{code: \"rel.undirected\", line: 1, column: 1, offset: 0}})\n");
+        let e = run_reject_text(&case(&two), TEXT, START).unwrap_err();
+        assert!(e.contains("missing") && e.contains("rel.undirected"), "{e}");
+    }
+
+    #[test]
+    fn a_text_that_loads_is_not_a_reject_case() {
+        let e = run_reject_text(&case(GOOD), b"(a)-[:T]->(b)\n", START).unwrap_err();
+        assert!(e.contains("loaded") || e.contains("should be rejected"), "{e}");
+    }
+
+    #[test]
+    fn the_total_is_compared_with_the_errors_found_before_the_cap() {
+        let with_total = |n: i64| {
+            parse_case(
+                Kind::Reject,
+                "t",
+                &format!("{{requires: [], settings: {{maxDiagnostics: 1}}}}\n(:Error {{code: \"rel.no-type\", line: 2, column: 4, offset: 8}})\n(:Counts {{total: {n}}})\n"),
+            )
+            .unwrap()
+        };
+        let text = b"// c\n(a)-->(b)\n(c)-->(d)\n";
+        run_reject_text(&with_total(2), text, START).unwrap();
+        let e = run_reject_text(&with_total(3), text, START).unwrap_err();
+        assert!(e.contains("total"), "{e}");
+    }
+
+    #[test]
+    fn a_connection_in_a_transaction_is_refused_and_leaves_the_starting_graph() {
+        let c = parse_case(Kind::Reject, "t", "{requires: [\"explicit-transactions\"], transaction: true}\n(:Error {code: \"load.in-transaction\"})\n").unwrap();
+        run_reject_text(&c, b"(a)\n", START).unwrap();
+    }
+}

@@ -1,0 +1,2 @@
+// two recognized tags in one array
+(a {xs: [date`2024-01-01`, localtime`10:30:00`]})

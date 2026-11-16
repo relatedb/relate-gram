@@ -1,0 +1,2 @@
+// a relationship identifier only referenced
+(a)-[r]->(b)

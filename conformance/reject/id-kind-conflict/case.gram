@@ -1,0 +1,3 @@
+/** one identifier used as a node and a relationship */
+{requires: []}
+(:Error {code: "id.kind-conflict", line: 2, column: 6, offset: 57})

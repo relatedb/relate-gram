@@ -1,0 +1,2 @@
+// duration with content that breaks its form (duration-leading-minus)
+(a {when: duration`-P1DT2H`})

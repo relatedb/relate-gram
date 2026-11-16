@@ -1,0 +1,3 @@
+/** a property with no value */
+{requires: []}
+(:Error {code: "parse.missing", line: 2, column: 7, offset: 34})

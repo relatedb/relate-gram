@@ -1,0 +1,3 @@
+/** a nested map */
+{requires: []}
+(:Error {code: "value.map", line: 2, column: 8, offset: 23})

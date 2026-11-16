@@ -1,0 +1,3 @@
+/** a double colon before a label */
+{requires: []}
+(:Error {code: "construct.double-colon", line: 2, column: 3, offset: 35})
