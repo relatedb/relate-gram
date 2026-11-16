@@ -61,8 +61,9 @@ Rationale: the behavior is defined by contracts and error reporting, which tests
 ## Rust Constraints
 
 - The crate MUST depend on `relate` for the engine and on `tree-sitter` and `tree-sitter-gram` for
-  parsing (ADR-007) and, for the known tags, on `gram-value` (ADR-012) and, in tests only, on
-  `relateby-gram` to read the conformance collection (ADR-015); any other parser requires an ADR.
+  parsing (ADR-007) and, for the known tags, on `gram-value` (ADR-012) and, in tests only, on a gram
+  reader to read the conformance collection, currently `relateby-gram` (ADR-015); any other parser
+  requires an ADR.
 - The Rust toolchain MUST be pinned in the repository and bumped deliberately.
 - `unsafe` code MUST NOT be added without an ADR.
 - Formatting and lint checks (`cargo fmt`, `cargo clippy`) MUST pass before merge.
