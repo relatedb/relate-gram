@@ -7,7 +7,7 @@ Prerequisites: `git submodule update --init external/tree-sitter-gram`; the `gra
    cargo test --test conformance                      # preview flag unset
    cargo test --test conformance16                    # preview flag set
    ```
-   Expected: every case `passed`, `skipped` or `not-applicable`; results in `target/conformance/results-*.gram`.
+   Expected: every case `passed`, `skipped` or `not-applicable`; results in `target/conformance/flag-unset.gram` and `flag-set.gram`.
 
 2. **See a case fail.** Change one `line` in `conformance/reject/rel-no-type/case.gram` and run step 1: the case fails and names the part that differs. Restore it.
 

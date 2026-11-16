@@ -28,12 +28,30 @@ fn copy_dir(from: &Path, to: &Path) {
     }
 }
 
-/// A copy of the collection, with its `.gitattributes` beside it, under a directory of its own.
+/// The cases a fault is applied to; a copy holds only these, to keep the checks quick.
+const COPIED: [&str; 4] = [
+    "reject/key-reserved",
+    "load/typed-date",
+    "export/empty-database",
+    "fix/double-colon-label",
+];
+
+/// A copy of the collection with a few cases, and its `.gitattributes` beside it, under a directory
+/// of its own.
 fn copy(name: &str) -> PathBuf {
     let base =
         std::env::temp_dir().join(format!("conformance-check-{}-{name}", std::process::id()));
     let _ = std::fs::remove_dir_all(&base);
-    copy_dir(&root(), &base.join("conformance"));
+    let dst = base.join("conformance");
+    std::fs::create_dir_all(&dst).unwrap();
+    for e in std::fs::read_dir(root()).unwrap().flatten() {
+        if e.path().is_file() {
+            std::fs::copy(e.path(), dst.join(e.file_name())).unwrap();
+        }
+    }
+    for case in COPIED {
+        copy_dir(&root().join(case), &dst.join(case));
+    }
     std::fs::copy(
         root().parent().unwrap().join(".gitattributes"),
         base.join(".gitattributes"),
@@ -43,7 +61,7 @@ fn copy(name: &str) -> PathBuf {
 }
 
 fn problems(base: &Path) -> Vec<String> {
-    check_collection(&base.join("conformance"), false, code::ALL)
+    check_collection(&base.join("conformance"), false, &[])
 }
 
 fn expect_problem(name: &str, fault: impl Fn(&Path), needle: &str) {
@@ -77,7 +95,7 @@ fn a_lint_error_in_a_case_file_fails() {
     let base = copy("lint");
     let broken = base.join("conformance/reject/key-reserved/case.gram");
     std::fs::write(&broken, "{requires: []\n(:Error {code: ").unwrap();
-    let got = check_collection(&base.join("conformance"), true, code::ALL);
+    let got = check_collection(&base.join("conformance"), true, &[]);
     let _ = std::fs::remove_dir_all(&base);
     assert!(
         got.iter()
