@@ -1,0 +1,2 @@
+/** A list of one typed kind is written as an array of tagged strings. */
+{requires: ["points", "temporal-values", "uuids"]}

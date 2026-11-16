@@ -1,0 +1,4 @@
+(ada:P)
+(grace:P)
+
+(ada)-[k:KNOWS]->(grace)

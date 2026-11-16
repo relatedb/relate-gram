@@ -1,0 +1,1 @@
+CREATE ({`my key`: 1, plain: 2});

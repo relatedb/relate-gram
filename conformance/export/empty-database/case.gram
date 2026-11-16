@@ -1,0 +1,2 @@
+/** The empty database exports nothing. */
+{requires: []}

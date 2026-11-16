@@ -1,0 +1,2 @@
+/** An integer identity value is written as a bare integer. */
+{requires: [], settings: {identity: "property", nodeIdProperty: "uid"}}

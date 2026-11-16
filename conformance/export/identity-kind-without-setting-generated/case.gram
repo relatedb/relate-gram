@@ -1,0 +1,2 @@
+/** A kind with no setting is generated as a whole. */
+{requires: [], settings: {identity: "property", nodeIdProperty: "email"}}

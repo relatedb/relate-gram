@@ -1,0 +1,2 @@
+/** A node with no labels and no properties is just its identifier. */
+{requires: []}

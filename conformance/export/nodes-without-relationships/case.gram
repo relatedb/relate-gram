@@ -1,0 +1,2 @@
+/** Nodes without relationships have no blank line. */
+{requires: []}

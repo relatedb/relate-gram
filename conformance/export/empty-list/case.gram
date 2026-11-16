@@ -1,0 +1,2 @@
+/** An empty list is written as empty brackets. */
+{requires: []}

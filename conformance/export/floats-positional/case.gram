@@ -1,0 +1,2 @@
+/** Large floats are written positionally. */
+{requires: []}

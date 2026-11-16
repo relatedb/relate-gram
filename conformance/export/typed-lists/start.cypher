@@ -1,0 +1,1 @@
+CREATE (:L {dates: [date('2024-01-01'), date('2024-02-02')], spans: [duration('P1D'), duration('PT1H')], places: [point({x: 1.0, y: 2.0}), point({x: 1.0, y: 2.0, z: 3.0})], ids: [uuid('123e4567-e89b-12d3-a456-426614174000')]});

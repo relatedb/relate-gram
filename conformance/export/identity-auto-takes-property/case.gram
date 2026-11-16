@@ -1,0 +1,2 @@
+/** Auto takes the property for elements without an id. */
+{requires: [], settings: {identity: "auto", nodeIdProperty: "email"}}

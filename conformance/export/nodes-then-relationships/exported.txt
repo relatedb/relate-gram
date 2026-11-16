@@ -1,0 +1,4 @@
+(n0:Person {born: 1815, name: Ada})
+(n1:Person {name: Grace})
+
+(n0)-[r0:KNOWS {since: 1843}]->(n1)

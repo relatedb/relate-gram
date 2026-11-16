@@ -813,3 +813,77 @@ mod load_runner {
         assert!(e.contains("path"), "{e}");
     }
 }
+
+mod export_runner {
+    use super::conformance::case::{parse_case, Case, Kind};
+    use super::conformance::export::run_export_text;
+    use super::conformance::load::run_load_export;
+
+    const START: &str = "CREATE (a:Person {name: 'Ada'})-[:KNOWS]->(b:Person);\n";
+    const TEXT: &[u8] = b"(n0:Person {name: Ada})\n(n1:Person)\n\n(n0)-[r0:KNOWS]->(n1)\n";
+
+    fn export(body: &str) -> Case {
+        parse_case(Kind::Export, "t", body).unwrap()
+    }
+
+    fn plain() -> Case {
+        export("{requires: []}\n")
+    }
+
+    #[test]
+    fn text_that_matches_byte_for_byte_passes() {
+        run_export_text(&plain(), START, Some(TEXT)).unwrap();
+    }
+
+    #[test]
+    fn a_changed_byte_fails() {
+        let mut bad = TEXT.to_vec();
+        bad[10] = b'X';
+        let e = run_export_text(&plain(), START, Some(&bad)).unwrap_err();
+        assert!(e.contains("byte"), "{e}");
+        // a trailing newline is part of the text
+        let e = run_export_text(&plain(), START, Some(&TEXT[..TEXT.len() - 1])).unwrap_err();
+        assert!(e.contains("byte"), "{e}");
+    }
+
+    #[test]
+    fn an_expected_failure_is_compared_by_code_in_any_order() {
+        let c = export(
+            "{requires: []}\n(:Error {code: \"export.value\"})\n(:Error {code: \"export.value\"})\n",
+        );
+        let start =
+            "CREATE (:A {v: vector([1, 2], 2, INTEGER16)}), (:B {v: vector([3], 1, INTEGER16)});\n";
+        run_export_text(&c, start, None).unwrap();
+        // a missing error and an unexpected export both fail
+        let one = export("{requires: []}\n(:Error {code: \"export.value\"})\n");
+        assert!(run_export_text(&one, start, None).is_err());
+        assert!(run_export_text(&c, START, None).is_err());
+    }
+
+    #[test]
+    fn a_transaction_gives_the_refusal_code() {
+        let c = export(
+            "{requires: [], transaction: true}\n(:Error {code: \"export.in-transaction\"})\n",
+        );
+        run_export_text(&c, "", None).unwrap();
+    }
+
+    #[test]
+    fn a_load_case_with_exported_text_checks_it_and_the_reload() {
+        let c = parse_case(
+            Kind::Load,
+            "t",
+            "{requires: []}\n(:Counts {nodesCreated: 2, relationshipsCreated: 1})\n",
+        )
+        .unwrap();
+        let input = b"(a:Person {name: \"Ada\"})-[r:KNOWS]->(b:Person)\n";
+        let expected = "(a:Person {name: \"Ada\"})\n(b:Person)\n(a)-[r:KNOWS]->(b)\n";
+        // the exporter writes the stored identifiers
+        let text = b"(a:Person {`@id`: a})\n";
+        let _ = text;
+        let exported = b"(a:Person {name: Ada})\n(b:Person)\n\n(a)-[r:KNOWS]->(b)\n";
+        run_load_export(&c, input, "", expected, Some(exported)).unwrap();
+        let e = run_load_export(&c, input, "", expected, Some(b"(a)\n")).unwrap_err();
+        assert!(e.contains("byte"), "{e}");
+    }
+}

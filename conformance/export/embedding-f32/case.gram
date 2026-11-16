@@ -1,0 +1,2 @@
+/** A 32-bit float vector is written as an embedding tag (ADR-014); the content is the reference writer's, from the load case embedding-f32. */
+{requires: ["vectors"]}

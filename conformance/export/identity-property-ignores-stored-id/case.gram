@@ -1,0 +1,2 @@
+/** Property mode ignores the stored id. */
+{requires: [], settings: {identity: "property", nodeIdProperty: "email"}}

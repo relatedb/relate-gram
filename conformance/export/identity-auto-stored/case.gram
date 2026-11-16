@@ -1,0 +1,2 @@
+/** Auto uses the stored id as the identifier. */
+{requires: []}

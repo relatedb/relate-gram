@@ -1,0 +1,2 @@
+CREATE (a:Thing {d: date('2024-01-15'), t: time('10:30:00.123456789+05:30'), lt: localtime('10:30:00'), dt: datetime('2024-01-15T10:30:00+01:00[Europe/Paris]'), ldt: localdatetime('2024-01-15T10:30:00'), du: duration('P1DT2H'), neg: duration('-P1DT2H'), mixed: duration('P1DT-2H'), p: point({latitude: 40.7, longitude: -74.0}), c: point({x: 1.0, y: 2.0, z: 3.0}), u: uuid('123E4567-E89B-12D3-A456-426614174000')}), (b:Thing)
+CREATE (a)-[:LINK {since: date('2020-05-05'), span: duration('PT1S'), at: point({x: 1.5, y: 2.5})}]->(b);

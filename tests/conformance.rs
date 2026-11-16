@@ -6,7 +6,7 @@
 mod conformance;
 
 use conformance::case::{read_case, Case, Kind};
-use conformance::{collection, load, reject};
+use conformance::{collection, export, load, reject};
 
 fn run_kind(kind: Kind, run: impl Fn(&Case) -> Result<(), String>) {
     std::env::remove_var("RELATE_PREVIEW");
@@ -41,4 +41,9 @@ fn reject_cases() {
 #[test]
 fn load_cases() {
     run_kind(Kind::Load, load::run_load);
+}
+
+#[test]
+fn export_cases() {
+    run_kind(Kind::Export, export::run_export);
 }

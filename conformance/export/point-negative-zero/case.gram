@@ -1,0 +1,2 @@
+/** Point coordinates are the shortest decimals, and negative zero is zero. */
+{requires: ["points"]}
