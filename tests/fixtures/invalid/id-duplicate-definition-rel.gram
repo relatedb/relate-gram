@@ -1,3 +1,0 @@
-// two definitions of one relationship
-(a)-[r:R]->(b)
-(a)-[r:S]->(b)

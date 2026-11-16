@@ -1,2 +1,0 @@
-// two labels on a relationship
-(a)-[:A:B]->(b)

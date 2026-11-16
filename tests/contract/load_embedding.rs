@@ -124,7 +124,11 @@ fn loading_twice_keeps_one_vector() {
 use relate_gram::settings::LoadSettings;
 
 fn invalid(name: &str) -> Vec<u8> {
-    fixture("invalid", name)
+    std::fs::read(format!(
+        "{}/conformance/reject/{name}/input.txt",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .unwrap()
 }
 
 #[test]

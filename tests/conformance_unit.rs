@@ -647,7 +647,12 @@ mod reject_runner {
     const TEXT: &[u8] = b"// a bare arrow has no type\n(a)-->(b)\n";
 
     fn case(expectations: &str) -> super::conformance::case::Case {
-        parse_case(Kind::Reject, "t", &format!("{{requires: []}}\n{expectations}")).unwrap()
+        parse_case(
+            Kind::Reject,
+            "t",
+            &format!("{{requires: []}}\n{expectations}"),
+        )
+        .unwrap()
     }
 
     const GOOD: &str = "(:Error {code: \"rel.no-type\", line: 2, column: 4, offset: 31})\n";
@@ -660,10 +665,22 @@ mod reject_runner {
     #[test]
     fn a_wrong_code_line_column_or_offset_fails_naming_the_part() {
         for (bad, part) in [
-            ("(:Error {code: \"rel.undirected\", line: 2, column: 4, offset: 31})\n", "rel.undirected"),
-            ("(:Error {code: \"rel.no-type\", line: 3, column: 4, offset: 31})\n", "line"),
-            ("(:Error {code: \"rel.no-type\", line: 2, column: 5, offset: 31})\n", "column"),
-            ("(:Error {code: \"rel.no-type\", line: 2, column: 4, offset: 32})\n", "offset"),
+            (
+                "(:Error {code: \"rel.undirected\", line: 2, column: 4, offset: 31})\n",
+                "rel.undirected",
+            ),
+            (
+                "(:Error {code: \"rel.no-type\", line: 3, column: 4, offset: 31})\n",
+                "line",
+            ),
+            (
+                "(:Error {code: \"rel.no-type\", line: 2, column: 5, offset: 31})\n",
+                "column",
+            ),
+            (
+                "(:Error {code: \"rel.no-type\", line: 2, column: 4, offset: 32})\n",
+                "offset",
+            ),
         ] {
             let e = run_reject_text(&case(bad), TEXT, START).unwrap_err();
             assert!(e.contains(part), "{part}: {e}");
@@ -674,7 +691,8 @@ mod reject_runner {
     fn an_extra_or_a_missing_error_fails() {
         let e = run_reject_text(&case(""), TEXT, START).unwrap_err();
         assert!(e.contains("unexpected") && e.contains("rel.no-type"), "{e}");
-        let two = format!("{GOOD}(:Error {{code: \"rel.undirected\", line: 1, column: 1, offset: 0}})\n");
+        let two =
+            format!("{GOOD}(:Error {{code: \"rel.undirected\", line: 1, column: 1, offset: 0}})\n");
         let e = run_reject_text(&case(&two), TEXT, START).unwrap_err();
         assert!(e.contains("missing") && e.contains("rel.undirected"), "{e}");
     }
@@ -682,7 +700,10 @@ mod reject_runner {
     #[test]
     fn a_text_that_loads_is_not_a_reject_case() {
         let e = run_reject_text(&case(GOOD), b"(a)-[:T]->(b)\n", START).unwrap_err();
-        assert!(e.contains("loaded") || e.contains("should be rejected"), "{e}");
+        assert!(
+            e.contains("loaded") || e.contains("should be rejected"),
+            "{e}"
+        );
     }
 
     #[test]

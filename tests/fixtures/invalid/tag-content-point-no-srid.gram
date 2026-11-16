@@ -1,2 +1,0 @@
-// point with content that breaks its form (point-no-srid)
-(a {when: point`1 2`})

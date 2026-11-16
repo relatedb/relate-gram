@@ -1,2 +1,0 @@
-// date with content that breaks its form (empty-content)
-(a {when: date` `})

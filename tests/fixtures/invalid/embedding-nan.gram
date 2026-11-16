@@ -1,2 +1,0 @@
-// Relate cannot store a NaN; the tag carries one (ADR-014 section 2.2)
-(a {e: embedding`QAAAAAAAAAB7ImVtYmVkZGluZyI6eyJkdHlwZSI6IkYzMiIsInNoYXBlIjpbMl0sImRhdGFfb2Zmc2V0cyI6WzAsOF19fSAgAACAPwAAwH8=`})

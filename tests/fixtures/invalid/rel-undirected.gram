@@ -1,2 +1,0 @@
-// undirected arrow
-(a)-[:KNOWS]-(b)

@@ -1,87 +1,33 @@
-//! Error positions (Constitution VI, FR-015, SC-002): every fixture under
-//! `tests/fixtures/invalid/` is loaded into a database that already holds
-//! known content. Each expected diagnostic must be reported with its code,
-//! line, column and byte offset, nothing else may be reported as an error,
-//! and the database must be unchanged afterwards.
-#[path = "../common/mod.rs"]
-mod common;
-
-use common::*;
+//! Every error code that a `reject` case can trigger has a case (until the collection's own check,
+//! spec 006 task T040, takes this over). The positions and the unchanged-database check of the
+//! former per-fixture test are now the `reject` runner of the conformance collection (ADR-015).
 use relate_gram::diagnostics::code;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
 fn fixtures() -> Vec<PathBuf> {
-    let dir = format!("{}/tests/fixtures/invalid", env!("CARGO_MANIFEST_DIR"));
+    let dir = format!("{}/conformance/reject", env!("CARGO_MANIFEST_DIR"));
     let mut v: Vec<PathBuf> = std::fs::read_dir(dir)
         .unwrap()
-        .map(|e| e.unwrap().path())
-        .filter(|p| p.extension().is_some_and(|e| e == "gram"))
+        .map(|e| e.unwrap().path().join("case.gram"))
         .collect();
     v.sort();
     v
 }
 
-fn expectations(path: &std::path::Path) -> Vec<(String, usize, usize, usize)> {
-    let text = std::fs::read_to_string(path.with_extension("expect"))
-        .unwrap_or_else(|e| panic!("{}: missing .expect: {e}", path.display()));
+/// The codes of the `Error` nodes of a `case.gram`.
+fn expectations(path: &std::path::Path) -> Vec<(String,)> {
+    let text = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     text.lines()
-        .filter(|l| !l.trim().is_empty() && !l.starts_with('#'))
+        .filter(|l| l.starts_with("(:Error {code: \""))
         .map(|l| {
-            let p: Vec<&str> = l.split_whitespace().collect();
-            assert_eq!(p.len(), 4, "bad .expect line {l:?}");
-            (
-                p[0].to_string(),
-                p[1].parse().unwrap(),
-                p[2].parse().unwrap(),
-                p[3].parse().unwrap(),
-            )
+            (l["(:Error {code: \"".len()..]
+                .split('"')
+                .next()
+                .unwrap()
+                .to_string(),)
         })
         .collect()
-}
-
-#[test]
-fn every_fixture_is_rejected_at_the_expected_position_and_changes_nothing() {
-    let all = fixtures();
-    assert!(all.len() > 30, "fixtures were not found");
-    for path in all {
-        let (_db, mut c) = fresh_db();
-        run(&mut c, "CREATE (:Existing {k: 1})-[:R]->(:Existing {k: 2})");
-        let before = dump_graph(&mut c);
-
-        let bytes = std::fs::read(&path).unwrap();
-        let failure = relate_gram::load(&mut c, &bytes, &Default::default())
-            .err()
-            .unwrap_or_else(|| panic!("{} should fail", path.display()));
-
-        let mut got: Vec<(String, usize, usize, usize)> = failure
-            .diagnostics
-            .iter()
-            .filter(|d| d.is_error())
-            .map(|d| {
-                let s = d
-                    .span
-                    .unwrap_or_else(|| panic!("{}: {} has no span", path.display(), d.code));
-                (d.code.to_string(), s.line, s.column, s.start)
-            })
-            .collect();
-        let mut want = expectations(&path);
-        got.sort();
-        want.sort();
-        assert_eq!(got, want, "{}", path.display());
-
-        assert_eq!(
-            dump_graph(&mut c),
-            before,
-            "{} must leave the database unchanged",
-            path.display()
-        );
-        assert!(
-            !c.in_transaction(),
-            "{} must not leave a transaction open",
-            path.display()
-        );
-    }
 }
 
 /// The error codes a fixture can trigger. The others are tested elsewhere:

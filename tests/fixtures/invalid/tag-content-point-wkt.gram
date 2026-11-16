@@ -1,2 +1,0 @@
-// point in extended well-known text is no longer a form (ADR-012 section 2.4)
-(a {when: point`SRID=4326;POINT(1 2)`})

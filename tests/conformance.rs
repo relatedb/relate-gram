@@ -19,7 +19,14 @@ fn run_kind(kind: Kind, run: impl Fn(&Case) -> Result<(), String>) {
         }
     }
     println!("{} cases of kind {}", cases.len(), kind.dir());
-    assert!(failures.is_empty(), "{} of {} {} cases failed:\n  {}", failures.len(), cases.len(), kind.dir(), failures.join("\n  "));
+    assert!(
+        failures.is_empty(),
+        "{} of {} {} cases failed:\n  {}",
+        failures.len(),
+        cases.len(),
+        kind.dir(),
+        failures.join("\n  ")
+    );
 }
 
 #[test]

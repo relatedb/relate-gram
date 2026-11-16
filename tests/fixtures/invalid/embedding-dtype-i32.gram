@@ -1,2 +1,0 @@
-// gram-value 0.2.0 conformance case tag-embedding-dtype-i32 (conformance/tags.gram)
-(a {e: embedding`PgAAAAAAAAB7ImVtYmVkZGluZyI6eyJkdHlwZSI6IkkzMiIsInNoYXBlIjpbMl0sImRhdGFfb2Zmc2V0cyI6WzAsOF19fQAAgD8AAADA`})

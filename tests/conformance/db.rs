@@ -12,12 +12,16 @@ pub fn apply_start(conn: &mut Connection, text: &str) -> Result<(), String> {
         statement.push('\n');
         if line.trim_end().ends_with(';') {
             let q = statement.trim().trim_end_matches(';').to_string();
-            conn.query(&q).map_err(|e| format!("start.cypher: `{q}`: {e}"))?;
+            conn.query(&q)
+                .map_err(|e| format!("start.cypher: `{q}`: {e}"))?;
             statement.clear();
         }
     }
     if !statement.trim().is_empty() {
-        return Err(format!("start.cypher: a statement does not end in `;`: {}", statement.trim()));
+        return Err(format!(
+            "start.cypher: a statement does not end in `;`: {}",
+            statement.trim()
+        ));
     }
     Ok(())
 }

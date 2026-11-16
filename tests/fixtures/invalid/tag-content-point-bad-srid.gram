@@ -1,2 +1,0 @@
-// point with content that breaks its form (point-bad-srid)
-(a {when: point`SRID=1234;1 2`})
