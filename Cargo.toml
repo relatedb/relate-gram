@@ -25,6 +25,10 @@ thiserror = "2"
 gram-value = "0.2"
 
 [dev-dependencies]
+# The conformance runner reads case files with the pattern-rs gram libraries (ADR-015 section 2.10);
+# relateby-pattern names the Pattern, Subject and Value types that relateby-gram returns.
+relateby-gram = "0.7"
+relateby-pattern = "0.7"
 proptest = "1"
 toml = "0.8"
 serde = { version = "1", features = ["derive"] }

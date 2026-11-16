@@ -1,0 +1,17 @@
+/**
+ * How a runner decides each capability (ADR-015 section 2.6). `how` is `cypher` (the statement
+ * succeeds), `transaction` (an explicit transaction can begin and roll back), `reader` (a property
+ * of the runner's gram reader) or `declared` (an operation the implementation says it offers).
+ */
+{kind: "capabilities"}
+(:Capability {name: "explicit-transactions", how: "transaction"})
+(:Capability {name: "temporal-values", how: "cypher", probe: "RETURN date('2024-01-01')"})
+(:Capability {name: "points", how: "cypher", probe: "RETURN point({x: 1.0, y: 2.0, srid: 7203})"})
+(:Capability {name: "uuids", how: "cypher", probe: "RETURN randomUUID()"})
+(:Capability {name: "vectors", how: "cypher", probe: "RETURN vector([1.0], 1, FLOAT32)"})
+(:Capability {name: "vector-16-bit", how: "cypher", probe: "RETURN vector([1.0], 1, FLOAT16)"})
+(:Capability {name: "numeric-kinds", how: "reader"})
+(:Capability {name: "check", how: "declared"})
+(:Capability {name: "load", how: "declared"})
+(:Capability {name: "export", how: "declared"})
+(:Capability {name: "fix", how: "declared"})

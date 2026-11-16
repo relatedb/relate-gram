@@ -1,0 +1,2 @@
+/** Cases this implementation fails today, each with a reason and an issue (ADR-015 section 2.6). */
+{kind: "known-failures"}

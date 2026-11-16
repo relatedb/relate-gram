@@ -23,7 +23,12 @@ jobs:
       - run: scripts/check-public-api.sh
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
+      # The conformance collection is linted with the gram tool (ADR-015 section 2.2); the version
+      # is the one in conformance/GRAMMAR_VERSION.
+      - run: cargo install gram-data --locked --version 0.7.0
       - run: cargo test
+        env:
+          CONFORMANCE_REQUIRE_LINT: "1"
   perf:
     if: github.event_name == 'workflow_dispatch' && inputs.perf
     runs-on: ubuntu-latest
