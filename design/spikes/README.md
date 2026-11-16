@@ -58,3 +58,5 @@ into the RFC rather than copied verbatim.
 | [SPIKE-002](SPIKE-002-relate-property-values/SPIKE.md) | Relate Property Value Types | done | RFC-002 |
 | [SPIKE-003](SPIKE-003-parser-behaviors/SPIKE.md) | Parser Behaviors of gram-codec and tree-sitter-gram | done | RFC-002, RFC-001 |
 | [SPIKE-005](SPIKE-005-typed-value-forms/SPIKE.md) | Relate's Typed Property Values and Their String Forms | done | RFC-002 |
+| [SPIKE-006](SPIKE-006-pattern-rs-readers/SPIKE.md) | Reading Gram with the pattern-rs Libraries | done | RFC-005 |
+| [SPIKE-007](SPIKE-007-typed-syntax-prototype/SPIKE.md) | A Typed Syntax Layer over tree-sitter-gram with gram-value Values | done | RFC-005 |

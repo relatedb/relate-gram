@@ -1,0 +1,1 @@
+[team:Team {name: "x"} | (a), (b), (a)-[:KNOWS]->(b)]

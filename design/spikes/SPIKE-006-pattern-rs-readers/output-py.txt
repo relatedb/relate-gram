@@ -1,0 +1,145 @@
+== bad-01-missing-value.gram
+error: Gram parse error: Parse error: Syntax error at 1:5: expected Char('}'), found 'k: })
+== bad-02-duplicate-key.gram
+header: none
+pattern id="a" labels=[] props={k=int:2}
+== bad-03-duplicate-header-key.gram
+header: {kind=str:"load"}
+pattern id="a" labels=[] props={}
+== bad-04-unterminated.gram
+error: Gram parse error: Parse error: Syntax error at 2:1: expected Char('"'), found ''
+== bad-05-block-comment.gram
+error: Gram parse error: Parse error: Unexpected input at 1:5: /* not gram */
+== bad-06-top-level-comma.gram
+error: Gram parse error: Parse error: Unexpected input at 1:14: , (q)-[:K]->(p)
+== bad-07-quoted-identifier.gram
+error: Gram parse error: Parse error: Syntax error at 1:2: expected Char(')'), found '"quoted":N)
+== bad-08-stray-token.gram
+error: Gram parse error: Parse error: Unexpected input at 1:5: )
+== ok-01-case-file.gram
+header: {kind=str:"reject", requires=[str:"vectors"], settings={identity=str:"auto", maxErrors=int:100}}
+pattern id="" labels=["Error"] props={code=str:"rel.no-type", column=int:8, line=int:2, offset=int:73}
+pattern id="" labels=["Error"] props={code=str:"rel.undirected", column=int:1, line=int:3, offset=int:90}
+== ok-02-expected-graph.gram
+header: none
+pattern id="ada" labels=["Person"] props={born=int:1815, joined=tag:date:"2024-01-15", name=str:"Ada Lovelace", score=dec:1.0}
+pattern id="bob" labels=["Admin", "Person"] props={id=int:42, name=str:"Bob"}
+pattern id="" labels=["KNOWS"] props={since=dec:1.5}
+  pattern id="ada" labels=[] props={}
+  pattern id="bob" labels=[] props={}
+pattern id="" labels=["Doc"] props={title=str:"orphan"}
+== ok-03-identifiers.gram
+header: none
+pattern id="42" labels=["N"] props={}
+pattern id="my id" labels=["N"] props={}
+pattern id="" labels=["N"] props={}
+== ok-04-values.gram
+header: none
+pattern id="a" labels=[] props={bigint=int:9223372036854775807, dec=dec:0.1, hex=int:31, neg=int:-3, negdec=dec:-2.5, zero=int:0}
+pattern id="b" labels=[] props={empty=str:"", quoted=str:"active", str=str:"a\nb\t\"q\"", sym=sym:active, t=bool:true, tstr=str:"true"}
+pattern id="c" labels=[] props={fence=str:"line one\nline two\n", unicode=str:"naïve — ✓"}
+pattern id="d" labels=[] props={arr=[int:1, int:2, int:3], decs=[dec:1.0, dec:2.5], none=[], strs=[str:"a", str:"b"], tags=[tag:date:"2024-01-01", tag:date:"2024-02-02"]}
+pattern id="e" labels=[] props={m={x=int:1, y=str:"two", z=[int:1, int:2]}}
+== ok-05-paths.gram
+header: none
+pattern id="" labels=["S"] props={}
+  pattern id="" labels=["R"] props={w=int:1}
+    pattern id="a" labels=[] props={}
+    pattern id="b" labels=[] props={}
+  pattern id="c" labels=[] props={}
+pattern id="" labels=["T"] props={}
+  pattern id="y" labels=[] props={}
+  pattern id="x" labels=[] props={}
+== ok-06-embedding-point-uuid.gram
+header: none
+pattern id="a" labels=[] props={e=tag:embedding:"QAAAAAAAAAB7ImVtYmVkZGluZyI6eyJkdHlwZSI6IkYzMiIsInNoYXBlIjpbMl0sImRhdGFfb2Zmc2V0cyI6WzAsOF19fSAgAACAPwAAAMA=", p=tag:point:"SRID=4326;12.5 55.7", u=tag:uuid:"123e4567-e89b-12d3-a456-426614174000"}
+== ok-07-annotations.gram
+header: none
+pattern id="" labels=[] props={desc=str:"the first one"}
+  pattern id="a" labels=["N"] props={}
+pattern id="id1" labels=["Note"] props={desc=str:"identified"}
+  pattern id="b" labels=["N"] props={}
+pattern id="" labels=[] props={error=str:"{code: \"rel.no-type\", line: 2}"}
+  pattern id="e" labels=[] props={}
+== ok-08-beyond-i64.gram
+error: Gram parse error: Parse error: Syntax error at 1:5: expected Char('}'), found 'n: 92233720368547758'
+== ok-09-long-decimal.gram
+header: none
+pattern id="a" labels=[] props={d=dec:0.1}
+== ok-10-comments.gram
+header: none
+pattern id="a" labels=[] props={s=str:"kept"}
+pattern id="b" labels=[] props={}
+== ok-11-fenced-tag.gram
+header: none
+pattern id="a" labels=[] props={f=str:"2024-01-15\n"}
+== ok-12-arrow-families.gram
+header: none
+pattern id="" labels=[] props={}
+  pattern id="a" labels=[] props={}
+  pattern id="b" labels=[] props={}
+pattern id="" labels=[] props={}
+  pattern id="c" labels=[] props={}
+  pattern id="d" labels=[] props={}
+pattern id="" labels=[] props={}
+  pattern id="e" labels=[] props={}
+  pattern id="f" labels=[] props={}
+pattern id="" labels=[] props={}
+  pattern id="g" labels=[] props={}
+  pattern id="h" labels=[] props={}
+pattern id="" labels=[] props={}
+  pattern id="i" labels=[] props={}
+  pattern id="j" labels=[] props={}
+== ok-13-subject-pattern.gram
+header: none
+pattern id="team" labels=["Team"] props={name=str:"x"}
+  pattern id="a" labels=[] props={}
+  pattern id="b" labels=[] props={}
+  pattern id="" labels=["KNOWS"] props={}
+    pattern id="a" labels=[] props={}
+    pattern id="b" labels=[] props={}
+== ok-14-range-measurement.gram
+header: none
+pattern id="a" labels=[] props={f=other:MeasurementVal(unit='m', value=2.5), m=other:MeasurementVal(unit='kg', value=5.0), open=other:RangeVal(lower=1.0, upper=None), r=other:RangeVal(lower=1.0, upper=5.0)}
+== ok-15a-double-colon.gram
+error: Gram parse error: Parse error: Syntax error at 1:3: expected Char(')'), found '::Wide)
+== ok-15b-quoted-key.gram
+header: none
+pattern id="a" labels=[] props={my key=int:1}
+== ok-15c-backtick-key.gram
+header: none
+pattern id="a" labels=[] props={back tick=int:2}
+== ok-15d-true-key.gram
+header: none
+pattern id="a" labels=[] props={true=int:3}
+== ok-15e-backtick-label.gram
+header: none
+pattern id="a" labels=["odd label"] props={}
+== ok-16-unicode-backtick.gram
+header: none
+pattern id="ñandú" labels=["Ave"] props={nombre=str:"ñ", ключ=int:1}
+== ok-17-pattern-reference.gram
+header: none
+pattern id="a" labels=[] props={}
+pattern id="b" labels=[] props={}
+  pattern id="a" labels=[] props={}
+== ok-18-relationship-id.gram
+header: none
+pattern id="r" labels=["T"] props={w=int:1}
+  pattern id="a" labels=[] props={}
+  pattern id="b" labels=[] props={}
+pattern id="" labels=["T"] props={}
+  pattern id="a" labels=[] props={}
+  pattern id="b" labels=[] props={}
+== ok-19-empty-record.gram
+header: none
+pattern id="" labels=[] props={}
+pattern id="a" labels=[] props={}
+== ok-20-record-only.gram
+header: {kind=str:"load", n=dec:1.5}
+== ok-21-single-quoted.gram
+header: none
+pattern id="a" labels=[] props={s=str:"it's", t=str:"x"}
+== ok-22-double-colon-record.gram
+header: {kind=str:"load"}
+pattern id="a" labels=[] props={}

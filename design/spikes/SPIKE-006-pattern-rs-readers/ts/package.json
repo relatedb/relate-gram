@@ -1,0 +1,10 @@
+{
+  "name": "spike-pattern-rs-readers-ts",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@relateby/gram": "*",
+    "@relateby/pattern": "*",
+    "effect": "*"
+  }
+}

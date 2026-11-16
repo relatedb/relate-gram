@@ -1,0 +1,4 @@
+/** A relationship without a type (ADR-008). Documents the case; the runner ignores it. */
+{kind: "reject", requires: ["vectors"], settings: {identity: "auto", maxErrors: 100}}
+(:Error {code: "rel.no-type", line: 2, column: 8, offset: 73})
+(:Error {code: "rel.undirected", line: 3, column: 1, offset: 90})
