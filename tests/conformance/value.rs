@@ -44,7 +44,6 @@ pub fn expected_value(v: &PV) -> Result<Value, String> {
         PV::VMap(_) => Err("an expected graph holds no map value".into()),
         PV::VRange(_) => Err("an expected graph holds no range value".into()),
         PV::VMeasurement { .. } => Err("an expected graph holds no measurement value".into()),
-        other => Err(format!("an expected graph holds no value like {other:?}")),
     }
 }
 

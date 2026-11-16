@@ -36,10 +36,12 @@ pub fn load_settings(s: &Settings) -> Result<LoadSettings, String> {
         ],
         "a load",
     )?;
-    let mut out = LoadSettings::default();
-    out.node_id_property = string(s, "nodeIdProperty")?;
-    out.relationship_id_property = string(s, "relationshipIdProperty")?;
-    out.file_name = string(s, "fileName")?;
+    let mut out = LoadSettings {
+        node_id_property: string(s, "nodeIdProperty")?,
+        relationship_id_property: string(s, "relationshipIdProperty")?,
+        file_name: string(s, "fileName")?,
+        ..LoadSettings::default()
+    };
     if let Some(t) = string(s, "tags")? {
         out.tags = match t.as_str() {
             "warn" => TagPolicy::Warn,
@@ -69,9 +71,11 @@ pub fn export_settings(s: &Settings) -> Result<ExportSettings, String> {
         &["identity", "nodeIdProperty", "relationshipIdProperty"],
         "an export",
     )?;
-    let mut out = ExportSettings::default();
-    out.node_id_property = string(s, "nodeIdProperty")?;
-    out.relationship_id_property = string(s, "relationshipIdProperty")?;
+    let mut out = ExportSettings {
+        node_id_property: string(s, "nodeIdProperty")?,
+        relationship_id_property: string(s, "relationshipIdProperty")?,
+        ..ExportSettings::default()
+    };
     if let Some(i) = string(s, "identity")? {
         out.identity = match i.as_str() {
             "auto" => IdentityMode::Auto,
@@ -89,8 +93,10 @@ pub fn export_settings(s: &Settings) -> Result<ExportSettings, String> {
 
 pub fn fix_options(s: &Settings) -> Result<FixOptions, String> {
     check_keys(s, &["relType", "direction", "octal", "annotate"], "a fix")?;
-    let mut out = FixOptions::default();
-    out.rel_type = string(s, "relType")?;
+    let mut out = FixOptions {
+        rel_type: string(s, "relType")?,
+        ..FixOptions::default()
+    };
     if let Some(d) = string(s, "direction")? {
         out.direction = Some(match d.as_str() {
             "right" => Direction::Right,

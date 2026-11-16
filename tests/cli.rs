@@ -7,6 +7,13 @@ fn bin() -> Command {
     Command::new(env!("CARGO_BIN_EXE_relate-gram"))
 }
 
+fn reject_input(name: &str) -> String {
+    format!(
+        "{}/conformance/reject/{name}/input.txt",
+        env!("CARGO_MANIFEST_DIR")
+    )
+}
+
 fn fixture(path: &str) -> String {
     format!("{}/tests/fixtures/{path}", env!("CARGO_MANIFEST_DIR"))
 }
@@ -44,7 +51,7 @@ fn check_a_valid_file_succeeds() {
 
 #[test]
 fn check_an_invalid_file_shows_the_source_and_a_marker_and_fails() {
-    let path = fixture("invalid/rel-no-type.gram");
+    let path = reject_input("rel-no-type");
     let o = run(&["check", &path]);
     assert_eq!(o.status.code(), Some(1));
     let err = text(&o.stderr);
@@ -82,8 +89,8 @@ fn check_several_files_counts_them_all() {
     let o = run(&[
         "check",
         &fixture("valid/people.gram"),
-        &fixture("invalid/rel-undirected.gram"),
-        &fixture("invalid/key-empty.gram"),
+        &reject_input("rel-undirected"),
+        &reject_input("key-empty"),
     ]);
     assert_eq!(o.status.code(), Some(1));
     assert!(
@@ -149,7 +156,7 @@ fn normalize_prints_canonical_gram() {
 
 #[test]
 fn normalize_rejects_an_invalid_file_and_writes_nothing() {
-    let o = run(&["normalize", &fixture("invalid/rel-no-type.gram")]);
+    let o = run(&["normalize", &reject_input("rel-no-type")]);
     assert_eq!(o.status.code(), Some(1));
     assert!(o.stdout.is_empty());
 }
@@ -211,7 +218,7 @@ fn load_then_export_through_a_database_on_disk() {
 fn a_failed_load_says_the_database_is_unchanged() {
     let dir = scratch("fail");
     let db = dir.to_str().unwrap();
-    let o = run(&["load", &fixture("invalid/rel-no-type.gram"), "--db", db]);
+    let o = run(&["load", &reject_input("rel-no-type"), "--db", db]);
     assert_eq!(o.status.code(), Some(1));
     assert!(text(&o.stderr).contains("the database is unchanged"));
     let _ = std::fs::remove_dir_all(&dir);
