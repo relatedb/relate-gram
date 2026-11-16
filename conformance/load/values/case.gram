@@ -1,0 +1,4 @@
+/** One node holding every accepted value kind (ADR-006). */
+{requires: []}
+(:Warning {code: "value.tag-dropped", line: 13, column: 11, offset: 474})
+(:Counts {nodesCreated: 1, relationshipsCreated: 0, tagsDropped: 1})

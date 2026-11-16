@@ -1,0 +1,6 @@
+// Version 2: a changed property, an added label, a new node and a new relationship.
+(ada:Person:Pioneer {name: "Ada Lovelace", born: 1815})
+(grace:Person {name: "Grace"})
+(alan:Person {name: "Alan"})
+(ada)-[k:KNOWS {since: 1841}]->(grace)
+(grace)-[:KNOWS]->(alan)

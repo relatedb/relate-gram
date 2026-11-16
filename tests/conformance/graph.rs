@@ -98,7 +98,7 @@ fn params(pairs: Vec<(&str, RV)>) -> BTreeMap<String, RV> {
 }
 
 /// The properties of the node or relationship with internal id `id` as gram values.
-fn properties(
+pub fn properties(
     conn: &mut Connection,
     entity: &str,
     id: i64,
@@ -131,7 +131,42 @@ fn properties(
             .rows;
         let (vt, text) = (text_of(&r[0][0])?, text_of(&r[0][1])?);
         let t = vt.strip_suffix(" NOT NULL").unwrap_or(&vt).to_string();
-        let value = if t.starts_with("LIST<") {
+        let value = if t.starts_with("LIST<POINT") {
+            let q = format!(
+                "MATCH {entity} WHERE id(e) = $id RETURN [x IN e[$k] | [x.srid, x.x, x.y, \
+                 CASE WHEN x.srid IN [4979, 9157] THEN x.z ELSE null END]]"
+            );
+            let r = conn
+                .query_with_params(&q, p(vec![]))
+                .map_err(|e| e.to_string())?
+                .rows;
+            let mut items = Vec::new();
+            match &r[0][0] {
+                RV::List(points) => {
+                    for pt in points.iter() {
+                        let RV::List(f) = pt else {
+                            return Err(format!("expected a point, found {pt:?}"));
+                        };
+                        let srid = match &f[0] {
+                            RV::Int(i) => *i,
+                            other => return Err(format!("expected an SRID, found {other:?}")),
+                        };
+                        let z = match &f[3] {
+                            RV::Null => None,
+                            other => Some(float_of(other)?),
+                        };
+                        items.push(value::database_point(
+                            srid,
+                            float_of(&f[1])?,
+                            float_of(&f[2])?,
+                            z,
+                        )?);
+                    }
+                }
+                other => return Err(format!("expected a list, found {other:?}")),
+            }
+            Value::array(items)
+        } else if t.starts_with("LIST<") {
             let q = format!("MATCH {entity} WHERE id(e) = $id RETURN [x IN e[$k] | toString(x)]");
             let r = conn
                 .query_with_params(&q, p(vec![]))
@@ -211,4 +246,35 @@ pub fn dump_database(conn: &mut Connection, strip_generated: bool) -> Result<Gra
         rels.push(relationship_line(&ty, &props, &lines[&a], &lines[&b])?);
     }
     Ok(Graph::new(lines.into_values().collect(), rels))
+}
+
+fn only_in(a: &[String], b: &[String]) -> Vec<String> {
+    let mut rest: Vec<&String> = b.iter().collect();
+    let mut out = Vec::new();
+    for x in a {
+        if let Some(i) = rest.iter().position(|y| *y == x) {
+            rest.remove(i);
+        } else {
+            out.push(x.clone());
+        }
+    }
+    out
+}
+
+/// What differs between an expected graph and the one read from the database, as a message.
+pub fn describe_difference(expected: &Graph, got: &Graph) -> String {
+    let mut parts = Vec::new();
+    for l in only_in(&expected.nodes, &got.nodes) {
+        parts.push(format!("expected node missing: {l}"));
+    }
+    for l in only_in(&got.nodes, &expected.nodes) {
+        parts.push(format!("unexpected node: {l}"));
+    }
+    for l in only_in(&expected.relationships, &got.relationships) {
+        parts.push(format!("expected relationship missing: {l}"));
+    }
+    for l in only_in(&got.relationships, &expected.relationships) {
+        parts.push(format!("unexpected relationship: {l}"));
+    }
+    parts.join("; ")
 }

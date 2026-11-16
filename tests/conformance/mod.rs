@@ -8,6 +8,7 @@ pub mod db;
 pub mod expect;
 pub mod expected;
 pub mod graph;
+pub mod load;
 pub mod reject;
 pub mod settings;
 pub mod value;

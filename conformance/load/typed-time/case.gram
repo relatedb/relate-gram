@@ -1,0 +1,3 @@
+/** zoned times, with an offset and with nanoseconds */
+{requires: ["temporal-values"]}
+(:Counts {nodesCreated: 1, relationshipsCreated: 0})

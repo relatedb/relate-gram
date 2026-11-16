@@ -1,0 +1,3 @@
+/** The stored relationship k has the type KNOWS; the file gives it another type, so the load fails and writes nothing. */
+{requires: []}
+(:Error {code: "match.type-differs", line: 4, column: 6, offset: 82})

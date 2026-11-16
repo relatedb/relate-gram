@@ -1,0 +1,4 @@
+/** An edited file updates matched elements, keeps unstated properties, unions labels and creates new elements (ADR-001 section 2.7). */
+{requires: []}
+(:Warning {code: "load.anonymous"})
+(:Counts {nodesCreated: 1, relationshipsCreated: 1, nodesUpdated: 2, relationshipsUpdated: 1})

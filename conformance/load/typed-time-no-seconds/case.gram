@@ -1,0 +1,3 @@
+/** seconds are optional (ADR-012 section 2.3); an offset is not */
+{requires: ["temporal-values"]}
+(:Counts {nodesCreated: 1, relationshipsCreated: 0})

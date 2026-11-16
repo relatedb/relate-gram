@@ -1,0 +1,7 @@
+/** Identifier forms, references and anonymous elements (ADR-001). */
+{requires: []}
+(:Warning {code: "id.reference-only", line: 5, column: 1, offset: 98})
+(:Warning {code: "id.reference-only", line: 6, column: 23, offset: 124})
+(:Warning {code: "id.reference-only", line: 10, column: 1, offset: 152})
+(:Warning {code: "load.anonymous"})
+(:Counts {nodesCreated: 8, relationshipsCreated: 2, elementsWithoutIdentifier: 2, referenceOnlyNodes: 3})

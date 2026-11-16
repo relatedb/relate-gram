@@ -18,7 +18,9 @@ fn collect(dir: &Path, out: &mut String) {
                 continue;
             }
             collect(&path, out);
-        } else if path.extension().is_some_and(|e| e == "rs" || e == "expect")
+        } else if path
+            .extension()
+            .is_some_and(|e| e == "rs" || e == "expect" || e == "gram")
             && !path.ends_with("coverage.rs")
         {
             out.push_str(&std::fs::read_to_string(&path).unwrap_or_default());
@@ -32,6 +34,11 @@ fn every_code_is_asserted_by_a_test() {
     let mut text = String::new();
     collect(
         &Path::new(env!("CARGO_MANIFEST_DIR")).join("tests"),
+        &mut text,
+    );
+    // The collection's cases assert codes too (spec 006; T040 replaces this scan with a check).
+    collect(
+        &Path::new(env!("CARGO_MANIFEST_DIR")).join("conformance"),
         &mut text,
     );
     let mut missing = Vec::new();

@@ -1,0 +1,3 @@
+/** points: geographic 2D and Cartesian 3D */
+{requires: ["points"]}
+(:Counts {nodesCreated: 1, relationshipsCreated: 0})

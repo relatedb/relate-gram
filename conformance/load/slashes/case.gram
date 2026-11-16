@@ -1,0 +1,3 @@
+/** Quoted text that starts with slashes (tree-sitter-gram 0.6.2 fixes the 0.6.1 parse error). */
+{requires: []}
+(:Counts {nodesCreated: 2, relationshipsCreated: 0})

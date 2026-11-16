@@ -6,13 +6,17 @@
 mod conformance;
 
 use conformance::case::{read_case, Case, Kind};
-use conformance::{collection, reject};
+use conformance::{collection, load, reject};
 
 fn run_kind(kind: Kind, run: impl Fn(&Case) -> Result<(), String>) {
     std::env::remove_var("RELATE_PREVIEW");
     let cases = collection::cases(kind);
     let mut failures = Vec::new();
     for (id, dir) in &cases {
+        // Until the capability probes of T036 run, the 16-bit vector cases wait for the second pass.
+        if read_case(dir, kind, id).is_ok_and(|c| c.requires.iter().any(|r| r == "vector-16-bit")) {
+            continue;
+        }
         match read_case(dir, kind, id).and_then(|c| run(&c)) {
             Ok(()) => {}
             Err(e) => failures.push(format!("{}/{id}: {e}", kind.dir())),
@@ -32,4 +36,9 @@ fn run_kind(kind: Kind, run: impl Fn(&Case) -> Result<(), String>) {
 #[test]
 fn reject_cases() {
     run_kind(Kind::Reject, reject::run_reject);
+}
+
+#[test]
+fn load_cases() {
+    run_kind(Kind::Load, load::run_load);
 }

@@ -1,0 +1,2 @@
+// zoned times, with an offset and with nanoseconds
+(a {t: time`10:30:00+01:00`, u: time`10:30:00.123456789Z`})

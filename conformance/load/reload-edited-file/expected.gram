@@ -1,0 +1,5 @@
+(ada:Person:Pioneer {born: 1815, name: "Ada Lovelace", note: "kept"})
+(grace:Person {name: "Grace"})
+(alan:Person {name: "Alan"})
+(ada)-[k:KNOWS {since: 1841}]->(grace)
+(grace)-[:KNOWS]->(alan)

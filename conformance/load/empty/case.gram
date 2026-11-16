@@ -1,0 +1,3 @@
+/** A file with only a comment. */
+{requires: []}
+(:Counts {nodesCreated: 0, relationshipsCreated: 0})

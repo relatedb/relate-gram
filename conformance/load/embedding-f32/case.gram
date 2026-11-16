@@ -1,0 +1,5 @@
+/** gram-value 0.2.0 conformance case tag-embedding-ref-f32 (conformance/tags.gram) */
+{requires: ["vectors"]}
+(:Warning {code: "id.reference-only", line: 2, column: 261, offset: 343})
+(:Warning {code: "load.anonymous"})
+(:Counts {nodesCreated: 2, relationshipsCreated: 1, elementsWithoutIdentifier: 1, referenceOnlyNodes: 1})

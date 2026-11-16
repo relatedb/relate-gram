@@ -1,0 +1,4 @@
+/** The valid fixture `record-only`. */
+{requires: []}
+(:Warning {code: "file.record-not-stored", line: 1, column: 1, offset: 0})
+(:Counts {nodesCreated: 0, relationshipsCreated: 0})

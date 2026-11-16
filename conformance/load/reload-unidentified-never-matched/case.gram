@@ -1,0 +1,3 @@
+/** A stored element without an identifier is never matched, so the file creates its own node. */
+{requires: []}
+(:Counts {nodesCreated: 1})

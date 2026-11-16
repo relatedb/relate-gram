@@ -1,0 +1,3 @@
+/** gram-value 0.2.0 conformance case tag-embedding-ref-f64 (conformance/tags.gram) */
+{requires: ["vectors"]}
+(:Counts {nodesCreated: 1, relationshipsCreated: 0})

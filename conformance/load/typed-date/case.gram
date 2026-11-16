@@ -1,0 +1,3 @@
+/** a date and a date before the common era (ADR-011 section 2.2) */
+{requires: ["temporal-values"]}
+(:Counts {nodesCreated: 1, relationshipsCreated: 0})

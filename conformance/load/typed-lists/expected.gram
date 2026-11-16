@@ -1,0 +1,1 @@
+(a {dates: [date`2024-01-01`, date`2024-02-02`], ids: [uuid`123e4567-e89b-12d3-a456-426614174000`, uuid`00000000-0000-0000-0000-000000000001`], one: [date`2024-05-05`], places: [point`SRID=4326;1 2`, point`SRID=9157;1 2 3`], spans: [duration`P1D`, duration`PT1H`]})

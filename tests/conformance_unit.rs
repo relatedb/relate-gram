@@ -728,3 +728,88 @@ mod reject_runner {
         run_reject_text(&c, b"(a)\n", START).unwrap();
     }
 }
+
+// --- T021: the load runner -------------------------------------------------------------------
+
+mod load_runner {
+    use super::conformance::case::{parse_case, Kind};
+    use super::conformance::load::run_load_text;
+
+    const TEXT: &[u8] = b"(a:Person {name: \"Ada\"})-[r:KNOWS]->(b:Person)\n";
+    const EXPECTED: &str = "(a:Person {name: \"Ada\"})\n(b:Person)\n(a)-[r:KNOWS]->(b)\n";
+
+    fn case(header_and_nodes: &str) -> super::conformance::case::Case {
+        parse_case(Kind::Load, "t", header_and_nodes).unwrap()
+    }
+
+    fn plain() -> super::conformance::case::Case {
+        case("{requires: []}\n(:Counts {nodesCreated: 2, relationshipsCreated: 1})\n")
+    }
+
+    #[test]
+    fn a_correct_case_passes() {
+        run_load_text(&plain(), TEXT, "", EXPECTED).unwrap();
+    }
+
+    #[test]
+    fn a_graph_that_differs_fails_naming_the_difference() {
+        for (expected, needle) in [
+            ("(a:Person)\n(b:Person)\n(a)-[r:KNOWS]->(b)\n", "name"),
+            (
+                "(a:Person {name: \"Bob\"})\n(b:Person)\n(a)-[r:KNOWS]->(b)\n",
+                "Bob",
+            ),
+            (
+                "(a:Person {name: \"Ada\"})\n(b:Person)\n(c:Person)\n(a)-[r:KNOWS]->(b)\n",
+                "node",
+            ),
+            ("(a:Person {name: \"Ada\"})\n(b:Person)\n", "relationship"),
+        ] {
+            let e = run_load_text(&plain(), TEXT, "", expected).unwrap_err();
+            assert!(e.contains(needle), "{needle}: {e}");
+        }
+    }
+
+    #[test]
+    fn counts_and_warnings_are_compared() {
+        let wrong = case("{requires: []}\n(:Counts {nodesCreated: 3})\n");
+        assert!(run_load_text(&wrong, TEXT, "", EXPECTED)
+            .unwrap_err()
+            .contains("nodesCreated"));
+        // an unlisted warning fails; a listed one passes
+        let tagged: &[u8] = b"(a {m: md`x`})\n";
+        let none = case("{requires: []}\n");
+        assert!(run_load_text(&none, tagged, "", "(a {m: \"x\"})\n")
+            .unwrap_err()
+            .contains("Warning"));
+        let listed = case("{requires: []}\n(:Warning {code: \"value.tag-dropped\", line: 1, column: 8, offset: 7})\n");
+        run_load_text(&listed, tagged, "", "(a {m: \"x\"})\n").unwrap();
+    }
+
+    #[test]
+    fn a_start_graph_and_an_identity_property_match_and_update() {
+        let c = case("{requires: [], settings: {nodeIdProperty: \"key\"}}\n(:Counts {nodesCreated: 0, nodesUpdated: 1})\n");
+        run_load_text(
+            &c,
+            b"(:N {key: \"a\", y: 2})\n",
+            "CREATE (:N {key: 'a', x: 1});\n",
+            "(:N {key: \"a\", x: 1, y: 2})\n",
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn a_text_that_does_not_load_is_not_a_load_case() {
+        let e = run_load_text(&plain(), b"(a)-->(b)\n", "", EXPECTED).unwrap_err();
+        assert!(
+            e.contains("did not load") && e.contains("rel.no-type"),
+            "{e}"
+        );
+    }
+
+    #[test]
+    fn a_malformed_expected_graph_fails_the_case_naming_the_rule() {
+        let e = run_load_text(&plain(), TEXT, "", "(a)-[:R]->(b)-[:S]->(c)\n").unwrap_err();
+        assert!(e.contains("path"), "{e}");
+    }
+}

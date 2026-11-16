@@ -1,0 +1,2 @@
+(:Person {name: "Ada"})
+(ada:Person {name: "Ada"})

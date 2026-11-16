@@ -1,0 +1,3 @@
+/** Loading a file whose elements are already stored changes nothing (ADR-001 section 2.7). */
+{requires: []}
+(:Counts {nodesCreated: 0, relationshipsCreated: 0})

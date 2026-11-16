@@ -1,0 +1,4 @@
+/** People and the relationships between them. */
+{requires: []}
+(:Warning {code: "load.anonymous"})
+(:Counts {nodesCreated: 3, relationshipsCreated: 3, elementsWithoutIdentifier: 3})
