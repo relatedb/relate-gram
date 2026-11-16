@@ -59,7 +59,7 @@ specs/006-conformance-collection/
 └── tasks.md             # produced by /speckit-tasks
 ```
 
-No `contracts/`: the contract is `conformance/README.md`, written in task T052.
+No `contracts/`: the contract is `conformance/README.md`, written in task T036.
 
 ### Source Code (repository root)
 
