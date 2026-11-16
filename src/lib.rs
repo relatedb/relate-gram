@@ -174,4 +174,6 @@ pub fn load(
 #[doc(hidden)]
 pub mod __test_support {
     pub use crate::syntax::{parse, Syntax, SyntaxFailure};
+    /// The conversion of an embedding's elements, for the conformance runner (spec 006).
+    pub use crate::typed::elements::{narrow, widen};
 }

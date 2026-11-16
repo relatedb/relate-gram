@@ -32,11 +32,23 @@ impl Kind {
                 &["case.gram"],
             ),
             Kind::Load => (
-                &["case.gram", "input.txt", "expected.gram", "start.cypher", "exported.txt"],
+                &[
+                    "case.gram",
+                    "input.txt",
+                    "expected.gram",
+                    "start.cypher",
+                    "exported.txt",
+                ],
                 &["case.gram", "input.txt", "expected.gram"],
             ),
-            Kind::Export => (&["case.gram", "start.cypher", "exported.txt"], &["case.gram", "start.cypher"]),
-            Kind::Fix => (&["case.gram", "input.txt", "fixed.txt"], &["case.gram", "input.txt", "fixed.txt"]),
+            Kind::Export => (
+                &["case.gram", "start.cypher", "exported.txt"],
+                &["case.gram", "start.cypher"],
+            ),
+            Kind::Fix => (
+                &["case.gram", "input.txt", "fixed.txt"],
+                &["case.gram", "input.txt", "fixed.txt"],
+            ),
         }
     }
 }
@@ -81,32 +93,62 @@ impl Case {
     pub fn errors(&self) -> Vec<Diag> {
         self.expectations
             .iter()
-            .filter_map(|e| if let Expectation::Error(d) = e { Some(d.clone()) } else { None })
+            .filter_map(|e| {
+                if let Expectation::Error(d) = e {
+                    Some(d.clone())
+                } else {
+                    None
+                }
+            })
             .collect()
     }
 
     pub fn warnings(&self) -> Vec<Diag> {
         self.expectations
             .iter()
-            .filter_map(|e| if let Expectation::Warning(d) = e { Some(d.clone()) } else { None })
+            .filter_map(|e| {
+                if let Expectation::Warning(d) = e {
+                    Some(d.clone())
+                } else {
+                    None
+                }
+            })
             .collect()
     }
 
     pub fn remaining(&self) -> Vec<Diag> {
         self.expectations
             .iter()
-            .filter_map(|e| if let Expectation::Remaining(d) = e { Some(d.clone()) } else { None })
+            .filter_map(|e| {
+                if let Expectation::Remaining(d) = e {
+                    Some(d.clone())
+                } else {
+                    None
+                }
+            })
             .collect()
     }
 
     pub fn counts(&self) -> Option<&BTreeMap<String, i64>> {
-        self.expectations.iter().find_map(|e| if let Expectation::Counts(m) = e { Some(m) } else { None })
+        self.expectations.iter().find_map(|e| {
+            if let Expectation::Counts(m) = e {
+                Some(m)
+            } else {
+                None
+            }
+        })
     }
 
     pub fn applied(&self) -> Vec<(String, i64)> {
         self.expectations
             .iter()
-            .filter_map(|e| if let Expectation::Applied { code, count } = e { Some((code.clone(), *count)) } else { None })
+            .filter_map(|e| {
+                if let Expectation::Applied { code, count } = e {
+                    Some((code.clone(), *count))
+                } else {
+                    None
+                }
+            })
             .collect()
     }
 }
@@ -138,11 +180,16 @@ fn setting_of(v: &Value) -> Option<Setting> {
     }
 }
 
-fn int_prop(props: &std::collections::HashMap<String, Value>, key: &str) -> Result<Option<usize>, String> {
+fn int_prop(
+    props: &std::collections::HashMap<String, Value>,
+    key: &str,
+) -> Result<Option<usize>, String> {
     match props.get(key) {
         None => Ok(None),
         Some(Value::VInteger(i)) if *i >= 0 => Ok(Some(*i as usize)),
-        Some(other) => Err(format!("`{key}` must be a non-negative integer, found {other:?}")),
+        Some(other) => Err(format!(
+            "`{key}` must be a non-negative integer, found {other:?}"
+        )),
     }
 }
 
@@ -151,11 +198,19 @@ fn diag_of(label: &str, props: &std::collections::HashMap<String, Value>) -> Res
         .get("code")
         .and_then(text_of)
         .ok_or_else(|| format!("{label} needs a `code`"))?;
-    let (line, column, offset) = (int_prop(props, "line")?, int_prop(props, "column")?, int_prop(props, "offset")?);
+    let (line, column, offset) = (
+        int_prop(props, "line")?,
+        int_prop(props, "column")?,
+        int_prop(props, "offset")?,
+    );
     let position = match (line, column, offset) {
         (Some(l), Some(c), Some(o)) => Some((l, c, o)),
         (None, None, None) => None,
-        _ => return Err(format!("{label} `{code}` needs all of `line`, `column` and `offset`, or none")),
+        _ => {
+            return Err(format!(
+                "{label} `{code}` needs all of `line`, `column` and `offset`, or none"
+            ))
+        }
     };
     for k in props.keys() {
         if !["code", "line", "column", "offset"].contains(&k.as_str()) {
@@ -168,8 +223,10 @@ fn diag_of(label: &str, props: &std::collections::HashMap<String, Value>) -> Res
 /// Read the text of a `case.gram`. The error names the case.
 pub fn parse_case(kind: Kind, id: &str, text: &str) -> Result<Case, String> {
     let fail = |m: String| format!("case {}/{id}: {m}", kind.dir());
-    let (header, patterns) = parse_gram_with_header(text).map_err(|e| fail(format!("case.gram does not parse: {e}")))?;
-    let header = header.ok_or_else(|| fail("case.gram has no header record with `requires`".into()))?;
+    let (header, patterns) =
+        parse_gram_with_header(text).map_err(|e| fail(format!("case.gram does not parse: {e}")))?;
+    let header =
+        header.ok_or_else(|| fail("case.gram has no header record with `requires`".into()))?;
     let mut requires = None;
     let mut settings = BTreeMap::new();
     let mut transaction = false;
@@ -179,13 +236,19 @@ pub fn parse_case(kind: Kind, id: &str, text: &str) -> Result<Case, String> {
                 requires = Some(
                     items
                         .iter()
-                        .map(|i| text_of(i).ok_or_else(|| fail("`requires` holds only names".into())))
+                        .map(|i| {
+                            text_of(i).ok_or_else(|| fail("`requires` holds only names".into()))
+                        })
                         .collect::<Result<Vec<_>, _>>()?,
                 );
             }
             ("settings", Value::VMap(m)) => {
                 for (sk, sv) in m {
-                    let s = setting_of(sv).ok_or_else(|| fail(format!("setting `{sk}` must be a string, integer or boolean")))?;
+                    let s = setting_of(sv).ok_or_else(|| {
+                        fail(format!(
+                            "setting `{sk}` must be a string, integer or boolean"
+                        ))
+                    })?;
                     settings.insert(sk.clone(), s);
                 }
             }
@@ -201,7 +264,11 @@ pub fn parse_case(kind: Kind, id: &str, text: &str) -> Result<Case, String> {
         labels.sort();
         let label = match labels.as_slice() {
             [l] => l.as_str(),
-            _ => return Err(fail(format!("an expectation node has exactly one label, found {labels:?}"))),
+            _ => {
+                return Err(fail(format!(
+                    "an expectation node has exactly one label, found {labels:?}"
+                )))
+            }
         };
         let props = &s.properties;
         let e = match label {
@@ -218,13 +285,20 @@ pub fn parse_case(kind: Kind, id: &str, text: &str) -> Result<Case, String> {
                         Value::VInteger(i) => {
                             m.insert(k.clone(), *i);
                         }
-                        other => return Err(fail(format!("Counts `{k}` must be an integer, found {other:?}"))),
+                        other => {
+                            return Err(fail(format!(
+                                "Counts `{k}` must be an integer, found {other:?}"
+                            )))
+                        }
                     }
                 }
                 Expectation::Counts(m)
             }
             "Applied" => {
-                let code = props.get("code").and_then(text_of).ok_or_else(|| fail("Applied needs a `code`".into()))?;
+                let code = props
+                    .get("code")
+                    .and_then(text_of)
+                    .ok_or_else(|| fail("Applied needs a `code`".into()))?;
                 let count = match props.get("count") {
                     Some(Value::VInteger(i)) => *i,
                     _ => return Err(fail("Applied needs an integer `count`".into())),
@@ -251,11 +325,21 @@ pub fn read_case(dir: &Path, kind: Kind, id: &str) -> Result<Case, String> {
     let (allowed, required) = kind.files();
     let mut present = Vec::new();
     for entry in std::fs::read_dir(dir).map_err(|e| format!("case {}/{id}: {e}", kind.dir()))? {
-        present.push(entry.map_err(|e| e.to_string())?.file_name().to_string_lossy().to_string());
+        present.push(
+            entry
+                .map_err(|e| e.to_string())?
+                .file_name()
+                .to_string_lossy()
+                .to_string(),
+        );
     }
     for f in &present {
         if !allowed.contains(&f.as_str()) {
-            return Err(format!("case {}/{id}: the file `{f}` is not used by a `{}` case", kind.dir(), kind.dir()));
+            return Err(format!(
+                "case {}/{id}: the file `{f}` is not used by a `{}` case",
+                kind.dir(),
+                kind.dir()
+            ));
         }
     }
     for r in required {
@@ -265,13 +349,19 @@ pub fn read_case(dir: &Path, kind: Kind, id: &str) -> Result<Case, String> {
             present.iter().any(|f| f == r)
         };
         if !satisfied {
-            return Err(format!("case {}/{id}: the file `{r}` is missing", kind.dir()));
+            return Err(format!(
+                "case {}/{id}: the file `{r}` is missing",
+                kind.dir()
+            ));
         }
     }
     if kind == Kind::Reject && !present.iter().any(|f| f == "input.txt" || f == "input.bin") {
-        return Err(format!("case reject/{id}: the text under test (`input.txt` or `input.bin`) is missing"));
+        return Err(format!(
+            "case reject/{id}: the text under test (`input.txt` or `input.bin`) is missing"
+        ));
     }
-    let text = std::fs::read_to_string(dir.join("case.gram")).map_err(|e| format!("case {}/{id}: {e}", kind.dir()))?;
+    let text = std::fs::read_to_string(dir.join("case.gram"))
+        .map_err(|e| format!("case {}/{id}: {e}", kind.dir()))?;
     let mut case = parse_case(kind, id, &text)?;
     case.dir = dir.to_path_buf();
     Ok(case)

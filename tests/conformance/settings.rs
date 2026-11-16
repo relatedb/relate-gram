@@ -25,7 +25,17 @@ fn check_keys(s: &Settings, allowed: &[&str], operation: &str) -> Result<(), Str
 }
 
 pub fn load_settings(s: &Settings) -> Result<LoadSettings, String> {
-    check_keys(s, &["nodeIdProperty", "relationshipIdProperty", "tags", "maxDiagnostics", "fileName"], "a load")?;
+    check_keys(
+        s,
+        &[
+            "nodeIdProperty",
+            "relationshipIdProperty",
+            "tags",
+            "maxDiagnostics",
+            "fileName",
+        ],
+        "a load",
+    )?;
     let mut out = LoadSettings::default();
     out.node_id_property = string(s, "nodeIdProperty")?;
     out.relationship_id_property = string(s, "relationshipIdProperty")?;
@@ -34,19 +44,31 @@ pub fn load_settings(s: &Settings) -> Result<LoadSettings, String> {
         out.tags = match t.as_str() {
             "warn" => TagPolicy::Warn,
             "error" => TagPolicy::Error,
-            other => return Err(format!("setting `tags` is `warn` or `error`, found `{other}`")),
+            other => {
+                return Err(format!(
+                    "setting `tags` is `warn` or `error`, found `{other}`"
+                ))
+            }
         };
     }
     match s.get("maxDiagnostics") {
         None => {}
         Some(Setting::Int(i)) if *i >= 0 => out.max_diagnostics = *i as usize,
-        Some(other) => return Err(format!("setting `maxDiagnostics` must be a non-negative integer, found {other:?}")),
+        Some(other) => {
+            return Err(format!(
+                "setting `maxDiagnostics` must be a non-negative integer, found {other:?}"
+            ))
+        }
     }
     Ok(out)
 }
 
 pub fn export_settings(s: &Settings) -> Result<ExportSettings, String> {
-    check_keys(s, &["identity", "nodeIdProperty", "relationshipIdProperty"], "an export")?;
+    check_keys(
+        s,
+        &["identity", "nodeIdProperty", "relationshipIdProperty"],
+        "an export",
+    )?;
     let mut out = ExportSettings::default();
     out.node_id_property = string(s, "nodeIdProperty")?;
     out.relationship_id_property = string(s, "relationshipIdProperty")?;
@@ -55,7 +77,11 @@ pub fn export_settings(s: &Settings) -> Result<ExportSettings, String> {
             "auto" => IdentityMode::Auto,
             "generate" => IdentityMode::Generate,
             "property" => IdentityMode::Property,
-            other => return Err(format!("setting `identity` is `auto`, `generate` or `property`, found `{other}`")),
+            other => {
+                return Err(format!(
+                    "setting `identity` is `auto`, `generate` or `property`, found `{other}`"
+                ))
+            }
         };
     }
     Ok(out)
@@ -69,20 +95,32 @@ pub fn fix_options(s: &Settings) -> Result<FixOptions, String> {
         out.direction = Some(match d.as_str() {
             "right" => Direction::Right,
             "left" => Direction::Left,
-            other => return Err(format!("setting `direction` is `right` or `left`, found `{other}`")),
+            other => {
+                return Err(format!(
+                    "setting `direction` is `right` or `left`, found `{other}`"
+                ))
+            }
         });
     }
     if let Some(o) = string(s, "octal")? {
         out.octal = Some(match o.as_str() {
             "decimal" => OctalAs::Decimal,
             "octal" => OctalAs::Octal,
-            other => return Err(format!("setting `octal` is `decimal` or `octal`, found `{other}`")),
+            other => {
+                return Err(format!(
+                    "setting `octal` is `decimal` or `octal`, found `{other}`"
+                ))
+            }
         });
     }
     match s.get("annotate") {
         None => {}
         Some(Setting::Bool(b)) => out.annotate = *b,
-        Some(other) => return Err(format!("setting `annotate` must be a boolean, found {other:?}")),
+        Some(other) => {
+            return Err(format!(
+                "setting `annotate` must be a boolean, found {other:?}"
+            ))
+        }
     }
     Ok(out)
 }
