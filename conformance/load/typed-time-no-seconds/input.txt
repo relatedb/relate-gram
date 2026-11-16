@@ -1,0 +1,2 @@
+// seconds are optional (ADR-012 section 2.3); an offset is not
+(a {t: time`10:30Z`, dt: datetime`2024-01-15T10:30+01:00`, lt: localtime`10:30`, ldt: localdatetime`2024-01-15T10:30`})

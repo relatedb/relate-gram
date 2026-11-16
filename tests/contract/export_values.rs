@@ -8,48 +8,6 @@ fn list(items: Vec<Value>) -> Value {
 }
 
 #[test]
-fn integers_booleans_strings_and_lists() {
-    let (_db, mut c) = fresh_db();
-    create_node(
-        &mut c,
-        "",
-        vec![
-            ("i", Value::Int(-7)),
-            ("min", Value::Int(i64::MIN)),
-            ("max", Value::Int(i64::MAX)),
-            ("t", Value::Bool(true)),
-            ("f", Value::Bool(false)),
-            ("s", str_value("plain")),
-            ("empty", str_value("")),
-            ("ints", list(vec![Value::Int(1), Value::Int(2)])),
-            ("strs", list(vec![str_value("a"), str_value("b")])),
-            ("bools", list(vec![Value::Bool(true), Value::Bool(false)])),
-            ("floats", list(vec![Value::Float(1.5), Value::Float(2.0)])),
-        ],
-    );
-    assert_eq!(
-        export_str(&mut c).unwrap(),
-        "(n0 {bools: [true, false], empty: \"\", f: false, floats: [1.5, 2.0], i: -7, \
-         ints: [1, 2], max: 9223372036854775807, min: -9223372036854775808, \
-         s: plain, strs: [a, b], t: true})\n"
-    );
-}
-
-#[test]
-fn strings_are_double_quoted_with_the_escapes() {
-    let (_db, mut c) = fresh_db();
-    create_node(
-        &mut c,
-        "",
-        vec![("s", str_value("a\"b\\c\nd\re\tf\u{8}g\u{c}h it's `x`"))],
-    );
-    assert_eq!(
-        export_str(&mut c).unwrap(),
-        "(n0 {s: \"a\\\"b\\\\c\\nd\\re\\tf\\bg\\fh it's `x`\"})\n"
-    );
-}
-
-#[test]
 fn floats_have_a_dot_and_no_exponent_and_read_back_as_the_same_value() {
     let values = [
         0.1,
@@ -99,20 +57,6 @@ fn floats_have_a_dot_and_no_exponent_and_read_back_as_the_same_value() {
     assert_eq!(
         export_str(&mut c).unwrap(),
         "(n0 {a: 0.1, b: 1.0, c: -0.0})\n"
-    );
-}
-
-#[test]
-fn keys_that_need_quoting_are_backticked() {
-    let (_db, mut c) = fresh_db();
-    create_node(
-        &mut c,
-        "",
-        vec![("my key", Value::Int(1)), ("plain", Value::Int(2))],
-    );
-    assert_eq!(
-        export_str(&mut c).unwrap(),
-        "(n0 {`my key`: 1, plain: 2})\n"
     );
 }
 

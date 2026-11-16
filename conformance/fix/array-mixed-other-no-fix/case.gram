@@ -1,0 +1,3 @@
+/** Any other mixture has no fix. */
+{requires: []}
+(:Remaining {code: "value.array-mixed", line: 1, column: 13, offset: 12})

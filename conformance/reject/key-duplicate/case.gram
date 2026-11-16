@@ -1,0 +1,3 @@
+/** a repeated key */
+{requires: []}
+(:Error {code: "key.duplicate", line: 2, column: 11, offset: 28})

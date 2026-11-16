@@ -1,0 +1,3 @@
+(ada:Person {name: "Ada"})
+(x:X)
+(ada)-[:R]->(x)

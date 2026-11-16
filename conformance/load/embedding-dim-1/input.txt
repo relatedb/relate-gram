@@ -1,0 +1,2 @@
+// gram-value 0.2.0 conformance case tag-embedding-dim-1 (conformance/tags.gram)
+(a {e: embedding`QAAAAAAAAAB7ImVtYmVkZGluZyI6eyJkdHlwZSI6IkYzMiIsInNoYXBlIjpbMV0sImRhdGFfb2Zmc2V0cyI6WzAsNF19fSAgAAAAPw==`})

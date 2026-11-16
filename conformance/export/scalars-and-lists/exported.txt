@@ -1,0 +1,1 @@
+(n0 {bools: [true, false], empty: "", f: false, floats: [1.5, 2.0], i: -7, ints: [1, 2], max: 9223372036854775807, min: -9223372036854775808, s: plain, strs: [a, b], t: true})

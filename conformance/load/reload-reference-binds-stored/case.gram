@@ -1,0 +1,4 @@
+/** A reference binds to a stored element and changes nothing. */
+{requires: []}
+(:Warning {code: "load.anonymous"})
+(:Counts {nodesCreated: 1, nodesUpdated: 0})

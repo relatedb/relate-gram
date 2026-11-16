@@ -1,0 +1,3 @@
+/** bidirectional arrow */
+{requires: []}
+(:Error {code: "rel.bidirectional", line: 2, column: 4, offset: 26})

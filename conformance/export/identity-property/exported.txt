@@ -1,0 +1,2 @@
+(x@y:P {email: x@y})
+(z:P {email: z})

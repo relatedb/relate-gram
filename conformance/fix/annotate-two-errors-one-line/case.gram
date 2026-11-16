@@ -1,0 +1,4 @@
+/** Several errors on one line each get a marker. */
+{requires: [], settings: {annotate: true}}
+(:Remaining {code: "value.range", line: 3, column: 8, offset: 233})
+(:Remaining {code: "value.range", line: 3, column: 17, offset: 242})

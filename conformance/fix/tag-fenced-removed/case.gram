@@ -1,0 +1,3 @@
+/** A fenced tag is removed with its fence line kept. */
+{requires: [], settings: {tags: "error"}}
+(:Applied {code: "value.tag", count: 1})

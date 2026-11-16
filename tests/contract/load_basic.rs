@@ -2,28 +2,6 @@
 use super::common::*;
 
 #[test]
-fn people_fixture_loads_the_described_graph() {
-    let (_db, mut c) = fresh_db();
-    let report = load_fixture(&mut c, "valid", "people").expect("loads");
-    assert!(report.diagnostics.iter().all(|d| !d.is_error()));
-    let g = dump_graph(&mut c);
-    let ada = ":Person {\"@id\": \"ada\", \"born\": 1815, \"name\": \"Ada\"}";
-    let grace = ":Person {\"@id\": \"grace\", \"born\": 1906, \"name\": \"Grace\"}";
-    let alan = ":Mathematician:Person {\"@id\": \"alan\", \"name\": \"Alan\"}";
-    let mut nodes = vec![ada, grace, alan];
-    nodes.sort();
-    assert_eq!(g.nodes, nodes);
-    let mut rels = vec![
-        format!("({ada}) -[KNOWS {{\"since\": 1840}}]-> ({grace})"),
-        format!("({alan}) -[KNOWS {{}}]-> ({ada})"),
-        // a left arrow: (ada)<-[:MENTORS]-(grace) is a relationship from grace to ada
-        format!("({grace}) -[MENTORS {{}}]-> ({ada})"),
-    ];
-    rels.sort();
-    assert_eq!(g.relationships, rels);
-}
-
-#[test]
 fn elements_are_created_in_order_of_first_appearance() {
     let (_db, mut c) = fresh_db();
     load_fixture(&mut c, "valid", "people").unwrap();

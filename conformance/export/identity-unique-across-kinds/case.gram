@@ -1,0 +1,4 @@
+/** Identifiers are unique across nodes and relationships. */
+{requires: []}
+(:Error {code: "export.id-duplicate"})
+(:Error {code: "export.id-duplicate"})

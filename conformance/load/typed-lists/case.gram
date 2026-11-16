@@ -1,0 +1,3 @@
+/** lists of typed values: one tag per array */
+{requires: ["points", "temporal-values", "uuids"]}
+(:Counts {nodesCreated: 1, relationshipsCreated: 0})

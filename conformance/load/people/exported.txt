@@ -1,0 +1,7 @@
+(ada:Person {born: 1815, name: Ada})
+(grace:Person {born: 1906, name: Grace})
+(alan:Mathematician:Person {name: Alan})
+
+(ada)-[r0:KNOWS {since: 1840}]->(grace)
+(alan)-[r1:KNOWS]->(ada)
+(grace)-[r2:MENTORS]->(ada)

@@ -1,0 +1,3 @@
+// a recognized tag as a fenced tagged string, and as a backtick one
+(a {f: ```date
+2024-01-15```, b: date`2024-01-16`})

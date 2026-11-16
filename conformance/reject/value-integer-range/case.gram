@@ -1,0 +1,3 @@
+/** an integer beyond 64 bits */
+{requires: []}
+(:Error {code: "value.integer-range", line: 2, column: 8, offset: 36})

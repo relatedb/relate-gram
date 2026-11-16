@@ -1,0 +1,2 @@
+/** Every typed value is written as a tagged string, a point with its SRID and longitude first (ADR-011). */
+{requires: ["points", "temporal-values", "uuids"]}

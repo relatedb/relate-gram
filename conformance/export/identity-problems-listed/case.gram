@@ -1,0 +1,9 @@
+/** Missing, unusable and duplicate identity values are all listed before any output. */
+{requires: [], settings: {identity: "property", nodeIdProperty: "email"}}
+(:Error {code: "export.id-duplicate"})
+(:Error {code: "export.id-duplicate"})
+(:Error {code: "export.id-duplicate"})
+(:Error {code: "export.id-duplicate"})
+(:Error {code: "export.id-missing"})
+(:Error {code: "export.id-unusable"})
+(:Error {code: "export.id-unusable"})

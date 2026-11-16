@@ -1,0 +1,3 @@
+/** A double colon before a label becomes a single colon. */
+{requires: []}
+(:Applied {code: "construct.double-colon", count: 1})

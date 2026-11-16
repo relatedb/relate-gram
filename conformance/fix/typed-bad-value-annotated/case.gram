@@ -1,0 +1,3 @@
+/** A bad typed value has no fix and is annotated once (ADR-011 section 4). */
+{requires: [], settings: {annotate: true}}
+(:Remaining {code: "value.tag-content", line: 2, column: 11, offset: 120})

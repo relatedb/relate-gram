@@ -1,0 +1,3 @@
+/** Property mode with no property name is a configuration error. */
+{requires: [], settings: {identity: "property"}}
+(:Error {code: "export.config"})

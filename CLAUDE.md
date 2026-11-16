@@ -64,8 +64,13 @@ table in `docs/supported-gram.md`.
 ## Build and test
 
 - `git submodule update --init external/tree-sitter-gram` fetches the grammar corpus (needed by `tests/corpus.rs`).
-- `cargo test` runs the unit, contract, position, round-trip and corpus tests. A test target in a folder needs
+- `cargo test` runs the unit, contract, position, round-trip, corpus and conformance tests. A test target in a folder needs
   `main.rs` (`tests/contract/`, `tests/positions/`, `tests/roundtrip/`); add a `mod` line when adding a test file.
+- The conformance collection (ADR-015, spec 006) is `conformance/`: `reject`, `load`, `export` and `fix` cases, read by
+  `tests/conformance.rs` (16-bit flag unset) and `tests/conformance16.rs` (flag set); `tests/conformance_checks.rs` checks the
+  collection itself and needs the `gram` tool (`cargo install gram-data --locked --version 0.7.0`, and
+  `CONFORMANCE_REQUIRE_LINT=1` to fail without it). A new rejection, load, export or fix example is a case, not a fixture;
+  `conformance/README.md` has the form and the list of tests that stay in Rust.
 - `cargo test --release --test perf -- --ignored --nocapture` checks SC-006; `cargo bench --bench load_export` prints timings.
 - `scripts/check-public-api.sh` checks that only Relate's public items are used (Constitution V).
 - `cargo fmt --check` and `cargo clippy --all-targets -- -D warnings` must pass before merge.

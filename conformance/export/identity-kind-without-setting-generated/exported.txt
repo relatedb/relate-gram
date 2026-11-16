@@ -1,0 +1,4 @@
+(a:P {email: a})
+(b:P {email: b})
+
+(a)-[r0:R]->(b)

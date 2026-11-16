@@ -1,0 +1,3 @@
+/** a UUID, written in upper case */
+{requires: ["uuids"]}
+(:Counts {nodesCreated: 1, relationshipsCreated: 0})

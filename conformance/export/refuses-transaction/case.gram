@@ -1,0 +1,3 @@
+/** The connection must not be in a transaction. */
+{requires: [], transaction: true}
+(:Error {code: "export.in-transaction"})

@@ -1,0 +1,3 @@
+(ada:Person {born: 1815, name: "Ada", note: "kept"})
+(grace:Person {name: "Grace"})
+(ada)-[k:KNOWS {since: 1840}]->(grace)

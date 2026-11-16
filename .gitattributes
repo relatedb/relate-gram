@@ -1,0 +1,4 @@
+# Conformance text files are byte strings: a checkout must not change line endings or a byte order
+# mark (ADR-015 section 2.2).
+conformance/**/*.txt -text
+conformance/**/*.bin -text

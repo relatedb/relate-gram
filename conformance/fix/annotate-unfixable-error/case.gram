@@ -1,0 +1,4 @@
+/** An error that cannot be fixed gets a comment above its line (ADR-010 section 2.7). */
+{requires: [], settings: {annotate: true, relType: "K"}}
+(:Applied {code: "rel.no-type", count: 1})
+(:Remaining {code: "value.range", line: 3, column: 8, offset: 138})

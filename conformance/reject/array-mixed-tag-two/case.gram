@@ -1,0 +1,3 @@
+/** two recognized tags in one array */
+{requires: []}
+(:Error {code: "value.array-mixed", line: 2, column: 28, offset: 63})

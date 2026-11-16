@@ -1,0 +1,3 @@
+/** ada is a stored node, and the file uses it as a relationship. */
+{requires: []}
+(:Error {code: "match.kind-differs", line: 3, column: 8, offset: 67})

@@ -2,63 +2,6 @@
 use super::common::*;
 
 #[test]
-fn nodes_then_a_blank_line_then_relationships() {
-    let (_db, mut c) = fresh_db();
-    run(
-        &mut c,
-        "CREATE (a:Person {name: 'Ada', born: 1815}), (b:Person {name: 'Grace'}), \
-         (a)-[:KNOWS {since: 1843}]->(b)",
-    );
-    let text = export_str(&mut c).unwrap();
-    assert_eq!(
-        text,
-        "(n0:Person {born: 1815, name: Ada})\n\
-         (n1:Person {name: Grace})\n\
-         \n\
-         (n0)-[r0:KNOWS {since: 1843}]->(n1)\n"
-    );
-}
-
-#[test]
-fn the_empty_database_exports_nothing() {
-    let (_db, mut c) = fresh_db();
-    assert_eq!(export_str(&mut c).unwrap(), "");
-}
-
-#[test]
-fn nodes_without_relationships_have_no_blank_line() {
-    let (_db, mut c) = fresh_db();
-    run(&mut c, "CREATE (:A), (:B)");
-    assert_eq!(export_str(&mut c).unwrap(), "(n0:A)\n(n1:B)\n");
-}
-
-#[test]
-fn a_node_with_no_labels_and_no_properties_is_just_its_identifier() {
-    let (_db, mut c) = fresh_db();
-    run(&mut c, "CREATE ()");
-    assert_eq!(export_str(&mut c).unwrap(), "(n0)\n");
-    run(&mut c, "CREATE ({k: 1})");
-    assert_eq!(export_str(&mut c).unwrap(), "(n0)\n(n1 {k: 1})\n");
-}
-
-#[test]
-fn labels_and_property_keys_are_sorted() {
-    let (_db, mut c) = fresh_db();
-    run(&mut c, "CREATE (:B:A {z: 1, a: 2, m: 3})");
-    assert_eq!(export_str(&mut c).unwrap(), "(n0:A:B {a: 2, m: 3, z: 1})\n");
-}
-
-#[test]
-fn elements_are_written_in_id_order() {
-    let (_db, mut c) = fresh_db();
-    run(&mut c, "CREATE (:First)");
-    run(&mut c, "CREATE (:Second)");
-    run(&mut c, "CREATE (:Third)");
-    let text = export_str(&mut c).unwrap();
-    assert_eq!(text, "(n0:First)\n(n1:Second)\n(n2:Third)\n");
-}
-
-#[test]
 fn two_exports_of_an_unchanged_database_are_equal() {
     let (_db, mut c) = fresh_db();
     load_fixture(&mut c, "valid", "people").unwrap();

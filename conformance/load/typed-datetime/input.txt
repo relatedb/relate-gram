@@ -1,0 +1,2 @@
+// zoned datetimes: an offset, a zone name, nanoseconds
+(a {t: datetime`2024-01-15T10:30:00+01:00`, z: datetime`2024-01-15T10:30:00+01:00[Europe/Paris]`, n: datetime`2024-01-15T10:30:00.123456789Z`})

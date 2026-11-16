@@ -1,0 +1,4 @@
+/** every tag, on a node and on a relationship */
+{requires: ["points", "temporal-values", "uuids"]}
+(:Warning {code: "load.anonymous"})
+(:Counts {nodesCreated: 2, relationshipsCreated: 1, elementsWithoutIdentifier: 1})

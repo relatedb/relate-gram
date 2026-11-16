@@ -1,0 +1,3 @@
+/** An undirected arrow can face left. */
+{requires: [], settings: {direction: "left"}}
+(:Applied {code: "rel.undirected", count: 1})

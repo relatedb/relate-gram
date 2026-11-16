@@ -1,0 +1,7 @@
+/** Every value with no gram form is listed before any output: three floats outside gram, a reserved key and an integer vector. */
+{requires: ["vectors"]}
+(:Error {code: "export.value"})
+(:Error {code: "export.value"})
+(:Error {code: "export.value"})
+(:Error {code: "export.value"})
+(:Error {code: "export.key-reserved"})

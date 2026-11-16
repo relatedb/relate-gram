@@ -1,0 +1,1 @@
+(a {g: point`SRID=4326;POINT(1 2)`})

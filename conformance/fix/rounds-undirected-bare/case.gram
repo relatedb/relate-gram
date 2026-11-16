@@ -1,0 +1,4 @@
+/** A bare undirected arrow needs a direction, then a type (two rounds). */
+{requires: [], settings: {relType: "K", direction: "right"}}
+(:Applied {code: "rel.undirected", count: 1})
+(:Applied {code: "rel.no-type", count: 1})

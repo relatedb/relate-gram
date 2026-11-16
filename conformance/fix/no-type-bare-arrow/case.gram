@@ -1,0 +1,3 @@
+/** A missing relationship type is inserted into a bare arrow (ADR-010 section 2.3). */
+{requires: [], settings: {relType: "KNOWS"}}
+(:Applied {code: "rel.no-type", count: 1})

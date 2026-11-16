@@ -1,0 +1,4 @@
+/** A decimal a float cannot hold exactly loads as the nearest float, with a warning (ADR-006). */
+{requires: []}
+(:Warning {code: "value.decimal-precision", line: 1, column: 8, offset: 7})
+(:Counts {nodesCreated: 1, relationshipsCreated: 0})

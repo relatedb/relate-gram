@@ -1,0 +1,3 @@
+/** undirected bare arrow */
+{requires: []}
+(:Error {code: "rel.undirected", line: 2, column: 4, offset: 28})

@@ -1,0 +1,2 @@
+// relate-gram: error[rel.no-type]: old
+(a:N)-->(b:N)

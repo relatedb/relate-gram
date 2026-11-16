@@ -1,0 +1,23 @@
+/**
+ * The names a case file may use (ADR-015 sections 2.2 and 2.6). The collection's checks fail on a
+ * label or capability that is not listed here, so a misspelling cannot silently skip a case.
+ */
+{kind: "vocabulary"}
+(:Label {name: "Error"})
+(:Label {name: "Warning"})
+(:Label {name: "Counts"})
+(:Label {name: "Applied"})
+(:Label {name: "Remaining"})
+(:Label {name: "Result"})
+(:Label {name: "KnownFailure"})
+(:Capability {name: "explicit-transactions"})
+(:Capability {name: "temporal-values"})
+(:Capability {name: "points"})
+(:Capability {name: "uuids"})
+(:Capability {name: "vectors"})
+(:Capability {name: "vector-16-bit"})
+(:Capability {name: "numeric-kinds"})
+(:Capability {name: "check"})
+(:Capability {name: "load"})
+(:Capability {name: "export"})
+(:Capability {name: "fix"})

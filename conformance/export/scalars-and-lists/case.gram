@@ -1,0 +1,2 @@
+/** Integers, booleans, strings and lists (ADR-006 section 2.5). */
+{requires: []}

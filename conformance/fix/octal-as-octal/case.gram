@@ -1,0 +1,3 @@
+/** An octal literal is replaced by its octal value when that is chosen. */
+{requires: [], settings: {octal: "octal"}}
+(:Applied {code: "value.octal", count: 1})

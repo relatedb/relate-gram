@@ -1,0 +1,3 @@
+/** A list that mixes temporal kinds fails the export (ADR-011). */
+{requires: ["temporal-values"]}
+(:Error {code: "export.value"})

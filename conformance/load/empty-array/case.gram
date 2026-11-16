@@ -1,0 +1,3 @@
+/** an empty list is a value (tree-sitter-gram 0.7.0) */
+{requires: []}
+(:Counts {nodesCreated: 1, relationshipsCreated: 0})

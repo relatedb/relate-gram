@@ -1,0 +1,3 @@
+/** duration with content that breaks its form (duration-leading-minus) */
+{requires: []}
+(:Error {code: "value.tag-content", line: 2, column: 11, offset: 81})

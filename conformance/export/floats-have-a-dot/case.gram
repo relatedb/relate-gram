@@ -1,0 +1,2 @@
+/** A float has a dot and no exponent, and negative zero stays. */
+{requires: []}

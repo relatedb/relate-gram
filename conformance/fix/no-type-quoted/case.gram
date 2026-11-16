@@ -1,0 +1,3 @@
+/** A type that needs quoting is backticked. */
+{requires: [], settings: {relType: "my type"}}
+(:Applied {code: "rel.no-type", count: 1})

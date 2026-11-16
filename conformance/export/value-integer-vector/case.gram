@@ -1,0 +1,3 @@
+/** A vector of integers has no gram form and fails the export. */
+{requires: ["vectors"]}
+(:Error {code: "export.value"})

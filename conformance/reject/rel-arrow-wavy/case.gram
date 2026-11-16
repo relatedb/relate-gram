@@ -1,0 +1,4 @@
+/** wavy arrow */
+{requires: []}
+(:Error {code: "rel.arrow-family", line: 2, column: 4, offset: 17})
+(:Error {code: "rel.arrow-family", line: 3, column: 4, offset: 27})

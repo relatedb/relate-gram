@@ -1,0 +1,3 @@
+/** time with content that breaks its form (time-second-60) */
+{requires: []}
+(:Error {code: "value.tag-content", line: 2, column: 11, offset: 69})

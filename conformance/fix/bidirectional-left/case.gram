@@ -1,0 +1,3 @@
+/** A bidirectional arrow loses its right head. */
+{requires: [], settings: {direction: "left"}}
+(:Applied {code: "rel.bidirectional", count: 1})

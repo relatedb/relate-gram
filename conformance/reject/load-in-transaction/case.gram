@@ -1,0 +1,3 @@
+/** A load refuses a connection that is already in a transaction (ADR-001). */
+{requires: ["explicit-transactions"], transaction: true}
+(:Error {code: "load.in-transaction"})

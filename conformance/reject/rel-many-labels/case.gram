@@ -1,0 +1,3 @@
+/** two labels on a relationship */
+{requires: []}
+(:Error {code: "rel.many-labels", line: 2, column: 4, offset: 35})

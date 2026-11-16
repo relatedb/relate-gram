@@ -1,0 +1,4 @@
+/** The fix lengthens line 1; the remaining error on line 2 is positioned in the fixed text. */
+{requires: [], settings: {relType: "KNOWS"}}
+(:Applied {code: "rel.no-type", count: 1})
+(:Remaining {code: "value.range", line: 2, column: 8, offset: 29})

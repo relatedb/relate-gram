@@ -1,0 +1,3 @@
+/** Relationship values are checked too. */
+{requires: ["vectors"]}
+(:Error {code: "export.value"})

@@ -1,0 +1,2 @@
+﻿// relate-gram: error[value.range]: the range `1..2` has no Cypher type; write the bounds as separate properties
+(c {r: 1..2})

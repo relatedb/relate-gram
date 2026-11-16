@@ -1,0 +1,3 @@
+/** Generate with a property name is a configuration error. */
+{requires: [], settings: {identity: "generate", nodeIdProperty: "email"}}
+(:Error {code: "export.config"})

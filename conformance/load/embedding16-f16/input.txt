@@ -1,0 +1,2 @@
+// gram-value 0.2.0 conformance case tag-embedding-ref-f16 (conformance/tags.gram)
+(a {e: embedding`QAAAAAAAAAB7ImVtYmVkZGluZyI6eyJkdHlwZSI6IkYxNiIsInNoYXBlIjpbNV0sImRhdGFfb2Zmc2V0cyI6WzAsMTBdfX0gAAAAPABAAEIARA==`})

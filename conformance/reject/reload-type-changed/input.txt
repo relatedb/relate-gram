@@ -1,0 +1,4 @@
+// The stored relationship k has the type KNOWS.
+(ada:Person)
+(grace:Person)
+(ada)-[k:LIKES]->(grace)

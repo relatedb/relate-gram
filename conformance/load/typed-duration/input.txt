@@ -1,0 +1,2 @@
+// durations: plain, mixed units, negative and mixed sign, nanoseconds
+(a {p: duration`P1DT2H`, m: duration`P1Y2M3DT4H5M6.789S`, n: duration`P-1DT-2H`, x: duration`P1DT-2H`, s: duration`PT0.123456789S`})

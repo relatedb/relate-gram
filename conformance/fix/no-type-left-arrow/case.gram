@@ -1,0 +1,3 @@
+/** The type goes into a left arrow. */
+{requires: [], settings: {relType: "KNOWS"}}
+(:Applied {code: "rel.no-type", count: 1})

@@ -1,0 +1,3 @@
+/** A tag is removed when tags are errors. */
+{requires: [], settings: {tags: "error"}}
+(:Applied {code: "value.tag", count: 1})

@@ -1,0 +1,4 @@
+(n0:`my label` {`my key`: 1})
+(n1:`@x`)
+
+(n0)-[r0:`odd type@`]->(n1)

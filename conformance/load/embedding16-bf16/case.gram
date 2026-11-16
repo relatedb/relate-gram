@@ -1,0 +1,3 @@
+/** gram-value 0.2.0 conformance case tag-embedding-bf16 (conformance/tags.gram) */
+{requires: ["vectors", "vector-16-bit"]}
+(:Counts {nodesCreated: 1, relationshipsCreated: 0})

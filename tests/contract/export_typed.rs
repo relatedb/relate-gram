@@ -19,38 +19,6 @@ fn build(c: &mut relate::Connection) {
 }
 
 #[test]
-fn every_typed_value_is_written_as_a_tagged_string() {
-    let (_db, mut c) = fresh_db();
-    build(&mut c);
-    let text = export_str(&mut c).unwrap();
-    for want in [
-        "d: date`2024-01-15`",
-        "t: time`10:30:00.123456789+05:30`",
-        "lt: localtime`10:30:00`",
-        "dt: datetime`2024-01-15T10:30:00+01:00[Europe/Paris]`",
-        "ldt: localdatetime`2024-01-15T10:30:00`",
-        "du: duration`P1DT2H`",
-        "neg: duration`P-1DT-2H`",
-        "mixed: duration`P1DT-2H`",
-        "u: uuid`123e4567-e89b-12d3-a456-426614174000`",
-        "since: date`2020-05-05`",
-        "span: duration`PT1S`",
-    ] {
-        assert!(text.contains(want), "missing {want} in:\n{text}");
-    }
-}
-
-#[test]
-fn points_are_written_with_their_srid_and_longitude_first() {
-    let (_db, mut c) = fresh_db();
-    build(&mut c);
-    let text = export_str(&mut c).unwrap();
-    assert!(text.contains("p: point`SRID=4326;-74 40.7`"), "{text}");
-    assert!(text.contains("c: point`SRID=9157;1 2 3`"), "{text}");
-    assert!(text.contains("at: point`SRID=7203;1.5 2.5`"), "{text}");
-}
-
-#[test]
 fn an_export_of_unchanged_data_is_byte_identical() {
     let (_db, mut c) = fresh_db();
     build(&mut c);
@@ -116,15 +84,4 @@ fn a_list_that_mixes_temporal_kinds_fails_the_export_and_is_listed() {
         "{}",
         f.diagnostics[0].message
     );
-}
-
-#[test]
-fn point_coordinates_are_the_shortest_decimals_and_negative_zero_is_zero() {
-    let (_db, mut c) = fresh_db();
-    run(
-        &mut c,
-        "CREATE (n:P {g: point({longitude: -0.0, latitude: 0.5})})",
-    );
-    let text = export_str(&mut c).unwrap();
-    assert!(text.contains("g: point`SRID=4326;0 0.5`"), "{text}");
 }

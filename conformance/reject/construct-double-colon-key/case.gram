@@ -1,0 +1,3 @@
+/** a double colon after a property key */
+{requires: []}
+(:Error {code: "construct.double-colon", line: 2, column: 6, offset: 44})

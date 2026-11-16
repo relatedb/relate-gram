@@ -1,0 +1,2 @@
+/** A 64-bit float vector is written as an embedding tag (ADR-014). */
+{requires: ["vectors"]}

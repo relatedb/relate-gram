@@ -1,0 +1,2 @@
+// relate-gram: error[value.tag-content]: the content of the `date` tag is not valid: month 13 does not exist
+(a {when: date`2024-13-45`})

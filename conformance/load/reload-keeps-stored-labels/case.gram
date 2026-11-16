@@ -1,0 +1,3 @@
+/** Stored labels are kept when the file adds another. */
+{requires: []}
+(:Counts {nodesCreated: 0})

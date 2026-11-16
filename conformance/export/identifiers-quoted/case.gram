@@ -1,0 +1,2 @@
+/** Identifiers that need quoting are quoted. */
+{requires: []}

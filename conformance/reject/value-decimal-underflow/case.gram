@@ -1,0 +1,3 @@
+/** a decimal whose nonzero digits round to zero */
+{requires: []}
+(:Error {code: "value.decimal", line: 2, column: 8, offset: 55})
