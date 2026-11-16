@@ -52,7 +52,9 @@ pub fn run_reject_text(case: &Case, text: &[u8], start: &str) -> Result<(), Stri
     // The same errors without a database. A transaction has no meaning there, and `check` does not
     // apply the cap on reported errors, so a case that sets `maxDiagnostics` compares `load` only.
     // A `match.*` error is found by comparing with stored elements, so `check` cannot report it.
-    let needs_database = case.errors().iter().any(|e| e.code.starts_with("match."));
+    // A 16-bit embedding is refused by Relate's flag, which `check` cannot know (ADR-014).
+    let needs_database = case.errors().iter().any(|e| e.code.starts_with("match."))
+        || case.requires.iter().any(|r| r == "!vector-16-bit");
     if !case.transaction && !needs_database && !case.settings.contains_key("maxDiagnostics") {
         let checked = relate_gram::check(text, &settings);
         let (check_errors, _) = expect::split(&checked.diagnostics);

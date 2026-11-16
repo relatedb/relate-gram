@@ -2,6 +2,7 @@
 //! collection and by the unit tests.
 #![allow(dead_code)]
 
+pub mod capabilities;
 pub mod case;
 pub mod collection;
 pub mod db;
@@ -12,5 +13,7 @@ pub mod fix;
 pub mod graph;
 pub mod load;
 pub mod reject;
+pub mod results;
 pub mod settings;
+pub mod suite;
 pub mod value;

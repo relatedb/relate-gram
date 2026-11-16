@@ -950,3 +950,111 @@ mod fix_runner {
         run_fix_text(&c, b"(a {s: md`x`})", b"(a {s: `x`})").unwrap();
     }
 }
+
+mod capabilities_and_results {
+    use super::conformance::capabilities::{applicable, apply_declared, operations, probe};
+    use super::conformance::case::{parse_case, Kind};
+    use super::conformance::results::{decide, known_failures, results_text, Status};
+    use std::collections::BTreeSet;
+
+    fn set(names: &[&str]) -> BTreeSet<String> {
+        names.iter().map(|s| s.to_string()).collect()
+    }
+
+    fn reqs(names: &[&str]) -> Vec<String> {
+        names.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn a_requirement_that_is_not_met_makes_the_case_not_applicable() {
+        let have = set(&["points", "load"]);
+        assert!(applicable(&reqs(&[]), &have));
+        assert!(applicable(&reqs(&["points"]), &have));
+        assert!(!applicable(&reqs(&["points", "uuids"]), &have));
+    }
+
+    #[test]
+    fn a_bang_requires_the_capability_to_be_absent() {
+        let have = set(&["points"]);
+        assert!(applicable(&reqs(&["!vector-16-bit"]), &have));
+        assert!(!applicable(&reqs(&["!points"]), &have));
+    }
+
+    #[test]
+    fn a_kind_implies_its_operations() {
+        let c = |k: Kind, body: &str| parse_case(k, "t", body).unwrap();
+        assert_eq!(
+            operations(&c(Kind::Reject, "{requires: []}\n")),
+            ["check", "load"]
+        );
+        assert_eq!(operations(&c(Kind::Load, "{requires: []}\n")), ["load"]);
+        assert_eq!(operations(&c(Kind::Export, "{requires: []}\n")), ["export"]);
+        assert_eq!(operations(&c(Kind::Fix, "{requires: []}\n")), ["fix"]);
+        // a load case with exported.txt is told apart by the flag the runner passes
+    }
+
+    #[test]
+    fn an_operation_the_implementation_lacks_makes_cases_not_applicable() {
+        let c = parse_case(Kind::Fix, "t", "{requires: []}\n").unwrap();
+        let have = set(&["load"]);
+        let needed = operations(&c);
+        assert!(!needed.iter().all(|o| have.contains(*o)));
+    }
+
+    #[test]
+    fn probes_run_against_the_database() {
+        let text = "{kind: \"capabilities\"}\n\
+            (:Capability {name: \"explicit-transactions\", how: \"transaction\"})\n\
+            (:Capability {name: \"temporal-values\", how: \"cypher\", probe: \"RETURN date('2024-01-01')\"})\n\
+            (:Capability {name: \"broken\", how: \"cypher\", probe: \"RETURN nonsense(\"})\n\
+            (:Capability {name: \"numeric-kinds\", how: \"reader\"})\n\
+            (:Capability {name: \"load\", how: \"declared\"})\n";
+        let got = probe(text).unwrap();
+        assert!(got.contains("explicit-transactions"));
+        assert!(got.contains("temporal-values"));
+        assert!(!got.contains("broken"));
+        assert!(got.contains("numeric-kinds") && got.contains("load"));
+    }
+
+    #[test]
+    fn a_declared_file_may_only_remove_a_capability_with_a_reason() {
+        let have = set(&["points", "uuids"]);
+        let removes = "{kind: \"declared-capabilities\"}\n(:Capability {name: \"uuids\", supported: false, reason: \"no UUID type in this package\"})\n";
+        let got = apply_declared(&have, removes).unwrap();
+        assert_eq!(got, set(&["points"]));
+        let no_reason = "{kind: \"declared-capabilities\"}\n(:Capability {name: \"uuids\", supported: false})\n";
+        assert!(apply_declared(&have, no_reason)
+            .unwrap_err()
+            .contains("reason"));
+        let adds = "{kind: \"declared-capabilities\"}\n(:Capability {name: \"vectors\", supported: true})\n";
+        assert!(apply_declared(&have, adds).unwrap_err().contains("add"));
+    }
+
+    #[test]
+    fn a_known_failure_that_fails_is_skipped_and_one_that_passes_fails_the_run() {
+        let text = "{kind: \"known-failures\"}\n(:KnownFailure {case: \"load/a\", reason: \"not yet\", issue: \"#1\"})\n";
+        let known = known_failures(text).unwrap();
+        let k = known.get("load/a");
+        assert_eq!(decide(true, Some(Err("boom".into())), k).0, Status::Skipped);
+        let (status, why) = decide(true, Some(Ok(())), k);
+        assert_eq!(status, Status::Failed);
+        assert!(why.unwrap().contains("known failure"));
+        assert_eq!(decide(true, Some(Ok(())), None).0, Status::Passed);
+        assert_eq!(decide(true, Some(Err("x".into())), None).0, Status::Failed);
+        assert_eq!(decide(false, None, None).0, Status::NotApplicable);
+    }
+
+    #[test]
+    fn the_results_file_has_one_result_per_case() {
+        let rows = vec![
+            ("load/a".to_string(), Status::Passed),
+            ("fix/b".to_string(), Status::NotApplicable),
+        ];
+        let text = results_text(&rows, "1.0.0");
+        assert!(
+            text.contains("(:Result {case: \"load/a\", status: \"passed\", version: \"1.0.0\"})")
+        );
+        assert!(text.contains("status: \"not-applicable\""));
+        assert_eq!(text.matches(":Result").count(), 2);
+    }
+}

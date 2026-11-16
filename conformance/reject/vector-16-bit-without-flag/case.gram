@@ -1,0 +1,5 @@
+/** Without Relate's preview flag a 16-bit embedding stops the load before anything is written, one error at each such value (ADR-014 section 2.2). `check` cannot know the flag, so it reports nothing. */
+{requires: ["vectors", "!vector-16-bit"]}
+(:Error {code: "value.tag-content", line: 1, column: 8, offset: 7})
+(:Error {code: "value.tag-content", line: 2, column: 132, offset: 264})
+(:Error {code: "value.tag-content", line: 3, column: 8, offset: 397})
