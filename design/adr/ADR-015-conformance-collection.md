@@ -1,7 +1,7 @@
 ---
 id: ADR-015
 title: A Language-Neutral Conformance Collection
-status: proposed
+status: accepted
 rfcs: [RFC-005]
 created: 2026-11-15
 ---
