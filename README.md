@@ -1,6 +1,6 @@
 # relate-gram
 
-Load [gram](https://github.com/gram-data/gram-spec) files into a [Relate](https://relatedb.ai/)
+Load [gram](https://github.com/gram-data/tree-sitter-gram) files into a [Relate](https://relatedb.ai/)
 database, and export a Relate database as gram.
 
 Gram is a plain-text notation for graphs. `relate-gram` supports a strict subset: the constructs that

@@ -3,7 +3,7 @@
 ## Purpose
 
 `relate-gram` is a standalone, out-of-tree Rust crate that adds a strict subset of the
-[gram](https://github.com/gram-data/gram-spec) notation to [Relate](https://relatedb.ai/) (the embedded Cypher graph
+[gram](https://github.com/gram-data/tree-sitter-gram) notation to [Relate](https://relatedb.ai/) (the embedded Cypher graph
 database in `relatedb/relate`, formerly `neo4j-labs/cypherlite`): load a gram file into an in-memory Relate database, and export one back out.
 It links the public `relate` crate as a library and integrates minimally with the `relate` CLI (`relate run`,
 ADR-0429/0431 upstream). It may be brought in-house later.

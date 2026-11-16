@@ -1,6 +1,6 @@
 # What is supported, and why
 
-`relate-gram` loads a strict subset of [gram](https://github.com/gram-data/gram-spec): the part that
+`relate-gram` loads a strict subset of [gram](https://github.com/gram-data/tree-sitter-gram): the part that
 maps directly to Cypher's property graph model. A file that uses anything else is rejected with an
 error that names the construct, shows where it is, and says what to write instead. Nothing is
 approximated or dropped silently; the two reported exceptions are an unrecognized tag on a tagged string
