@@ -1,0 +1,4 @@
+/** Two untyped relationships in a file with CRLF line endings: positions count the carriage returns as bytes. */
+{requires: []}
+(:Error {code: "rel.no-type", line: 1, column: 4, offset: 3})
+(:Error {code: "rel.no-type", line: 2, column: 4, offset: 14})
