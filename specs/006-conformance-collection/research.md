@@ -61,3 +61,26 @@
 
 - **Decision**: T001 records the wall time of `cargo test` (debug), of the position test and of the contract tests, and the number of Rust tests, before the conversion.
 - **Rationale**: SC-006 and SC-007 are relative.
+
+## R3 results (T007, 2026-11-16): `valueType()` and `toString()` of each property type
+
+Printed by a throwaway test against `relate` 1.0.1 (16-bit kinds with the preview flag set). `valueType` always ends in ` NOT NULL`; the table below omits it.
+
+| Property | `valueType` | `toString` |
+|---|---|---|
+| integer `5`, `-0` | `INTEGER` | `5`, `0` |
+| float `1.5`, `1.0`, `-0.0`, `1.0e21` | `FLOAT` | `1.5`, `1.0`, `-0.0`, `1000000000000000000000.0` |
+| boolean | `BOOLEAN` | `true` |
+| string | `STRING` | the string itself (not quoted) |
+| list | `LIST<T NOT NULL>` (`LIST<NOTHING>` for `[]`); `[1, 2.5]` is stored as `LIST<FLOAT>` | `[a, b]`, elements unquoted, so a list is read with `[x IN n.k \| toString(x)]` |
+| date | `DATE` | `2024-01-15` |
+| time | `ZONED TIME` | `10:30:00+01:00`, `10:30:00Z` |
+| local time | `LOCAL TIME` | `10:30:00.5` |
+| datetime | `ZONED DATETIME` | `2024-01-15T10:30:00+01:00[Europe/Paris]` |
+| local datetime | `LOCAL DATETIME` | `2024-01-15T10:30:00` |
+| duration | `DURATION` | `P1Y2M3DT4H5M6.789S` |
+| point | `POINT` | `point({x: 1.5, y: 2.0, crs: 'wgs-84'})`: a crs name, not an SRID, so a point is read with `.srid`, `.x`, `.y`, `.z` |
+| UUID (`uuid('...')`) | `UUID` | lower-case `8-4-4-4-12` |
+| vector | `VECTOR<K NOT NULL>(n)` with `K` one of `FLOAT32`, `FLOAT` (for FLOAT64), `INTEGER8` and the other integer kinds, `FLOAT16`, `BFLOAT16` | `vector([1.0, 2.5], 2, FLOAT32)`; `FLOAT` is written for 64-bit |
+
+Notes: `randomUUID()` returns a STRING, so the capability probe for UUIDs uses `uuid('...')` (corrected in `conformance/capabilities.gram`). The strings in the printout of T007 showed Rust `Debug` escapes; the stored text is not escaped.

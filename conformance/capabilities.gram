@@ -7,7 +7,7 @@
 (:Capability {name: "explicit-transactions", how: "transaction"})
 (:Capability {name: "temporal-values", how: "cypher", probe: "RETURN date('2024-01-01')"})
 (:Capability {name: "points", how: "cypher", probe: "RETURN point({x: 1.0, y: 2.0, srid: 7203})"})
-(:Capability {name: "uuids", how: "cypher", probe: "RETURN randomUUID()"})
+(:Capability {name: "uuids", how: "cypher", probe: "RETURN uuid('123e4567-e89b-12d3-a456-426614174000')"})
 (:Capability {name: "vectors", how: "cypher", probe: "RETURN vector([1.0], 1, FLOAT32)"})
 (:Capability {name: "vector-16-bit", how: "cypher", probe: "RETURN vector([1.0], 1, FLOAT16)"})
 (:Capability {name: "numeric-kinds", how: "reader"})
